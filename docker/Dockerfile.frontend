@@ -1,0 +1,41 @@
+# Frontend Dockerfile for React Development
+# Using official Node.js verified image from Docker Hub
+
+FROM node:20-alpine
+
+# Set metadata labels
+LABEL maintainer="AI Floor Plan Insights Team"
+LABEL description="React frontend development server"
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV NODE_ENV=development \
+    PATH=/app/node_modules/.bin:$PATH
+
+# Copy package files first for better caching
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy frontend source code
+COPY frontend/ .
+
+# Create non-root user
+RUN addgroup -g 1000 nodeuser && \
+    adduser -D -u 1000 -G nodeuser nodeuser && \
+    chown -R nodeuser:nodeuser /app
+
+USER nodeuser
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5173 || exit 1
+
+# Run Vite dev server
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
