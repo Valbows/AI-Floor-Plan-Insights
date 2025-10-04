@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import './design-system/charney-variables.css';
 
 @tailwind base;
 @tailwind components;
@@ -6,24 +7,44 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-sans;
+    @apply bg-charney-cream text-charney-black font-franklin;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-charney-red text-charney-white px-8 py-4 rounded-sm hover:bg-red-600 transition-all duration-200 font-bold uppercase tracking-wide;
   }
   
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors;
+    @apply bg-charney-black text-charney-white px-8 py-4 rounded-sm hover:bg-gray-800 transition-colors font-bold uppercase tracking-wide;
+  }
+  
+  .btn-outline {
+    @apply bg-transparent text-charney-black px-8 py-4 rounded-sm border-3 border-charney-black hover:bg-charney-black hover:text-charney-white transition-colors font-bold uppercase tracking-wide;
   }
   
   .input-field {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-4 py-2 border border-charney-light-gray rounded-md focus:ring-2 focus:ring-charney-red focus:border-transparent bg-charney-white;
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply bg-charney-white rounded-lg shadow-sm p-md;
+  }
+
+  .charney-heading {
+    @apply font-black uppercase tracking-tight;
+  }
+
+  .charney-mixed-heading {
+    @apply font-black uppercase tracking-tight;
+  }
+
+  .charney-mixed-heading .text-red {
+    @apply text-charney-red;
+  }
+
+  .accent-bar {
+    @apply w-full h-1.5 bg-charney-red my-md;
   }
 }
