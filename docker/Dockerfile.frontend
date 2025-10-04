@@ -23,12 +23,10 @@ RUN npm install
 # Copy frontend source code
 COPY frontend/ .
 
-# Create non-root user
-RUN addgroup -g 1000 nodeuser && \
-    adduser -D -u 1000 -G nodeuser nodeuser && \
-    chown -R nodeuser:nodeuser /app
+# Create non-root user (Alpine comes with node user/group)
+RUN chown -R node:node /app
 
-USER nodeuser
+USER node
 
 # Expose Vite dev server port
 EXPOSE 5173

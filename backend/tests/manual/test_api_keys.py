@@ -15,18 +15,16 @@ def test_gemini_api():
     """Test Google Gemini API connection"""
     print("\n🧪 Testing Google Gemini API...")
     try:
-        from google import genai
+        import google.generativeai as genai
         
         api_key = os.getenv('GOOGLE_GEMINI_API_KEY')
         if not api_key:
             print("❌ GOOGLE_GEMINI_API_KEY not found in environment")
             return False
         
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model="gemini-2.0-flash-exp",
-            contents="Say 'API test successful' in exactly 3 words"
-        )
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        response = model.generate_content("Say 'API test successful' in exactly 3 words")
         
         print(f"✅ Gemini API working! Response: {response.text.strip()}")
         return True
