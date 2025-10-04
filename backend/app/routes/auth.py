@@ -10,7 +10,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
     get_jwt
 )
-from app.utils.supabase_client import get_supabase_client
+from app.utils.supabase_client import get_supabase_client, get_admin_db
 from datetime import timedelta
 import re
 
@@ -113,13 +113,15 @@ def register():
         user_id = auth_response.user.id
         
         # Insert extended user data into public.users table
+        # Use admin client to bypass RLS policies during registration
+        admin_client = get_admin_db()
         user_data = {
             'id': user_id,
             'email': email,
             'full_name': full_name
         }
         
-        supabase.table('users').insert(user_data).execute()
+        admin_client.table('users').insert(user_data).execute()
         
         # Create JWT access token
         access_token = create_access_token(
