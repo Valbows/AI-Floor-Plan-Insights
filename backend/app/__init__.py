@@ -132,11 +132,11 @@ def create_app(config_name='development'):
     
     # Import blueprints here to avoid circular imports
     from app.routes.auth import auth_bp
-    # from app.routes.properties import properties_bp
+    from app.routes.properties import properties_bp
     # from app.routes.public import public_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    # app.register_blueprint(properties_bp, url_prefix='/api/properties')
+    app.register_blueprint(properties_bp, url_prefix='/api/properties')
     # app.register_blueprint(public_bp, url_prefix='/api/public')
     
     # ================================

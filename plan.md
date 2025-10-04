@@ -90,16 +90,18 @@
 
 ## Phase 1: Data Ingestion & Core Parsing ⏳ IN PROGRESS
 
-### 1.1 Authentication System
+### 1.1 Authentication System ✅ COMPLETE
 - [x] Implement POST `/auth/register` with Supabase Auth
 - [x] Implement POST `/auth/login` with JWT generation
 - [x] Implement POST `/auth/logout`
+- [x] Implement GET `/auth/verify` token validation
+- [x] Implement GET `/auth/me` user profile
 - [x] Create JWT validation middleware (jwt_required decorator)
 - [x] Add password hashing and validation
 - [x] Write authentication unit tests
-- [ ] Configure Supabase Auth settings (disable email confirmation for dev)
-- [ ] Test auth endpoints end-to-end
-- [ ] Create frontend login/register forms
+- [x] Configure Supabase Auth settings
+- [x] Test auth endpoints end-to-end (all passing)
+- [ ] Create frontend login/register forms (deferred to frontend dev)
 
 ### 1.2 Property Creation Endpoints
 - [ ] Implement POST `/api/properties/upload` (floor plan image)
