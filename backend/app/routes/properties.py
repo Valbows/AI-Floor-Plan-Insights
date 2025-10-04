@@ -142,8 +142,9 @@ def upload_floor_plan_endpoint():
         
         property_record = result.data[0]
         
-        # TODO: Trigger Celery task for floor plan parsing
-        # process_floor_plan_task.delay(property_record['id'])
+        # Trigger Celery task for floor plan parsing
+        from app.tasks.property_tasks import process_floor_plan_task
+        task = process_floor_plan_task.delay(property_record['id'])
         
         return jsonify({
             'property': {

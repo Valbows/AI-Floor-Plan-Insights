@@ -103,30 +103,36 @@
 - [x] Test auth endpoints end-to-end (all passing)
 - [ ] Create frontend login/register forms (deferred to frontend dev)
 
-### 1.2 Property Creation Endpoints
-- [ ] Implement POST `/api/properties/upload` (floor plan image)
-- [ ] Add file validation (type, size, format)
-- [ ] Implement Supabase Storage upload logic
-- [ ] Implement POST `/api/properties/search` (address only)
-- [ ] Add address validation and normalization
-- [ ] Create property record with initial status
-- [ ] Write endpoint integration tests
+### 1.2 Property Creation Endpoints ✅ COMPLETE
+- [x] Implement POST `/api/properties/upload` (floor plan image)
+- [x] Add file validation (type, size, format)
+- [x] Implement Supabase Storage upload logic
+- [x] Implement POST `/api/properties/search` (address only)
+- [x] Implement GET `/api/properties/` (list properties)
+- [x] Implement GET `/api/properties/<id>` (get property)
+- [x] Implement DELETE `/api/properties/<id>` (delete property)
+- [x] Add address validation and normalization
+- [x] Create property record with initial status
+- [x] Write endpoint integration tests (15+ unit tests)
 
-### 1.3 CrewAI Agent #1: Floor Plan Analyst
-- [ ] Research and document Gemini Vision API capabilities
-- [ ] Define agent role, goal, and backstory
-- [ ] Create floor plan parsing tool (Gemini Vision)
-- [ ] Implement structured output schema (rooms, sq ft, features)
-- [ ] Add error handling for failed parsing
-- [ ] Test with sample floor plan images
+### 1.3 CrewAI Agent #1: Floor Plan Analyst ⏳ IN PROGRESS
+- [x] Research and document Gemini Vision API capabilities
+- [x] Define agent role, goal, and backstory
+- [x] Create floor plan parsing tool (Gemini Vision)
+- [x] Implement structured output schema (rooms, sq ft, features)
+- [x] Add error handling for failed parsing
+- [ ] Test with sample floor plan images (pending Docker rebuild)
 - [ ] Write agent evaluation tests
 
-### 1.4 Asynchronous Workflow (Celery)
-- [ ] Configure Celery with Redis broker
-- [ ] Create task queue for property processing
-- [ ] Implement `process_floor_plan_task` 
-- [ ] Add task status tracking in database
-- [ ] Implement retry logic for failed tasks
+### 1.4 Asynchronous Workflow (Celery) ⏳ IN PROGRESS
+- [x] Configure Celery with Redis broker (Phase 0)
+- [x] Create task queue for property processing
+- [x] Implement `process_floor_plan_task`
+- [x] Implement `enrich_property_data_task` (placeholder for Phase 2)
+- [x] Implement `generate_listing_copy_task` (placeholder for Phase 2)
+- [x] Add task status tracking in database (status field updates)
+- [x] Implement retry logic for failed tasks (max 3 retries, exponential backoff)
+- [x] Integrate task trigger in upload endpoint
 - [ ] Set up Celery beat for scheduled tasks (if needed)
 - [ ] Write workflow integration tests
 
