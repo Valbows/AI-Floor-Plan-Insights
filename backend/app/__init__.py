@@ -20,6 +20,10 @@ celery = Celery(
     backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
 )
 
+# Import tasks to register them with Celery
+# Must be after celery initialization
+from app.tasks import property_tasks  # noqa: E402
+
 
 def create_app(config_name='development'):
     """

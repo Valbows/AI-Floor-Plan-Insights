@@ -50,13 +50,16 @@ def process_floor_plan_task(self, property_id: str):
             'status': 'processing'
         }).eq('id', property_id).execute()
         
-        # Download floor plan image
-        image_url = property_record['image_url']
-        print(f"Downloading floor plan from: {image_url}")
+        # Download floor plan image from Storage
+        image_path = property_record['image_storage_path']
+        print(f"Downloading floor plan from storage: {image_path}")
         
-        response = requests.get(image_url, timeout=30)
-        response.raise_for_status()
-        image_bytes = response.content
+        # Use Supabase client to download from private bucket
+        from app.utils.supabase_client import FLOOR_PLAN_BUCKET
+        storage = db.storage
+        image_bytes = storage.from_(FLOOR_PLAN_BUCKET).download(image_path)
+        
+        print(f"Downloaded {len(image_bytes)} bytes")
         
         # Initialize Floor Plan Analyst
         analyst = FloorPlanAnalyst()
