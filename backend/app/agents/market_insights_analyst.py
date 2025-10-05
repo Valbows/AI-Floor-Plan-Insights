@@ -185,7 +185,7 @@ class MarketInsightsAnalyst:
         
         # Initialize Gemini 2.5 Flash LLM for CrewAI
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini/gemini-2.5-flash",
+            model="gemini-2.5-flash",
             google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY'),
             temperature=0.1
         )
