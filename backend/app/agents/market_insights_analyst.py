@@ -9,7 +9,7 @@ import json
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew
-from crewai_tools import tool, SerperDevTool
+from crewai_tools import tool, TavilySearchResults
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.clients.corelogic_client import CoreLogicClient
 
@@ -165,8 +165,8 @@ class MarketInsightsAnalyst:
         You specialize in analyzing comparable sales, market conditions, and investment potential 
         to provide data-driven insights for real estate professionals."""
         
-        # Create web search tool (optional - requires Serper API key)
-        self.search_tool = SerperDevTool() if os.getenv('SERPER_API_KEY') else None
+        # Create Tavily web search tool (optional - requires Tavily API key)
+        self.search_tool = TavilySearchResults() if os.getenv('TAVILY_API_KEY') else None
         
         # Build tools list
         tools = [search_property_data, get_comparable_properties, get_avm_estimate]

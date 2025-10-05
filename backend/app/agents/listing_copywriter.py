@@ -9,7 +9,7 @@ import json
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field, field_validator
 from crewai import Agent, Task, Crew
-from crewai_tools import tool, SerperDevTool
+from crewai_tools import tool, TavilySearchResults
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 class ListingCopy(BaseModel):
@@ -102,8 +102,8 @@ class ListingCopywriter:
         and digital campaigns. Your copy is known for being compelling, SEO-optimized, and results-driven, 
         with a proven track record of generating buyer interest and faster sales."""
         
-        # Create web search tool (optional - requires Serper API key)
-        self.search_tool = SerperDevTool() if os.getenv('SERPER_API_KEY') else None
+        # Create Tavily web search tool (optional - requires Tavily API key)
+        self.search_tool = TavilySearchResults() if os.getenv('TAVILY_API_KEY') else None
         
         # Build tools list
         tools = [research_neighborhood]
