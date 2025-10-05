@@ -262,7 +262,7 @@
   - [x] **Result**: All tests PASSED ✅
 - [ ] Configure TAVILY_API_KEY for enhanced web search (optional)
 - [ ] Configure CoreLogic API keys for full market analysis (optional)
-- [ ] Fix Agent #2 and #3 LiteLLM errors (same bypass approach)
+- [ ] Fix Agent #2 and #3 LiteLLM errors (DEFERRED - fallback mode working)
 - [ ] Performance benchmarking (old vs new architecture) (deferred)
 - [ ] Accuracy evaluation with real estate data (deferred)
 
@@ -288,16 +288,21 @@
 
 ---
 
-## Phase 3: Agent Dashboard & API Endpoints
+## Phase 3: Agent Dashboard & API Endpoints ⏳ IN PROGRESS
 
-### 3.1 Backend API (Protected Routes)
-- [ ] Implement GET `/api/properties` (list all for agent)
-- [ ] Implement GET `/api/properties/<id>` (single property detail)
-- [ ] Implement PUT `/api/properties/<id>` (edit listing text)
-- [ ] Implement DELETE `/api/properties/<id>` (soft delete)
-- [ ] Add pagination for property list
-- [ ] Add filtering and sorting options
-- [ ] Write endpoint integration tests
+**Status**: Agent #1 production-ready, Agents #2-#3 functional (optimization deferred)  
+**Start Date**: October 5, 2025
+
+### 3.1 Backend API (Protected Routes) ✅ EXISTS (from Phase 1)
+- [x] Implement GET `/api/properties` (list all for agent)
+- [x] Implement GET `/api/properties/<id>` (single property detail)
+- [x] Implement DELETE `/api/properties/<id>` (delete property)
+- [x] Implement POST `/api/properties/upload` (floor plan upload)
+- [x] Implement POST `/api/properties/search` (address-only creation)
+- [ ] Implement PUT `/api/properties/<id>` (edit listing text) - NEW
+- [ ] Add pagination for property list - ENHANCEMENT
+- [ ] Add filtering and sorting options - ENHANCEMENT
+- [ ] Write endpoint integration tests - TESTING
 
 ### 3.2 React Dashboard - Core Views
 - [ ] Create main dashboard layout component
