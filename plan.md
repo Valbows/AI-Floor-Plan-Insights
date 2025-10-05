@@ -215,6 +215,7 @@
 - [ ] Write orchestration tests (deferred)
 
 ### 2.6 CrewAI Integration ✅ COMPLETE (October 5, 2025)
+**Model**: Gemini 2.5 Flash with Structured JSON Output
 - [x] Install CrewAI and dependencies (crewai==0.86.0, crewai-tools==0.17.0)
 - [x] Resolve Pydantic dependency conflicts (upgraded to >=2.7.4)
 - [x] Fix LiteLLM model name format (gemini/gemini-2.0-flash-exp)
@@ -237,8 +238,15 @@
 - [x] Run end-to-end workflow test (✅ PASSED - 3 seconds)
 - [x] Document comprehensive test results (CREWAI_TEST_RESULTS.md)
 - [x] Commit and push all changes to Dev-Branch
+- [x] **UPGRADE TO GEMINI 2.5 FLASH** (October 5, 2025)
+  - [x] All 3 agents upgraded from gemini-2.0-flash-exp to gemini-2.5-flash
+  - [x] Implemented structured JSON output (genai.GenerationConfig)
+  - [x] Fixed floor plan JSON parsing errors
+  - [x] Improved bedroom/bathroom counting accuracy
+  - [x] Direct Pydantic schema validation in tool
 - [ ] Configure TAVILY_API_KEY for enhanced web search (optional)
 - [ ] Configure CoreLogic API keys for full market analysis (optional)
+- [ ] Test with real floor plan images (highly recommended)
 - [ ] Performance benchmarking (old vs new architecture) (deferred)
 - [ ] Accuracy evaluation with real estate data (deferred)
 
