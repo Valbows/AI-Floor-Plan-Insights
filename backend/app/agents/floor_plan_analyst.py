@@ -52,42 +52,88 @@ class FloorPlanData(BaseModel):
 @tool("Floor Plan Image Analyzer")
 def analyze_image_with_gemini(image_url: str, image_bytes_b64: str = None) -> str:
     """
-    Analyze a floor plan image using Google Gemini Vision.
+    Analyze a floor plan image using Google Gemini 2.5 Flash Vision with structured JSON output.
     
     Args:
         image_url: URL to the floor plan image
         image_bytes_b64: Base64 encoded image bytes (optional)
     
     Returns:
-        str: Detailed analysis of the floor plan
+        str: JSON string with structured floor plan data
     """
     import google.generativeai as genai
     genai.configure(api_key=os.getenv('GOOGLE_GEMINI_API_KEY'))
-    model = genai.GenerativeModel('gemini-2.0-flash-exp')
     
-    prompt = """Analyze this floor plan image in detail:
+    # Use Gemini 2.5 Flash for better accuracy
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
-1. Count all bedrooms (look for "BR", "Bedroom", "Master", etc.)
-2. Count all bathrooms (full baths = 1.0, half baths = 0.5)
-3. Identify all rooms (type, dimensions if visible, features)
-4. Calculate or estimate total square footage
-5. Note overall property features (garage, patio, balcony, etc.)
-6. Describe the layout type (open concept, traditional, etc.)
-7. Extract any visible text (address, dimensions)
+    prompt = """Analyze this floor plan image and extract structured data.
 
-Be precise and thorough."""
+Carefully examine the floor plan and:
+
+1. **Count Bedrooms**: Look for rooms labeled "BR", "Bedroom", "Master", "MBR", or bedroom-sized spaces
+2. **Count Bathrooms**: Count full bathrooms (1.0) and half baths (0.5). Look for "Bath", "WC", toilet symbols
+3. **Identify All Rooms**: Kitchen, living room, dining room, office, garage, closets, etc.
+4. **Extract Dimensions**: Look for measurements on the floor plan (e.g., "12' x 14'", room sizes)
+5. **Calculate Square Footage**: Sum all room dimensions if visible, otherwise estimate based on scale
+6. **Note Features**: Garage, patio, balcony, fireplace, walk-in closets, etc.
+7. **Layout Type**: Open concept, traditional, split-level, etc.
+8. **Extract Text**: Any visible address, lot size, or property details
+
+Return a JSON object with this exact structure:
+{
+  "address": "address if visible, otherwise empty string",
+  "bedrooms": number (count of bedrooms),
+  "bathrooms": number (use 0.5 for half bath, 1.0 for full),
+  "square_footage": number (total sq ft),
+  "rooms": [
+    {
+      "type": "room type (bedroom, bathroom, kitchen, etc.)",
+      "dimensions": "dimensions if visible (e.g., 12' x 14')",
+      "features": ["feature1", "feature2"]
+    }
+  ],
+  "features": ["overall property features"],
+  "layout_type": "layout description",
+  "notes": "any observations or unclear elements"
+}
+
+Be precise with bedroom and bathroom counts. This is critical for real estate listings."""
     
     try:
+        # Prepare image
         if image_bytes_b64:
             image_part = {'mime_type': 'image/png', 'data': image_bytes_b64}
         else:
             response_data = requests.get(image_url).content
             image_part = {'mime_type': 'image/png', 'data': base64.b64encode(response_data).decode('utf-8')}
         
-        response = model.generate_content([prompt, image_part])
-        return response.text
+        # Use structured output with JSON schema
+        generation_config = genai.GenerationConfig(
+            response_mime_type="application/json",
+            response_schema=FloorPlanData  # Use Pydantic schema for validation
+        )
+        
+        response = model.generate_content(
+            [prompt, image_part],
+            generation_config=generation_config
+        )
+        
+        return response.text  # Returns valid JSON string
+        
     except Exception as e:
-        return f"Error analyzing image: {str(e)}"
+        # Return error in JSON format
+        error_response = {
+            "address": "",
+            "bedrooms": 0,
+            "bathrooms": 0.0,
+            "square_footage": 0,
+            "rooms": [],
+            "features": [],
+            "layout_type": "",
+            "notes": f"Error analyzing image: {str(e)}"
+        }
+        return json.dumps(error_response)
 
 
 # ================================
@@ -107,9 +153,9 @@ class FloorPlanAnalyst:
     """
     
     def __init__(self):
-        # Initialize Gemini LLM for CrewAI
+        # Initialize Gemini 2.5 Flash LLM for CrewAI
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini/gemini-2.0-flash-exp",
+            model="gemini/gemini-2.5-flash",
             google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY'),
             temperature=0.1
         )
@@ -159,43 +205,20 @@ class FloorPlanAnalyst:
             # Ensure we have URL for the tool
             pass
         
-        # Create analysis task
+        # Create analysis task (tool returns JSON directly, just need to pass it through)
         task_description = f"""
-Analyze the floor plan image at: {image_url or 'provided bytes'}
+Use the Floor Plan Image Analyzer tool to analyze the floor plan image.
 
-Extract the following structured data:
+Image location: {image_url or 'provided bytes'}
 
-1. **Address**: If visible on the floor plan, extract it. Otherwise leave empty.
-2. **Bedrooms**: Count the number of bedrooms (BR, Bedroom, Master Bedroom, etc.)
-3. **Bathrooms**: Count full bathrooms and half baths (use 0.5 for half bath, 1.0 for full)
-4. **Square Footage**: If dimensions are visible, calculate. Otherwise estimate based on room count and layout.
-5. **Rooms**: List all identifiable rooms with:
-   - type (bedroom, bathroom, kitchen, living room, dining room, office, etc.)
-   - dimensions if visible (e.g., "12' x 14'")
-   - features (closet, window, door positions, etc.)
-6. **Features**: Overall property features (garage, patio, balcony, fireplace, etc.)
-7. **Layout Type**: Describe the layout (open concept, traditional, split-level, etc.)
-8. **Notes**: Any observations, unclear elements, or important details
+The tool will return a JSON object with complete floor plan analysis including:
+- Bedrooms and bathrooms count
+- Square footage
+- Room details with dimensions
+- Property features
+- Layout type
 
-Be precise with counts. If something is unclear, note it in the notes field.
-
-Provide your response as a JSON object matching this exact structure:
-{{
-  "address": "string or empty",
-  "bedrooms": number,
-  "bathrooms": number (use decimals for half baths),
-  "square_footage": number,
-  "rooms": [
-    {{
-      "type": "room type",
-      "dimensions": "dimensions if visible",
-      "features": ["feature1", "feature2"]
-    }}
-  ],
-  "features": ["feature1", "feature2"],
-  "layout_type": "layout description",
-  "notes": "additional observations"
-}}
+Simply return the JSON result from the tool without modification.
 """
         
         task = Task(

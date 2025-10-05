@@ -114,15 +114,14 @@ class ListingCopywriter:
         listing = writer.generate_listing(
             property_data={...},
             market_insights={...},
-            tone="luxury"
         )
     """
     
     def __init__(self):
         """Initialize Listing Copywriter with CrewAI"""
-        # Initialize Gemini LLM for CrewAI
+        # Initialize Gemini 2.5 Flash LLM for CrewAI
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini/gemini-2.0-flash-exp",
+            model="gemini/gemini-2.5-flash",
             google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY'),
             temperature=0.7  # Higher temperature for creative writing
         )

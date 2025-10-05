@@ -183,9 +183,9 @@ class MarketInsightsAnalyst:
         """Initialize Market Insights Analyst with CrewAI"""
         self.corelogic = CoreLogicClient()
         
-        # Initialize Gemini LLM for CrewAI
+        # Initialize Gemini 2.5 Flash LLM for CrewAI
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini/gemini-2.0-flash-exp",
+            model="gemini/gemini-2.5-flash",
             google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY'),
             temperature=0.1
         )
