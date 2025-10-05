@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
       if (savedToken) {
         try {
           // Verify token is still valid by making a test request
-          const response = await axios.get('/api/auth/verify')
+          const response = await axios.get('/auth/verify')
           setUser(response.data.user)
           setToken(savedToken)
         } catch (error) {

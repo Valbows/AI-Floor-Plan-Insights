@@ -11,15 +11,18 @@ const PropertyDetail = () => {
 
   useEffect(() => {
     loadProperty()
-    // Poll for updates if processing
-    const interval = setInterval(() => {
-      if (property?.status === 'processing') {
-        loadProperty()
-      }
-    }, 5000)
-    
-    return () => clearInterval(interval)
   }, [id])
+
+  // Separate effect for polling
+  useEffect(() => {
+    if (property?.status === 'processing') {
+      const interval = setInterval(() => {
+        loadProperty()
+      }, 5000)
+      
+      return () => clearInterval(interval)
+    }
+  }, [property?.status])
 
   const loadProperty = async () => {
     try {
