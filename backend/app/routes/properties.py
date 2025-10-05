@@ -109,8 +109,12 @@ def upload_floor_plan_endpoint():
                 }
             )
             
-            # Get public URL
-            floor_plan_url = storage.from_(FLOOR_PLAN_BUCKET).get_public_url(unique_filename)
+            # Generate signed URL (valid for 1 year)
+            # Note: Using signed URL because bucket is private
+            floor_plan_url = storage.from_(FLOOR_PLAN_BUCKET).create_signed_url(
+                unique_filename,
+                expires_in=31536000  # 1 year in seconds
+            )['signedURL']
             
         except Exception as e:
             return jsonify({
@@ -291,8 +295,21 @@ def list_properties():
         # Apply pagination
         query = query.range(offset, offset + limit - 1)
         
-        # Execute query
         result = query.execute()
+        
+        # Regenerate signed URLs for all properties
+        admin_db = get_admin_db()
+        storage = admin_db.storage
+        for prop in result.data:
+            if prop.get('image_storage_path'):
+                try:
+                    signed_url = storage.from_(FLOOR_PLAN_BUCKET).create_signed_url(
+                        prop['image_storage_path'],
+                        expires_in=3600  # 1 hour
+                    )['signedURL']
+                    prop['image_url'] = signed_url
+                except Exception as e:
+                    print(f"Failed to generate signed URL for {prop['id']}: {e}")
         
         return jsonify({
             'properties': result.data,
@@ -341,6 +358,20 @@ def get_property(property_id):
             }), 404
         
         property_record = result.data[0]
+        
+        # Regenerate signed URL for image if it exists
+        if property_record.get('image_storage_path'):
+            try:
+                admin_db = get_admin_db()
+                storage = admin_db.storage
+                signed_url = storage.from_(FLOOR_PLAN_BUCKET).create_signed_url(
+                    property_record['image_storage_path'],
+                    expires_in=3600  # 1 hour for viewing
+                )['signedURL']
+                property_record['image_url'] = signed_url
+            except Exception as e:
+                print(f"Failed to generate signed URL: {e}")
+                # Keep existing URL if signing fails
         
         return jsonify({
             'property': property_record
