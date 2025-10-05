@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { 
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
-  FileText, Star, AlertCircle, BarChart3
+  FileText, Star, AlertCircle, BarChart3, Edit3, Save, X
 } from 'lucide-react'
 import axios from 'axios'
 
@@ -12,6 +12,10 @@ const PropertyDetail = () => {
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedListingCopy, setEditedListingCopy] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [copySuccess, setCopySuccess] = useState('')
 
   useEffect(() => {
     loadProperty()
@@ -63,7 +67,41 @@ const PropertyDetail = () => {
 
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text)
-    alert(`${label} copied to clipboard!`)
+    setCopySuccess(label)
+    setTimeout(() => setCopySuccess(''), 2000)
+  }
+
+  const handleEdit = () => {
+    setEditedListingCopy({
+      ...property.listing_copy,
+      headline: property.listing_copy?.headline || '',
+      description: property.listing_copy?.description || ''
+    })
+    setIsEditing(true)
+  }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    setEditedListingCopy(null)
+  }
+
+  const handleSave = async () => {
+    try {
+      setSaving(true)
+      const response = await axios.put(`/api/properties/${id}`, {
+        listing_copy: editedListingCopy
+      })
+      
+      setProperty(response.data.property)
+      setIsEditing(false)
+      setEditedListingCopy(null)
+      setCopySuccess('Listing updated successfully!')
+      setTimeout(() => setCopySuccess(''), 3000)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update listing')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
@@ -106,6 +144,16 @@ const PropertyDetail = () => {
           </div>
         </div>
       </header>
+
+      {/* Toast Notification */}
+      {copySuccess && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">{copySuccess} copied!</span>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -366,6 +414,42 @@ const PropertyDetail = () => {
             {/* Listing Copy (Agent #3) */}
             {extracted.listing_copy && (
               <>
+                {/* Edit/Save/Cancel Buttons */}
+                <div className="flex justify-end space-x-2 mb-4">
+                  {!isEditing ? (
+                    <button
+                      onClick={handleEdit}
+                      className="btn-secondary flex items-center space-x-2"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      <span>Edit Listing</span>
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleCancel}
+                        className="btn-secondary flex items-center space-x-2"
+                        disabled={saving}
+                      >
+                        <X className="w-4 h-4" />
+                        <span>Cancel</span>
+                      </button>
+                      <button
+                        onClick={handleSave}
+                        className="btn-primary flex items-center space-x-2"
+                        disabled={saving}
+                      >
+                        {saving ? (
+                          <Loader className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4" />
+                        )}
+                        <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+
                 {/* Headline */}
                 <div className="card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
                   <div className="flex items-center justify-between mb-3">
@@ -373,32 +457,56 @@ const PropertyDetail = () => {
                       <FileText className="w-5 h-5 mr-2 text-blue-600" />
                       Listing Headline
                     </h2>
-                    <button
-                      onClick={() => copyToClipboard(extracted.listing_copy.headline, 'Headline')}
-                      className="p-2 hover:bg-blue-100 rounded-lg transition"
-                    >
-                      <Copy className="w-4 h-4 text-blue-600" />
-                    </button>
+                    {!isEditing && (
+                      <button
+                        onClick={() => copyToClipboard(extracted.listing_copy.headline, 'Headline')}
+                        className="p-2 hover:bg-blue-100 rounded-lg transition"
+                      >
+                        <Copy className="w-4 h-4 text-blue-600" />
+                      </button>
+                    )}
                   </div>
-                  <p className="text-xl font-bold text-blue-900">
-                    {extracted.listing_copy.headline}
-                  </p>
+                  {isEditing ? (
+                    <textarea
+                      value={editedListingCopy?.headline || ''}
+                      onChange={(e) => setEditedListingCopy({...editedListingCopy, headline: e.target.value})}
+                      className="w-full p-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-bold text-blue-900 bg-white"
+                      rows="2"
+                      placeholder="Enter listing headline..."
+                    />
+                  ) : (
+                    <p className="text-xl font-bold text-blue-900">
+                      {extracted.listing_copy.headline}
+                    </p>
+                  )}
                 </div>
 
                 {/* Description */}
                 <div className="card">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-semibold text-gray-900">MLS Description</h2>
-                    <button
-                      onClick={() => copyToClipboard(extracted.listing_copy.description, 'Description')}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition"
-                    >
-                      <Copy className="w-4 h-4 text-gray-600" />
-                    </button>
+                    {!isEditing && (
+                      <button
+                        onClick={() => copyToClipboard(extracted.listing_copy.description, 'Description')}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition"
+                      >
+                        <Copy className="w-4 h-4 text-gray-600" />
+                      </button>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
-                    {extracted.listing_copy.description}
-                  </p>
+                  {isEditing ? (
+                    <textarea
+                      value={editedListingCopy?.description || ''}
+                      onChange={(e) => setEditedListingCopy({...editedListingCopy, description: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm text-gray-700 leading-relaxed"
+                      rows="8"
+                      placeholder="Enter property description..."
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                      {extracted.listing_copy.description}
+                    </p>
+                  )}
                 </div>
 
                 {/* Highlights */}
