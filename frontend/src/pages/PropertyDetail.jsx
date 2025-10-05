@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader } from 'lucide-react'
+import { 
+  Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
+  DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
+  FileText, Star, AlertCircle, BarChart3
+} from 'lucide-react'
 import axios from 'axios'
 
 const PropertyDetail = () => {
@@ -15,7 +19,8 @@ const PropertyDetail = () => {
 
   // Separate effect for polling
   useEffect(() => {
-    if (property?.status === 'processing') {
+    // Poll while any processing is happening
+    if (property?.status && !['complete', 'failed', 'enrichment_failed', 'listing_failed'].includes(property.status)) {
       const interval = setInterval(() => {
         loadProperty()
       }, 5000)
@@ -38,8 +43,12 @@ const PropertyDetail = () => {
   const getStatusBadge = (status) => {
     const badges = {
       'processing': { icon: Loader, color: 'bg-yellow-100 text-yellow-800', text: 'Processing' },
-      'parsing_complete': { icon: CheckCircle, color: 'bg-green-100 text-green-800', text: 'Analysis Complete' },
-      'failed': { icon: XCircle, color: 'bg-red-100 text-red-800', text: 'Failed' }
+      'parsing_complete': { icon: Clock, color: 'bg-blue-100 text-blue-800', text: 'Floor Plan Complete' },
+      'enrichment_complete': { icon: BarChart3, color: 'bg-purple-100 text-purple-800', text: 'Market Analysis Complete' },
+      'complete': { icon: CheckCircle, color: 'bg-green-100 text-green-800', text: 'All Complete' },
+      'failed': { icon: XCircle, color: 'bg-red-100 text-red-800', text: 'Failed' },
+      'enrichment_failed': { icon: AlertCircle, color: 'bg-orange-100 text-orange-800', text: 'Market Data Failed' },
+      'listing_failed': { icon: AlertCircle, color: 'bg-orange-100 text-orange-800', text: 'Listing Failed' }
     }
     const badge = badges[status] || badges['processing']
     const Icon = badge.icon
@@ -50,6 +59,11 @@ const PropertyDetail = () => {
         {badge.text}
       </span>
     )
+  }
+
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text)
+    alert(`${label} copied to clipboard!`)
   }
 
   if (loading) {
@@ -93,26 +107,28 @@ const PropertyDetail = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Floor Plan Image */}
-          <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Floor Plan</h2>
-            {property.image_url ? (
-              <img 
-                src={property.image_url} 
-                alt="Floor Plan" 
-                className="w-full rounded-lg border border-gray-200"
-              />
-            ) : (
-              <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
-                <Home className="w-16 h-16 text-gray-400" />
-              </div>
-            )}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* LEFT COLUMN - Floor Plan Image */}
+          <div className="lg:col-span-1">
+            <div className="card sticky top-4">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Floor Plan</h2>
+              {property.image_url ? (
+                <img 
+                  src={property.image_url} 
+                  alt="Floor Plan" 
+                  className="w-full rounded-lg border border-gray-200"
+                />
+              ) : (
+                <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
+                  <Home className="w-16 h-16 text-gray-400" />
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Property Information */}
-          <div className="space-y-6">
+          {/* MIDDLE COLUMN - Property Information */}
+          <div className="lg:col-span-1 space-y-6">
             {/* Address */}
             <div className="card">
               <h2 className="text-lg font-semibold text-gray-900 mb-3">Address</h2>
@@ -191,30 +207,317 @@ const PropertyDetail = () => {
               </div>
             )}
 
-            {/* Metadata */}
-            <div className="card bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">Details</h2>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Property ID:</span>
-                  <span className="text-gray-900 font-mono text-xs">{property.id}</span>
+          </div>
+
+          {/* RIGHT COLUMN - Market Insights & Listing Copy */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Market Insights (Agent #2) */}
+            {extracted.market_insights && (
+              <>
+                {/* Price Estimate */}
+                <div className="card bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <DollarSign className="w-5 h-5 mr-2 text-green-600" />
+                      Price Estimate
+                    </h2>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      extracted.market_insights.price_estimate?.confidence === 'high' ? 'bg-green-200 text-green-800' :
+                      extracted.market_insights.price_estimate?.confidence === 'medium' ? 'bg-yellow-200 text-yellow-800' :
+                      'bg-gray-200 text-gray-800'
+                    }`}>
+                      {extracted.market_insights.price_estimate?.confidence || 'low'} confidence
+                    </span>
+                  </div>
+                  <p className="text-3xl font-bold text-green-700 mb-2">
+                    ${(extracted.market_insights.price_estimate?.estimated_value || 0).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Range: ${(extracted.market_insights.price_estimate?.value_range_low || 0).toLocaleString()} - 
+                    ${(extracted.market_insights.price_estimate?.value_range_high || 0).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-600 italic">
+                    {extracted.market_insights.price_estimate?.reasoning}
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Input Type:</span>
-                  <span className="text-gray-900">{property.input_type}</span>
+
+                {/* Market Trend */}
+                <div className="card">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                    Market Trend
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-600">Direction</p>
+                      <p className="font-semibold text-gray-900 capitalize">
+                        {extracted.market_insights.market_trend?.trend_direction || 'Unknown'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Buyer Demand</p>
+                      <p className="font-semibold text-gray-900 capitalize">
+                        {extracted.market_insights.market_trend?.buyer_demand || 'Unknown'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Inventory</p>
+                      <p className="font-semibold text-gray-900 capitalize">
+                        {extracted.market_insights.market_trend?.inventory_level || 'Unknown'}
+                      </p>
+                    </div>
+                    {extracted.market_insights.market_trend?.appreciation_rate && (
+                      <div>
+                        <p className="text-gray-600">Appreciation</p>
+                        <p className="font-semibold text-gray-900">
+                          {extracted.market_insights.market_trend.appreciation_rate}%
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {extracted.market_insights.market_trend?.insights && (
+                    <p className="text-xs text-gray-600 mt-3 pt-3 border-t">
+                      {extracted.market_insights.market_trend.insights}
+                    </p>
+                  )}
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Created:</span>
-                  <span className="text-gray-900">
-                    {new Date(property.created_at).toLocaleDateString()}
-                  </span>
+
+                {/* Investment Analysis */}
+                <div className="card">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Building2 className="w-5 h-5 mr-2 text-purple-600" />
+                    Investment Analysis
+                  </h2>
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-600">Investment Score</span>
+                      <span className="text-lg font-bold text-purple-700">
+                        {extracted.market_insights.investment_analysis?.investment_score || 0}/100
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-purple-600 h-2 rounded-full" 
+                        style={{ width: `${extracted.market_insights.investment_analysis?.investment_score || 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Rental Potential:</span>
+                      <span className="font-semibold text-gray-900 capitalize">
+                        {extracted.market_insights.investment_analysis?.rental_potential || 'N/A'}
+                      </span>
+                    </div>
+                    {extracted.market_insights.investment_analysis?.estimated_rental_income && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Est. Rental Income:</span>
+                        <span className="font-semibold text-gray-900">
+                          ${extracted.market_insights.investment_analysis.estimated_rental_income.toLocaleString()}/mo
+                        </span>
+                      </div>
+                    )}
+                    {extracted.market_insights.investment_analysis?.cap_rate && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Cap Rate:</span>
+                        <span className="font-semibold text-gray-900">
+                          {extracted.market_insights.investment_analysis.cap_rate}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {extracted.market_insights.investment_analysis?.opportunities?.length > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-xs font-semibold text-gray-700 mb-1">Opportunities:</p>
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        {extracted.market_insights.investment_analysis.opportunities.map((opp, idx) => (
+                          <li key={idx}>• {opp}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span className="text-gray-900">{property.status}</span>
+
+                {/* Comparable Properties */}
+                {extracted.market_insights.comparable_properties?.length > 0 && (
+                  <div className="card">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Comparable Properties</h2>
+                    <p className="text-sm text-gray-600 mb-3">
+                      {extracted.market_insights.comparable_properties.length} similar properties found nearby
+                    </p>
+                    <div className="space-y-2">
+                      {extracted.market_insights.comparable_properties.slice(0, 3).map((comp, idx) => (
+                        <div key={idx} className="text-xs p-2 bg-gray-50 rounded">
+                          <p className="font-medium text-gray-900">{comp.address}</p>
+                          <p className="text-gray-600">
+                            {comp.bedrooms}BR / {comp.bathrooms}BA • {comp.square_feet?.toLocaleString()} sqft
+                          </p>
+                          <p className="text-gray-600">
+                            Sold: ${comp.last_sale_price?.toLocaleString()} • {comp.distance_miles} mi away
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Listing Copy (Agent #3) */}
+            {extracted.listing_copy && (
+              <>
+                {/* Headline */}
+                <div className="card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                      Listing Headline
+                    </h2>
+                    <button
+                      onClick={() => copyToClipboard(extracted.listing_copy.headline, 'Headline')}
+                      className="p-2 hover:bg-blue-100 rounded-lg transition"
+                    >
+                      <Copy className="w-4 h-4 text-blue-600" />
+                    </button>
+                  </div>
+                  <p className="text-xl font-bold text-blue-900">
+                    {extracted.listing_copy.headline}
+                  </p>
                 </div>
-              </div>
-            </div>
+
+                {/* Description */}
+                <div className="card">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-gray-900">MLS Description</h2>
+                    <button
+                      onClick={() => copyToClipboard(extracted.listing_copy.description, 'Description')}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      <Copy className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                    {extracted.listing_copy.description}
+                  </p>
+                </div>
+
+                {/* Highlights */}
+                {extracted.listing_copy.highlights?.length > 0 && (
+                  <div className="card">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">Key Highlights</h2>
+                    <ul className="space-y-2">
+                      {extracted.listing_copy.highlights.map((highlight, idx) => (
+                        <li key={idx} className="flex items-start text-sm">
+                          <Star className="w-4 h-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">{highlight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Social Media */}
+                {extracted.social_variants && (
+                  <div className="card">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Share2 className="w-5 h-5 mr-2 text-indigo-600" />
+                      Social Media
+                    </h2>
+                    <div className="space-y-3">
+                      {extracted.social_variants.instagram && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-semibold text-gray-700">Instagram</span>
+                            <button
+                              onClick={() => copyToClipboard(extracted.social_variants.instagram, 'Instagram caption')}
+                              className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center"
+                            >
+                              <Copy className="w-3 h-3 mr-1" /> Copy
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                            {extracted.social_variants.instagram}
+                          </p>
+                        </div>
+                      )}
+                      {extracted.social_variants.facebook && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-semibold text-gray-700">Facebook</span>
+                            <button
+                              onClick={() => copyToClipboard(extracted.social_variants.facebook, 'Facebook post')}
+                              className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center"
+                            >
+                              <Copy className="w-3 h-3 mr-1" /> Copy
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                            {extracted.social_variants.facebook}
+                          </p>
+                        </div>
+                      )}
+                      {extracted.social_variants.twitter && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-semibold text-gray-700">Twitter / X</span>
+                            <button
+                              onClick={() => copyToClipboard(extracted.social_variants.twitter, 'Tweet')}
+                              className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center"
+                            >
+                              <Copy className="w-3 h-3 mr-1" /> Copy
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                            {extracted.social_variants.twitter}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* CTA & Email */}
+                <div className="card">
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-xs font-semibold text-gray-700">Call to Action</span>
+                      <p className="text-sm text-gray-900 font-medium mt-1">
+                        {extracted.listing_copy.call_to_action}
+                      </p>
+                    </div>
+                    {extracted.listing_copy.email_subject && (
+                      <div className="pt-3 border-t">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-gray-700">Email Subject Line</span>
+                          <button
+                            onClick={() => copyToClipboard(extracted.listing_copy.email_subject, 'Email subject')}
+                            className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center">
+                            <Copy className="w-3 h-3 mr-1" /> Copy
+                          </button>
+                        </div>
+                        <p className="text-sm text-gray-900">
+                          {extracted.listing_copy.email_subject}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* SEO Keywords */}
+                {extracted.listing_copy.seo_keywords?.length > 0 && (
+                  <div className="card">
+                    <h2 className="text-sm font-semibold text-gray-900 mb-2">SEO Keywords</h2>
+                    <div className="flex flex-wrap gap-1">
+                      {extracted.listing_copy.seo_keywords.map((keyword, idx) => (
+                        <span key={idx} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </main>
