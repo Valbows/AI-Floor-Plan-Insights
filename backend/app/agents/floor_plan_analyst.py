@@ -109,7 +109,7 @@ class FloorPlanAnalyst:
     def __init__(self):
         # Initialize Gemini LLM for CrewAI
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-exp",
+            model="gemini/gemini-2.0-flash-exp",
             google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY'),
             temperature=0.1
         )
