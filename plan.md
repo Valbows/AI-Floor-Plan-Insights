@@ -214,6 +214,35 @@
 - [ ] Advanced multi-agent collaboration (deferred to Phase 5)
 - [ ] Write orchestration tests (deferred)
 
+### 2.6 CrewAI Integration ✅ COMPLETE (October 5, 2025)
+- [x] Install CrewAI and dependencies (crewai==0.86.0, crewai-tools==0.17.0)
+- [x] Resolve Pydantic dependency conflicts (upgraded to >=2.7.4)
+- [x] Refactor Agent #1 (Floor Plan Analyst) to use CrewAI
+  - [x] Create custom tool: analyze_image_with_gemini (Gemini Vision wrapper)
+  - [x] Implement CrewAI Agent, Task, Crew pattern
+  - [x] Maintain backward compatibility with existing schemas
+- [x] Refactor Agent #2 (Market Insights Analyst) to use CrewAI
+  - [x] Create CoreLogic tools: search_property_data, get_comparable_properties, get_avm_estimate
+  - [x] Add optional SerperDevTool for web search (market trends)
+  - [x] Implement tool-based data gathering workflow
+- [x] Refactor Agent #3 (Listing Copywriter) to use CrewAI
+  - [x] Create research_neighborhood tool
+  - [x] Add optional web search for amenities
+  - [x] Set temperature=0.7 for creative writing
+- [x] Cherry-pick Charney Design System from frontend-ariel-development branch
+- [x] Test and verify all 3 agents work with CrewAI framework
+- [x] Commit and push all changes to Dev-Branch
+- [ ] Run comprehensive unit tests (next step)
+- [ ] Run integration tests for complete workflow (next step)
+- [ ] Run evaluation tests (accuracy, performance benchmarks) (next step)
+
+**CrewAI Benefits Achieved:**
+- Tool-based architecture for extensibility
+- Autonomous agent decision-making
+- Web search capabilities (optional with SERPER_API_KEY)
+- Better logging and debugging
+- Modular tool design
+
 ---
 
 ## Phase 3: Agent Dashboard & API Endpoints
