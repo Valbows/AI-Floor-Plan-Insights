@@ -6,9 +6,9 @@ Uses Google Gemini Vision for image understanding
 
 import os
 import base64
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import google.generativeai as genai
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Configure Gemini
 genai.configure(api_key=os.getenv('GOOGLE_GEMINI_API_KEY'))
@@ -21,20 +21,32 @@ genai.configure(api_key=os.getenv('GOOGLE_GEMINI_API_KEY'))
 class Room(BaseModel):
     """Individual room information"""
     type: str = Field(description="Room type (e.g., bedroom, bathroom, kitchen, living room)")
-    dimensions: str = Field(default="", description="Room dimensions if visible (e.g., '12x14')")
+    dimensions: Optional[str] = Field(default="", description="Room dimensions if visible (e.g., '12x14')")
     features: List[str] = Field(default_factory=list, description="Room features (closet, window, etc.)")
+    
+    @field_validator('dimensions', mode='before')
+    @classmethod
+    def validate_dimensions(cls, v):
+        """Convert None to empty string"""
+        return v if v is not None else ""
 
 
 class FloorPlanData(BaseModel):
     """Structured floor plan analysis output"""
-    address: str = Field(default="", description="Property address if visible on floor plan")
+    address: Optional[str] = Field(default="", description="Property address if visible on floor plan")
     bedrooms: int = Field(default=0, description="Number of bedrooms")
     bathrooms: float = Field(default=0.0, description="Number of bathrooms (0.5 for half bath)")
     square_footage: int = Field(default=0, description="Total square footage")
     rooms: List[Room] = Field(default_factory=list, description="List of all rooms identified")
     features: List[str] = Field(default_factory=list, description="Overall property features")
-    layout_type: str = Field(default="", description="Layout description (e.g., 'Open concept', 'Split level')")
-    notes: str = Field(default="", description="Additional observations or unclear elements")
+    layout_type: Optional[str] = Field(default="", description="Layout description (e.g., 'Open concept', 'Split level')")
+    notes: Optional[str] = Field(default="", description="Additional observations or unclear elements")
+    
+    @field_validator('address', 'layout_type', 'notes', mode='before')
+    @classmethod
+    def validate_strings(cls, v):
+        """Convert None to empty string for all string fields"""
+        return v if v is not None else ""
 
 
 # ================================
