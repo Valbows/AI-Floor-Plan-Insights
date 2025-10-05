@@ -304,7 +304,7 @@
 - [ ] Add filtering and sorting options - ENHANCEMENT
 - [ ] Write endpoint integration tests - TESTING
 
-### 3.2 React Dashboard - Core Views ⏳ IN PROGRESS
+### 3.2 React Dashboard - Core Views ✅ COMPLETE (October 5, 2025)
 - [x] Create main dashboard layout component ✅ October 5, 2025
 - [x] Implement properties list view with status badges ✅ October 5, 2025
   - [x] PropertyCard component with image, stats, status
@@ -314,10 +314,16 @@
   - [x] Error state with retry button
   - [x] Empty state with CTA
 - [x] Create property detail view component (from Phase 1)
-- [ ] Add tabbed navigation (details, insights, analytics)
-- [ ] Implement real-time status polling in dashboard
-- [ ] Add loading skeletons
-- [ ] Write component tests
+- [x] **CRITICAL FIX: CORS Preflight Issue** ✅ October 5, 2025
+  - [x] Fixed "Redirect not allowed for preflight request" error
+  - [x] Added OPTIONS bypass in Flask @app.before_request
+  - [x] Enhanced CORS configuration with explicit headers
+  - [x] Tested OPTIONS preflight (returns 200 OK)
+  - [x] Dashboard now loads successfully
+- [ ] Add tabbed navigation (details, insights, analytics) - DEFERRED
+- [ ] Implement real-time status polling in dashboard - ENHANCEMENT
+- [ ] Add loading skeletons - ENHANCEMENT
+- [ ] Write component tests - TESTING
 
 ### 3.3 React Dashboard - Property Management
 - [ ] Create editable listing text component

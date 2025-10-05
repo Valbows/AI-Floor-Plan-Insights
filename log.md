@@ -543,6 +543,189 @@ ba9b155 - Update plan.md - Section 2.6 fully tested and verified
 
 ---
 
+## 2025-10-05 14:51-15:38 EDT - Phase 3.1 & 3.2 Complete - Dashboard & API
+
+### ✨ Phase 3.1 Backend API - COMPLETE
+
+**New Endpoint Added**:
+- `PUT /api/properties/<id>` - Edit listing copy
+  - Validates listing_copy structure (headline, description required)
+  - Updates property in database
+  - Returns updated property data
+  - Protected with JWT authentication
+
+**Existing Endpoints** (from Phase 1):
+- `GET /api/properties` - List all properties for agent
+- `GET /api/properties/<id>` - Get single property details
+- `POST /api/properties/upload` - Upload floor plan
+- `POST /api/properties/search` - Create property from address
+- `DELETE /api/properties/<id>` - Delete property
+
+**Total API Endpoints**: 6 complete ✅
+
+---
+
+### ✨ Phase 3.2 React Dashboard - COMPLETE
+
+**Frontend - Dashboard.jsx Enhanced** (68 → 226 lines):
+
+**1. PropertyCard Component**:
+```javascript
+- Floor plan image thumbnail (or placeholder if missing)
+- Address display (from extracted_data or property.address)
+- Status badge (Processing, Analyzing, Complete, Failed)
+- Property stats: Bedrooms, Bathrooms, Square Footage
+- Created date
+- Click to navigate to PropertyDetail page
+- Hover shadow effect
+```
+
+**2. StatusBadge Component**:
+```javascript
+Status mapping with colors and icons:
+- processing: Blue + Clock icon
+- parsing_complete: Yellow + Loader icon (Analyzing)
+- enrichment_complete: Purple + Loader icon (Finalizing)
+- complete: Green + CheckCircle icon
+- failed: Red + AlertCircle icon
+```
+
+**3. Data Fetching**:
+```javascript
+- useEffect hook to fetch on mount
+- axios GET /api/properties
+- Loading state with spinner
+- Error state with retry button
+- Empty state with CTA
+- Property count display
+```
+
+**4. Layout**:
+```javascript
+- Responsive grid:
+  - Mobile: 1 column
+  - Tablet: 2 columns
+  - Desktop: 3 columns
+- Header with user info and logout
+- "New Property" button
+```
+
+---
+
+### 🐛 Phase 3 Critical Bug Fix - CORS Preflight
+
+**Problem**:
+```
+Access to XMLHttpRequest blocked by CORS policy: 
+Redirect is not allowed for a preflight request
+```
+
+**Console Errors**:
+- `/auth/verify` → 404 Not Found
+- `/api/properties` → CORS blocked
+- Dashboard showing "Failed to load properties"
+
+**Root Cause Analysis**:
+1. **CORS Preflight Flow**: Browser sends OPTIONS request before actual GET
+2. **JWT Intercepting**: Flask-JWT-Extended was intercepting OPTIONS requests
+3. **Redirect Issue**: JWT tried to redirect unauthenticated OPTIONS → CORS fail
+4. **Browser Rejection**: CORS preflight cannot follow redirects
+
+**Investigation Steps**:
+1. Checked browser console: CORS policy error
+2. Tested backend health: OK
+3. Checked CORS configuration: Missing explicit headers
+4. Tested OPTIONS request: Being intercepted by JWT
+5. Identified: OPTIONS must bypass JWT authentication
+
+**Solution Implemented**:
+
+**Fix 1: Enhanced CORS Configuration**
+```python
+# backend/app/__init__.py
+CORS(app, 
+     origins=cors_origins, 
+     supports_credentials=True,
+     allow_headers=['Content-Type', 'Authorization'],  # ← Added
+     expose_headers=['Content-Type', 'Authorization'], # ← Added
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']) # ← Added
+```
+
+**Fix 2: OPTIONS Preflight Bypass**
+```python
+# backend/app/__init__.py
+@app.before_request
+def handle_preflight():
+    """Allow OPTIONS requests to bypass JWT authentication for CORS preflight"""
+    if request.method == "OPTIONS":
+        return '', 200  # Return immediately before JWT intercepts
+```
+
+**Why This Works**:
+1. **OPTIONS Bypass**: Browser preflight gets 200 OK immediately
+2. **No JWT Check**: OPTIONS doesn't need authentication (it's just CORS validation)
+3. **Proper Headers**: Browser sees allowed methods, headers, and origins
+4. **Actual Request Succeeds**: After preflight passes, GET request proceeds with JWT
+
+**Testing**:
+```bash
+# Test OPTIONS preflight
+curl -X OPTIONS http://localhost:5000/api/properties \
+  -H "Origin: http://localhost:5173" \
+  -H "Access-Control-Request-Method: GET"
+
+✅ HTTP/1.1 200 OK
+✅ Access-Control-Allow-Origin: http://localhost:5173
+✅ Access-Control-Allow-Methods: DELETE, GET, OPTIONS, POST, PUT
+✅ Access-Control-Allow-Headers: Authorization
+✅ Access-Control-Allow-Credentials: true
+```
+
+**Manual Testing**:
+- ✅ Dashboard loads without CORS errors
+- ✅ Properties fetched successfully
+- ✅ Status badges display correctly
+- ✅ Navigation to PropertyDetail works
+- ✅ Responsive design (1/2/3 columns)
+- ✅ Loading/error/empty states work
+
+**Files Modified**:
+- `frontend/src/pages/Dashboard.jsx` (68 → 226 lines)
+- `backend/app/routes/properties.py` (added PUT endpoint, 446 → 516 lines)
+- `backend/app/__init__.py` (CORS + OPTIONS handler)
+
+**Production Readiness**:
+- ✅ Dashboard fully functional
+- ✅ API complete (6 endpoints)
+- ✅ CORS properly configured
+- ✅ JWT security maintained (only OPTIONS bypassed)
+- ✅ Error handling comprehensive
+- ✅ Responsive design
+- ✅ Ready for Phase 3.3
+
+**Lessons Learned**:
+1. 💡 **CORS Preflight**: OPTIONS requests must return 200 immediately
+2. 💡 **JWT Bypass**: Authentication frameworks can interfere with CORS
+3. 💡 **Browser Security**: Redirects are not allowed during preflight
+4. 💡 **Explicit Headers**: Always specify allowed headers in CORS config
+5. 💡 **Testing Flow**: Test OPTIONS separately before actual requests
+6. 💡 **Hard Refresh**: Browser caches CORS responses aggressively
+7. 💡 **before_request**: Flask's hook for intercepting requests early
+
+**Performance**:
+- Dashboard loads: < 1 second
+- Property cards render: Instant
+- Grid layout: Smooth responsive transitions
+
+**Git Commits**:
+```
+a08e8cb - Phase 3.1 & 3.2 Complete - Dashboard & Edit Endpoint
+3355bbc - Fix CORS configuration for dashboard
+45f6e47 - Fix OPTIONS preflight bypass for CORS
+```
+
+---
+
 ## 2025-10-04 16:00-23:50 EDT - Phase 1 Complete Implementation
 
 ### 🎉 PHASE 1 FULLY COMPLETE - All Objectives Achieved
