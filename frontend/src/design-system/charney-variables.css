@@ -1,0 +1,175 @@
+/* Charney Companies Design System Variables */
+
+:root {
+  /* Brand Colors */
+  --charney-red: #FF5959;
+  --charney-black: #000000;
+  --charney-cream: #F6F1EB;
+  --charney-white: #FFFFFF;
+  --charney-gray: #666666;
+  --charney-light-gray: #E5E5E5;
+  
+  /* Spacing System */
+  --spacing-xs: 8px;
+  --spacing-sm: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 40px;
+  --spacing-xl: 60px;
+  --spacing-2xl: 80px;
+  
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Typography Base */
+body {
+  font-family: 'Franklin Gothic', 'Arial Narrow', Arial, sans-serif;
+  background: var(--charney-cream);
+  color: var(--charney-black);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography Scale */
+.display-xl {
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -2px;
+  text-transform: uppercase;
+}
+
+.display-lg {
+  font-size: 56px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1.5px;
+  text-transform: uppercase;
+}
+
+.display-md {
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+}
+
+.heading-lg {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.heading-md {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.body-lg {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.body-md {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* Brand Color Utilities */
+.text-red {
+  color: var(--charney-red);
+}
+
+.bg-red {
+  background: var(--charney-red);
+}
+
+.bg-red * {
+  color: var(--charney-black) !important;
+}
+
+/* Button Styles */
+.button {
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 16px 32px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--charney-red);
+  color: var(--charney-white);
+}
+
+.btn-primary:hover {
+  background: #E54545;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 89, 89, 0.3);
+}
+
+.btn-secondary {
+  background: var(--charney-black);
+  color: var(--charney-white);
+}
+
+.btn-secondary:hover {
+  background: #222;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--charney-black);
+  border: 3px solid var(--charney-black);
+}
+
+.btn-outline:hover {
+  background: var(--charney-black);
+  color: var(--charney-white);
+}
+
+/* Card Component */
+.card {
+  background: var(--charney-white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-content {
+  padding: var(--spacing-md);
+}
+
+/* Accent Bar */
+.accent-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--charney-red);
+  margin: var(--spacing-md) 0;
+}
+
+/* Layout Utilities */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing-xl) var(--spacing-lg);
+}
