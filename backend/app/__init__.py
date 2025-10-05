@@ -53,9 +53,14 @@ def create_app(config_name='development'):
     # Extensions
     # ================================
     
-    # CORS - Allow frontend origins
+    # CORS - Allow frontend origins with proper headers
     cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173').split(',')
-    CORS(app, origins=cors_origins, supports_credentials=True)
+    CORS(app, 
+         origins=cors_origins, 
+         supports_credentials=True,
+         allow_headers=['Content-Type', 'Authorization'],
+         expose_headers=['Content-Type', 'Authorization'],
+         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
     
     # JWT Authentication
     jwt = JWTManager(app)
