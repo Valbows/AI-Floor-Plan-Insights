@@ -140,14 +140,18 @@
 - [ ] Set up Celery beat for scheduled tasks (deferred)
 - [ ] Write workflow integration tests (deferred)
 
-### 1.5 Frontend - Upload Interface
-- [ ] Create property upload page component
-- [ ] Implement drag-and-drop file upload
-- [ ] Add image preview before submission
-- [ ] Implement address search input
-- [ ] Add loading states and progress indicators
-- [ ] Display validation errors
-- [ ] Write component tests
+### 1.5 Frontend - Upload Interface ✅ COMPLETE
+- [x] Create property upload page component
+- [x] Implement file upload with preview
+- [x] Add image preview before submission
+- [x] Implement address input field
+- [x] Add loading states and progress indicators
+- [x] Display validation errors
+- [x] Success feedback and auto-redirect
+- [x] Property detail page with AI results display
+- [x] Auto-polling for status updates
+- [x] Status badges (processing, complete, failed)
+- [ ] Write component tests (deferred to Phase 2)
 
 ---
 
