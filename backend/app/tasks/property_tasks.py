@@ -70,8 +70,13 @@ def process_floor_plan_task(self, property_id: str):
         
         print(f"Extracted data: {extracted_data}")
         
-        # Merge with existing extracted_data
+        # Merge with existing extracted_data, preserving non-empty values from form
         current_data = property_record.get('extracted_data', {})
+        
+        # Keep address from form if AI didn't extract one
+        if 'address' in current_data and current_data['address'] and not extracted_data.get('address'):
+            extracted_data['address'] = current_data['address']
+        
         merged_data = {**current_data, **extracted_data}
         
         # Update property with extracted data

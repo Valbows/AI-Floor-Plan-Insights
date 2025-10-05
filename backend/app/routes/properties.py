@@ -122,8 +122,15 @@ def upload_floor_plan_endpoint():
                 'message': f'Failed to upload file to storage: {str(e)}'
             }), 500
         
-        # Get optional address from form data
+        # Get required address from form data
         address = request.form.get('address', '').strip()
+        
+        # Validate address is provided
+        if not address:
+            return jsonify({
+                'error': 'Validation error',
+                'message': 'Address is required for property analysis'
+            }), 400
         
         # Create property record in database
         property_data = {
@@ -132,7 +139,7 @@ def upload_floor_plan_endpoint():
             'image_url': floor_plan_url,
             'image_storage_path': unique_filename,
             'status': 'processing',  # Status: processing -> parsing_complete -> enrichment_complete -> complete
-            'extracted_data': {'address': address} if address else {}
+            'extracted_data': {'address': address}  # Store address from form
         }
         
         db = get_admin_db()
@@ -146,9 +153,9 @@ def upload_floor_plan_endpoint():
         
         property_record = result.data[0]
         
-        # Trigger Celery task for floor plan parsing
-        from app.tasks.property_tasks import process_floor_plan_task
-        task = process_floor_plan_task.delay(property_record['id'])
+        # Trigger complete 3-agent workflow
+        from app.tasks.property_tasks import process_property_workflow
+        task = process_property_workflow.delay(property_record['id'])
         
         return jsonify({
             'property': {
