@@ -20,25 +20,27 @@ class CoreLogicClient:
     - Property details retrieval by CLIP ID
     - Comparable properties (comps) search
     - Comprehensive error handling
-    
-    Usage:
-        client = CoreLogicClient()
-        property_data = client.search_property("123 Main St, Miami, FL 33101")
     """
     
-    BASE_URL = "https://api.corelogic.com/property/v1"
-    AUTH_URL = "https://api.corelogic.com/oauth/token"
+    # Default to production API (can be overridden with CORELOGIC_API_URL env var)
+    BASE_URL = os.getenv('CORELOGIC_API_URL', 'https://api-prod.corelogic.com') + "/property/v1"
+    AUTH_URL = os.getenv('CORELOGIC_API_URL', 'https://api-prod.corelogic.com') + "/oauth/token"
     
     def __init__(self, consumer_key: Optional[str] = None, consumer_secret: Optional[str] = None):
         """
-        Initialize CoreLogic client
+        Initialize CoreLogic API client
         
         Args:
-            consumer_key: CoreLogic Consumer Key (defaults to env var)
-            consumer_secret: CoreLogic Consumer Secret (defaults to env var)
+            consumer_key: CoreLogic API consumer key (or from CORELOGIC_CONSUMER_KEY env var)
+            consumer_secret: CoreLogic API consumer secret (or from CORELOGIC_CONSUMER_SECRET env var)
         """
         self.consumer_key = consumer_key or os.getenv('CORELOGIC_CONSUMER_KEY')
         self.consumer_secret = consumer_secret or os.getenv('CORELOGIC_CONSUMER_SECRET')
+        
+        # Build URLs using configured base
+        base_url = os.getenv('CORELOGIC_API_URL', 'https://api-prod.corelogic.com')
+        self.BASE_URL = f"{base_url}/property/v1"
+        self.AUTH_URL = f"{base_url}/oauth/token"
         
         if not self.consumer_key or not self.consumer_secret:
             raise ValueError("CoreLogic credentials not found. Set CORELOGIC_CONSUMER_KEY and CORELOGIC_CONSUMER_SECRET")
