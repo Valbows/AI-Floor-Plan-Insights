@@ -75,7 +75,7 @@ const NewProperty = () => {
       
       // Redirect to property detail after 2 seconds
       setTimeout(() => {
-        navigate(`/property/${response.data.property.id}`)
+        navigate(`/properties/${response.data.property.id}`)
       }, 2000)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to upload floor plan')
