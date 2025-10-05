@@ -9,7 +9,7 @@ import json
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew
-from crewai_tools import tool, TavilySearchResults
+from crewai_tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.clients.corelogic_client import CoreLogicClient
 
@@ -119,6 +119,38 @@ def get_avm_estimate(clip_id: str) -> str:
         return f"AVM not available: {str(e)}"
 
 
+@tool("Tavily Web Search")
+def tavily_search_tool(query: str) -> str:
+    """
+    Search the web using Tavily for real estate market information.
+    
+    Args:
+        query: Search query for market trends, neighborhood info, etc.
+    
+    Returns:
+        str: Search results with relevant market information
+    """
+    try:
+        from tavily import TavilyClient
+        tavily_api_key = os.getenv('TAVILY_API_KEY')
+        if not tavily_api_key:
+            return "Tavily API key not configured"
+        
+        client = TavilyClient(api_key=tavily_api_key)
+        response = client.search(query, max_results=5)
+        
+        # Format results
+        results = []
+        for result in response.get('results', []):
+            results.append(f"Title: {result.get('title', 'N/A')}\n"
+                         f"URL: {result.get('url', 'N/A')}\n"
+                         f"Content: {result.get('content', 'N/A')}\n")
+        
+        return "\n---\n".join(results) if results else "No results found"
+    except Exception as e:
+        return f"Web search error: {str(e)}"
+
+
 # ================================
 # Market Insights Analyst Agent (CrewAI)
 # ================================
@@ -165,13 +197,12 @@ class MarketInsightsAnalyst:
         You specialize in analyzing comparable sales, market conditions, and investment potential 
         to provide data-driven insights for real estate professionals."""
         
-        # Create Tavily web search tool (optional - requires Tavily API key)
-        self.search_tool = TavilySearchResults() if os.getenv('TAVILY_API_KEY') else None
-        
-        # Build tools list
+        # Build tools list (Tavily tool added below if API key available)
         tools = [search_property_data, get_comparable_properties, get_avm_estimate]
-        if self.search_tool:
-            tools.append(self.search_tool)
+        
+        # Add Tavily web search tool if API key is available
+        if os.getenv('TAVILY_API_KEY'):
+            tools.append(tavily_search_tool)
         
         # Create CrewAI agent
         self.agent = Agent(
