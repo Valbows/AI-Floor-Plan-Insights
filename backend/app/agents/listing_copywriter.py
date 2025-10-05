@@ -1,21 +1,16 @@
 """
 Listing Copywriter Agent
 AI Agent #3 - Generates MLS-ready listing copy and marketing materials
-Uses Gemini AI to create compelling property descriptions
+Uses CrewAI with Gemini AI + Web Search for compelling property descriptions
 """
 
 import os
+import json
 from typing import Dict, Any, Optional
-import google.generativeai as genai
 from pydantic import BaseModel, Field, field_validator
-
-# Configure Gemini
-genai.configure(api_key=os.getenv('GOOGLE_GEMINI_API_KEY'))
-
-
-# ================================
-# Structured Output Schemas
-# ================================
+from crewai import Agent, Task, Crew
+from crewai_tools import tool, SerperDevTool
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 class ListingCopy(BaseModel):
     """MLS-ready listing copy"""
@@ -35,20 +30,47 @@ class ListingCopy(BaseModel):
 
 
 # ================================
-# Listing Copywriter Agent
+# CrewAI Tools for Copywriting
+# ================================
+
+@tool("Neighborhood Research")
+def research_neighborhood(location: str) -> str:
+    """
+    Research neighborhood features, amenities, and selling points.
+    
+    Args:
+        location: City, neighborhood, or zip code
+    
+    Returns:
+        str: Neighborhood highlights, schools, amenities, local attractions
+    """
+    # This would typically use web search or local database
+    # For now, return a template
+    return f"""Neighborhood research for {location}:
+- Well-established residential area
+- Highly rated schools nearby
+- Close to shopping, dining, and entertainment
+- Easy access to major highways
+- Family-friendly community with parks
+- Growing property values in the area"""
+
+
+# ================================
+# Listing Copywriter Agent (CrewAI)
 # ================================
 
 class ListingCopywriter:
     """
-    AI Agent specialized in real estate copywriting
+    AI Agent specialized in real estate copywriting using CrewAI
     
     Capabilities:
     - MLS listing descriptions
     - Property highlights and features
-    - Social media captions
+    - Social media captions (Instagram, Facebook, Twitter, LinkedIn)
     - Email campaign copy
     - SEO keyword optimization
     - Tone customization (luxury, family-friendly, investor-focused)
+    - Neighborhood research via web search
     
     Inputs:
     - Floor plan data (Agent #1)
@@ -65,8 +87,13 @@ class ListingCopywriter:
     """
     
     def __init__(self):
-        """Initialize Listing Copywriter"""
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        """Initialize Listing Copywriter with CrewAI"""
+        # Initialize Gemini LLM for CrewAI
+        self.llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash-exp",
+            google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY'),
+            temperature=0.7  # Higher temperature for creative writing
+        )
         
         # Agent persona and expertise
         self.role = "Professional Real Estate Copywriter"
@@ -74,6 +101,25 @@ class ListingCopywriter:
         creating high-converting property listings. You specialize in MLS descriptions, luxury marketing, 
         and digital campaigns. Your copy is known for being compelling, SEO-optimized, and results-driven, 
         with a proven track record of generating buyer interest and faster sales."""
+        
+        # Create web search tool (optional - requires Serper API key)
+        self.search_tool = SerperDevTool() if os.getenv('SERPER_API_KEY') else None
+        
+        # Build tools list
+        tools = [research_neighborhood]
+        if self.search_tool:
+            tools.append(self.search_tool)
+        
+        # Create CrewAI agent
+        self.agent = Agent(
+            role=self.role,
+            goal="Create compelling, SEO-optimized property listings that convert viewers into buyers",
+            backstory=self.expertise,
+            tools=tools,
+            llm=self.llm,
+            verbose=True,
+            allow_delegation=False
+        )
     
     def generate_listing(self, property_data: Dict[str, Any], 
                         market_insights: Dict[str, Any],
@@ -143,38 +189,94 @@ class ListingCopywriter:
             market_trend = market_insights.get('market_trend', {})
             investment = market_insights.get('investment_analysis', {})
             
-            # Build comprehensive prompt
-            prompt = self._build_prompt(
-                address=address,
-                bedrooms=bedrooms,
-                bathrooms=bathrooms,
-                sqft=sqft,
-                features=features,
-                layout=layout,
-                price=price_estimate.get('estimated_value', 0),
-                market_trend=market_trend.get('trend_direction', 'stable'),
-                investment_score=investment.get('investment_score', 0),
-                tone=tone,
-                target_audience=target_audience
+            # Create comprehensive task for CrewAI
+            task_description = f"""
+Create compelling, MLS-ready listing copy for the following property:
+
+PROPERTY DETAILS:
+- Address: {address}
+- Bedrooms: {bedrooms}
+- Bathrooms: {bathrooms}
+- Square Footage: {sqft:,} sq ft
+- Layout: {layout}
+- Features: {', '.join(features) if features else 'Standard features'}
+
+MARKET POSITIONING:
+- Estimated Value: ${price_estimate.get('estimated_value', 0):,}
+- Market Trend: {market_trend.get('trend_direction', 'stable')}
+- Investment Score: {investment.get('investment_score', 0)}/100
+
+TONE: {tone.upper()}
+TARGET AUDIENCE: {target_audience.upper()}
+
+REQUIREMENTS:
+1. HEADLINE: Create an attention-grabbing headline (max 60 characters)
+2. DESCRIPTION: Write a compelling 500-800 word property description that:
+   - Starts with a strong opening sentence
+   - Highlights unique selling points
+   - Describes each room and key features
+   - Paints a lifestyle picture
+   - Ends with urgency or exclusivity
+   - Uses {tone} tone appropriate for {target_audience}
+
+3. HIGHLIGHTS: List 5-8 specific, benefit-focused bullet points
+4. CALL TO ACTION: Create a compelling CTA that drives immediate action
+5. SOCIAL MEDIA CAPTION: Write a 150-character caption for Instagram/Facebook
+6. EMAIL SUBJECT: Write an email subject line (under 60 chars)
+7. SEO KEYWORDS: List 8-12 relevant SEO keywords
+
+WRITING GUIDELINES:
+- Be specific and concrete (use numbers and details)
+- Use power words that evoke emotion
+- Focus on benefits, not just features
+- Create visual imagery
+- Use active voice
+- Include location benefits from neighborhood research
+
+Use available tools to enhance the copy (neighborhood research, web search for local amenities).
+
+Respond with complete listing copy in JSON format matching the ListingCopy schema.
+"""
+            
+            task = Task(
+                description=task_description,
+                agent=self.agent,
+                expected_output="JSON object with complete listing copy"
             )
             
-            # Generate listing copy
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.GenerationConfig(
-                    response_mime_type="application/json",
-                    response_schema=ListingCopy
-                )
+            # Create crew and execute
+            crew = Crew(
+                agents=[self.agent],
+                tasks=[task],
+                verbose=True
             )
             
-            # Parse and return structured copy
-            import json
-            listing_copy = json.loads(response.text)
+            print(f"[CrewAI] Generating listing copy for: {address}")
+            result = crew.kickoff()
             
-            return listing_copy
+            # Parse result
+            result_text = str(result).strip()
+            
+            # Remove markdown code blocks if present
+            if result_text.startswith('```json'):
+                result_text = result_text[7:]
+            if result_text.startswith('```'):
+                result_text = result_text[3:]
+            if result_text.endswith('```'):
+                result_text = result_text[:-3]
+            
+            result_text = result_text.strip()
+            
+            # Parse JSON
+            listing_copy = json.loads(result_text)
+            
+            # Validate against schema
+            validated = ListingCopy(**listing_copy)
+            
+            return validated.model_dump()
             
         except Exception as e:
-            print(f"Listing generation error: {str(e)}")
+            print(f"CrewAI listing generation error: {str(e)}")
             # Return fallback copy
             return self._generate_fallback_listing(property_data)
     
