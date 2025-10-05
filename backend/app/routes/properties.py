@@ -391,6 +391,77 @@ def get_property(property_id):
         }), 500
 
 
+@properties_bp.route('/<property_id>', methods=['PUT'])
+@jwt_required()
+def update_property(property_id):
+    """
+    Update property listing copy (allows agents to edit AI-generated text)
+    
+    Headers:
+        Authorization: Bearer <jwt_token>
+    
+    Body:
+        {
+            "listing_copy": {
+                "headline": "Updated headline",
+                "description": "Updated description",
+                "highlights": ["feature1", "feature2"],
+                ...
+            }
+        }
+    
+    Returns:
+        {
+            "message": "Property updated successfully",
+            "property": {...}
+        }
+    """
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data or 'listing_copy' not in data:
+            return jsonify({
+                'error': 'Missing listing_copy',
+                'message': 'Request body must include listing_copy object'
+            }), 400
+        
+        # Validate listing_copy structure
+        listing_copy = data['listing_copy']
+        required_fields = ['headline', 'description']
+        missing_fields = [field for field in required_fields if field not in listing_copy]
+        
+        if missing_fields:
+            return jsonify({
+                'error': 'Invalid listing_copy',
+                'message': f'Missing required fields: {", ".join(missing_fields)}'
+            }), 400
+        
+        # Update property
+        admin_db = get_admin_db()
+        result = admin_db.table('properties').update({
+            'listing_copy': listing_copy,
+            'updated_at': 'now()'
+        }).eq('id', property_id).eq('agent_id', user_id).execute()
+        
+        if not result.data:
+            return jsonify({
+                'error': 'Property not found',
+                'message': 'Property does not exist or you do not have access'
+            }), 404
+        
+        return jsonify({
+            'message': 'Property updated successfully',
+            'property': result.data[0]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to update property',
+            'message': str(e)
+        }), 500
+
+
 @properties_bp.route('/<property_id>', methods=['DELETE'])
 @jwt_required()
 def delete_property(property_id):

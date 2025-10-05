@@ -293,23 +293,29 @@
 **Status**: Agent #1 production-ready, Agents #2-#3 functional (optimization deferred)  
 **Start Date**: October 5, 2025
 
-### 3.1 Backend API (Protected Routes) ✅ EXISTS (from Phase 1)
+### 3.1 Backend API (Protected Routes) ✅ COMPLETE
 - [x] Implement GET `/api/properties` (list all for agent)
 - [x] Implement GET `/api/properties/<id>` (single property detail)
 - [x] Implement DELETE `/api/properties/<id>` (delete property)
 - [x] Implement POST `/api/properties/upload` (floor plan upload)
 - [x] Implement POST `/api/properties/search` (address-only creation)
-- [ ] Implement PUT `/api/properties/<id>` (edit listing text) - NEW
+- [x] Implement PUT `/api/properties/<id>` (edit listing text) ✅ October 5, 2025
 - [ ] Add pagination for property list - ENHANCEMENT
 - [ ] Add filtering and sorting options - ENHANCEMENT
 - [ ] Write endpoint integration tests - TESTING
 
-### 3.2 React Dashboard - Core Views
-- [ ] Create main dashboard layout component
-- [ ] Implement properties list view with status badges
-- [ ] Create property detail view component
+### 3.2 React Dashboard - Core Views ⏳ IN PROGRESS
+- [x] Create main dashboard layout component ✅ October 5, 2025
+- [x] Implement properties list view with status badges ✅ October 5, 2025
+  - [x] PropertyCard component with image, stats, status
+  - [x] StatusBadge component (processing, analyzing, complete, failed)
+  - [x] Responsive grid layout (1/2/3 columns)
+  - [x] Loading state with spinner
+  - [x] Error state with retry button
+  - [x] Empty state with CTA
+- [x] Create property detail view component (from Phase 1)
 - [ ] Add tabbed navigation (details, insights, analytics)
-- [ ] Implement real-time status polling
+- [ ] Implement real-time status polling in dashboard
 - [ ] Add loading skeletons
 - [ ] Write component tests
 
