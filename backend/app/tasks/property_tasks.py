@@ -328,10 +328,11 @@ def process_property_workflow(property_id: str):
     from celery import chain
     
     # Create complete 3-agent task chain
+    # Use .si() (immutable signature) to prevent passing previous task results
     workflow = chain(
-        process_floor_plan_task.s(property_id),
-        enrich_property_data_task.s(property_id),
-        generate_listing_copy_task.s(property_id)
+        process_floor_plan_task.si(property_id),
+        enrich_property_data_task.si(property_id),
+        generate_listing_copy_task.si(property_id)
     )
     
     return workflow.apply_async()
