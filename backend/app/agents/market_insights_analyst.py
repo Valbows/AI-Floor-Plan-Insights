@@ -1,17 +1,17 @@
 """
 Market Insights Analyst Agent
 AI Agent #2 - Analyzes property market data and generates investment insights
-Uses CoreLogic data + Gemini AI for market analysis
+Uses CrewAI with CoreLogic data + Gemini AI + Web Search
 """
 
 import os
+import json
 from typing import Dict, Any, List, Optional
-import google.generativeai as genai
 from pydantic import BaseModel, Field
+from crewai import Agent, Task, Crew
+from crewai_tools import tool, SerperDevTool
+from langchain_google_genai import ChatGoogleGenerativeAI
 from app.clients.corelogic_client import CoreLogicClient
-
-# Configure Gemini
-genai.configure(api_key=os.getenv('GOOGLE_GEMINI_API_KEY'))
 
 
 # ================================
@@ -58,22 +58,85 @@ class MarketInsights(BaseModel):
 
 
 # ================================
-# Market Insights Analyst Agent
+# CrewAI Tools for Market Analysis
+# ================================
+
+@tool("CoreLogic Property Search")
+def search_property_data(address: str) -> str:
+    """
+    Search CoreLogic database for property information.
+    
+    Args:
+        address: Full property address
+    
+    Returns:
+        str: Property details including CLIP ID, property type, year built, etc.
+    """
+    try:
+        client = CoreLogicClient()
+        property_data = client.search_property(address)
+        return json.dumps(property_data, indent=2)
+    except Exception as e:
+        return f"Error fetching property data: {str(e)}"
+
+
+@tool("CoreLogic Comparables")
+def get_comparable_properties(clip_id: str, radius_miles: float = 1.0) -> str:
+    """
+    Fetch comparable properties from CoreLogic.
+    
+    Args:
+        clip_id: CoreLogic property ID
+        radius_miles: Search radius in miles
+    
+    Returns:
+        str: List of comparable properties with sale prices and details
+    """
+    try:
+        client = CoreLogicClient()
+        comps = client.get_comparables(clip_id, radius_miles=radius_miles, max_results=5)
+        return json.dumps(comps, indent=2)
+    except Exception as e:
+        return f"Error fetching comparables: {str(e)}"
+
+
+@tool("CoreLogic AVM Estimate")
+def get_avm_estimate(clip_id: str) -> str:
+    """
+    Get Automated Valuation Model (AVM) estimate from CoreLogic.
+    
+    Args:
+        clip_id: CoreLogic property ID
+    
+    Returns:
+        str: AVM valuation with confidence score and value range
+    """
+    try:
+        client = CoreLogicClient()
+        avm = client.estimate_value(clip_id)
+        return json.dumps(avm, indent=2)
+    except Exception as e:
+        return f"AVM not available: {str(e)}"
+
+
+# ================================
+# Market Insights Analyst Agent (CrewAI)
 # ================================
 
 class MarketInsightsAnalyst:
     """
-    AI Agent specialized in real estate market analysis
+    AI Agent specialized in real estate market analysis using CrewAI
     
     Capabilities:
     - Property valuation using comps and AVM data
-    - Market trend analysis
+    - Market trend analysis with web search
     - Investment potential assessment
     - Rental income estimation
     - Risk and opportunity identification
     
     Data Sources:
     - CoreLogic Property API (comps, AVM, property details)
+    - Web search for local market trends
     - Gemini AI for analysis and insights generation
     
     Usage:
@@ -85,9 +148,15 @@ class MarketInsightsAnalyst:
     """
     
     def __init__(self):
-        """Initialize Market Insights Analyst"""
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        """Initialize Market Insights Analyst with CrewAI"""
         self.corelogic = CoreLogicClient()
+        
+        # Initialize Gemini LLM for CrewAI
+        self.llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash-exp",
+            google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY'),
+            temperature=0.1
+        )
         
         # Agent persona and expertise
         self.role = "Senior Real Estate Market Analyst"
@@ -95,10 +164,29 @@ class MarketInsightsAnalyst:
         in residential property valuation, market trend analysis, and investment assessment. 
         You specialize in analyzing comparable sales, market conditions, and investment potential 
         to provide data-driven insights for real estate professionals."""
+        
+        # Create web search tool (optional - requires Serper API key)
+        self.search_tool = SerperDevTool() if os.getenv('SERPER_API_KEY') else None
+        
+        # Build tools list
+        tools = [search_property_data, get_comparable_properties, get_avm_estimate]
+        if self.search_tool:
+            tools.append(self.search_tool)
+        
+        # Create CrewAI agent
+        self.agent = Agent(
+            role=self.role,
+            goal="Analyze property market data and provide comprehensive investment insights",
+            backstory=self.expertise,
+            tools=tools,
+            llm=self.llm,
+            verbose=True,
+            allow_delegation=False
+        )
     
     def analyze_property(self, address: str, property_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Perform comprehensive market analysis for a property
+        Perform comprehensive market analysis for a property using CrewAI
         
         Args:
             address: Property address
@@ -121,38 +209,105 @@ class MarketInsightsAnalyst:
             }
         
         Raises:
-            Exception: If CoreLogic data unavailable or analysis fails
+            Exception: If CorewAI execution fails
         """
         try:
-            # Step 1: Get CoreLogic property data
-            print(f"Fetching CoreLogic data for: {address}")
-            corelogic_property = self.corelogic.search_property(address)
-            clip_id = corelogic_property['clip_id']
+            # Create analysis task for CrewAI
+            task_description = f"""
+Analyze the real estate market for the following property:
+
+ADDRESS: {address}
+
+PROPERTY DETAILS (from floor plan analysis):
+- Bedrooms: {property_data.get('bedrooms', 0)}
+- Bathrooms: {property_data.get('bathrooms', 0)}
+- Square Footage: {property_data.get('square_footage', 0)}
+- Layout: {property_data.get('layout_type', 'Not specified')}
+- Features: {', '.join(property_data.get('features', []))}
+
+TASKS:
+1. Use the CoreLogic Property Search tool to find property details
+2. Use the CoreLogic Comparables tool to find similar properties
+3. Use the CoreLogic AVM Estimate tool to get automated valuation
+4. If web search is available, research local market trends for the area
+5. Analyze all data and provide:
+   - Price estimate with confidence level and reasoning
+   - Market trend analysis (direction, appreciation, demand, inventory)
+   - Investment analysis (score 1-100, rental potential, cap rate, risks, opportunities)
+   - Executive summary with actionable insights
+
+Provide your analysis in JSON format matching the MarketInsights schema:
+{{
+  "price_estimate": {{
+    "estimated_value": number,
+    "confidence": "low/medium/high",
+    "value_range_low": number,
+    "value_range_high": number,
+    "reasoning": "detailed explanation"
+  }},
+  "market_trend": {{
+    "trend_direction": "rising/stable/declining",
+    "appreciation_rate": number or null,
+    "days_on_market_avg": number or null,
+    "inventory_level": "low/balanced/high",
+    "buyer_demand": "low/moderate/high/very_high",
+    "insights": "market insights"
+  }},
+  "investment_analysis": {{
+    "investment_score": number (1-100),
+    "rental_potential": "poor/fair/good/excellent",
+    "estimated_rental_income": number or null,
+    "cap_rate": number or null,
+    "appreciation_potential": "low/moderate/high",
+    "risk_factors": ["risk1", "risk2"],
+    "opportunities": ["opp1", "opp2"]
+  }},
+  "comparable_properties": [],
+  "summary": "executive summary"
+}}
+
+Be data-driven and specific. Use actual numbers from CoreLogic data.
+"""
             
-            # Step 2: Get comparable properties
-            print(f"Finding comparable properties...")
-            comps = self.corelogic.get_comparables(clip_id, radius_miles=1.0, max_results=5)
-            
-            # Step 3: Get AVM estimate (if available)
-            avm_estimate = None
-            try:
-                avm_estimate = self.corelogic.estimate_value(clip_id)
-            except Exception as e:
-                print(f"AVM not available: {e}")
-            
-            # Step 4: Run AI analysis
-            print(f"Running AI market analysis...")
-            insights = self._generate_insights(
-                property_data=property_data,
-                corelogic_data=corelogic_property,
-                comps=comps,
-                avm=avm_estimate
+            task = Task(
+                description=task_description,
+                agent=self.agent,
+                expected_output="JSON object with comprehensive market analysis"
             )
             
-            return insights
+            # Create crew and execute
+            crew = Crew(
+                agents=[self.agent],
+                tasks=[task],
+                verbose=True
+            )
+            
+            print(f"[CrewAI] Starting market analysis for: {address}")
+            result = crew.kickoff(inputs={'address': address})
+            
+            # Parse result
+            result_text = str(result).strip()
+            
+            # Remove markdown code blocks if present
+            if result_text.startswith('```json'):
+                result_text = result_text[7:]
+            if result_text.startswith('```'):
+                result_text = result_text[3:]
+            if result_text.endswith('```'):
+                result_text = result_text[:-3]
+            
+            result_text = result_text.strip()
+            
+            # Parse JSON
+            insights_data = json.loads(result_text)
+            
+            # Validate against schema
+            validated = MarketInsights(**insights_data)
+            
+            return validated.model_dump()
             
         except Exception as e:
-            print(f"Market analysis error: {str(e)}")
+            print(f"CrewAI market analysis error: {str(e)}")
             # Return fallback data
             return self._generate_fallback_insights(property_data, str(e))
     
