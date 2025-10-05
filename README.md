@@ -28,28 +28,37 @@
 
 ## ✨ Features
 
-### Phase 0 (Current - Foundation)
+### Phase 0: Foundation ✅ COMPLETE
 - ✅ Docker-based development environment
 - ✅ Flask REST API with JWT authentication
 - ✅ React frontend with mobile-first design
 - ✅ Supabase database with Row Level Security
-- ✅ Celery async task processing
+- ✅ Celery async task processing with Redis
 
-### Phase 1 (In Progress - Data Ingestion)
-- 🔨 Floor plan image upload
-- 🔨 AI-powered floor plan parsing (Gemini Vision)
-- 🔨 Address-based property search
-- 🔨 User authentication system
+### Phase 1: Data Ingestion ✅ COMPLETE
+- ✅ Floor plan image upload with validation
+- ✅ AI-powered floor plan parsing (Gemini Vision)
+- ✅ Room detection and feature extraction
+- ✅ Square footage estimation
+- ✅ User authentication system (JWT)
+- ✅ Real-time status updates
 
-### Phase 2 (Planned - AI Enrichment)
-- 📋 CoreLogic market data integration
-- 📋 Comparable property analysis
-- 📋 AI-powered price suggestions
-- 📋 Automated MLS listing generation
+### Phase 2: AI Enrichment ✅ COMPLETE
+- ✅ CoreLogic API integration (OAuth2)
+- ✅ Comparable property analysis
+- ✅ AVM (Automated Valuation Model)
+- ✅ AI-powered market insights (Agent #2)
+- ✅ Investment scoring and rental estimates
+- ✅ Automated MLS listing generation (Agent #3)
+- ✅ Social media content creation (4 platforms)
+- ✅ SEO keyword optimization
+- ✅ Complete 3-agent workflow pipeline
 
-### Phase 3 (Planned - Agent Dashboard)
-- 📋 Property management interface
-- 📋 Listing text editor
+### Phase 3: Agent Dashboard (In Progress)
+- 🔨 Property management interface
+- 🔨 Market insights visualization
+- 🔨 Listing copy display and editor
+- 🔨 Social media preview/sharing
 - 📋 Analytics dashboard
 - 📋 Shareable report link generation
 
@@ -79,10 +88,10 @@
                               │ AI Calls
                               ↓
                     ┌──────────────────────┐
-                    │   CrewAI Agents      │
-                    │  1. Floor Plan       │
-                    │  2. Market Analyst   │
-                    │  3. Copywriter       │
+                    │   AI Agents (Gemini) │
+                    │  #1 Floor Plan       │
+                    │  #2 Market Analyst   │
+                    │  #3 Copywriter       │
                     └──────────────────────┘
                               │
                     ┌─────────┴─────────────┐
@@ -99,11 +108,11 @@
 
 ### Backend
 - **Framework**: Flask 3.0 + Flask-CORS + Flask-JWT-Extended
-- **Async Processing**: Celery 5.3 + Redis
-- **AI Orchestration**: CrewAI 0.11
-- **LLM**: Google Gemini 2.5 Flash
+- **Async Processing**: Celery 5.3 + Redis 7.2
+- **AI Models**: Google Gemini 2.0 Flash (Vision + Text)
 - **Database**: Supabase (PostgreSQL + Auth + Storage)
-- **APIs**: CoreLogic Property API, Tavily Search, Google Maps
+- **APIs**: CoreLogic Property API (OAuth2), Google Gemini API
+- **Structured Output**: Pydantic 2.0 for schema validation
 
 ### Frontend
 - **Framework**: React 18 + Vite
@@ -145,13 +154,29 @@ cd ai-floor-plan-insights
 
 ### 2. Configure Environment Variables
 
-The `.env` file is already configured with your API keys. **Verify the file exists**:
+Create a `.env` file in the project root with the following variables:
 
 ```bash
-cat .env
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_KEY=your-service-key
+
+# JWT Secret
+JWT_SECRET_KEY=your-secure-random-key
+
+# Google Gemini API
+GOOGLE_GEMINI_API_KEY=your-gemini-api-key
+
+# CoreLogic API (Required for Phase 2 - Market Insights)
+CORELOGIC_CONSUMER_KEY=your-consumer-key
+CORELOGIC_CONSUMER_SECRET=your-consumer-secret
+
+# Flask Configuration
+FLASK_ENV=development
 ```
 
-You should see all required environment variables populated.
+**Note**: Without CoreLogic credentials, Agent #2 will use fallback logic (square footage-based estimates).
 
 ### 3. Set Up Supabase Database
 
@@ -203,7 +228,35 @@ Expected response:
 
 Open your browser and navigate to:
 - **Frontend**: http://localhost:5173
-- **Backend API Docs**: http://localhost:5000/docs (coming in Phase 1)
+- **Backend API**: http://localhost:5000
+- **Health Check**: http://localhost:5000/health
+
+**Default Login Credentials**:
+- Email: `jane.smith@realestate.com`
+- Password: `Agent2025!`
+
+### 7. (Optional) Add CoreLogic API Credentials
+
+For real market data from Agent #2 (Market Insights Analyst):
+
+1. **Get API Credentials**:
+   - Sign up at [CoreLogic Developer Portal](https://developer.corelogic.com/)
+   - Request access to Property API
+   - Obtain Consumer Key and Consumer Secret
+
+2. **Update `.env` file**:
+   ```bash
+   CORELOGIC_CONSUMER_KEY=your_real_key
+   CORELOGIC_CONSUMER_SECRET=your_real_secret
+   ```
+
+3. **Restart services**:
+   ```bash
+   docker-compose restart backend celery-worker
+   ```
+
+**Without CoreLogic**: Agent #2 uses fallback logic (~$200/sqft estimates)
+**With CoreLogic**: Agent #2 provides real comps, AVM, and market trends
 
 ---
 
@@ -285,11 +338,40 @@ docker-compose down -v
 
 ## 🧪 Testing
 
-### Backend Tests
+### Phase 2 Workflow Test (3-Agent Pipeline)
+
+Test the complete workflow: Upload → Agent #1 → Agent #2 → Agent #3
+
+```bash
+# Automated test script (recommended)
+python3 test_phase2_workflow.py
+
+# Expected output:
+# ✓ Login successful!
+# ✓ Upload successful!
+# ✓ Workflow complete in 30-60 seconds!
+# ✓ All 3 agents executed successfully!
+```
+
+**Manual testing via curl**:
+```bash
+# See TEST_COMMANDS.md for detailed curl examples
+cat TEST_COMMANDS.md
+```
+
+**Monitor Celery logs in real-time**:
+```bash
+docker logs -f ai-floorplan-celery
+```
+
+### Backend Unit Tests
 
 ```bash
 # Run all tests
 docker-compose exec backend pytest
+
+# Run CoreLogic client tests
+docker-compose exec backend pytest backend/tests/unit/test_corelogic_client.py -v
 
 # Run with coverage
 docker-compose exec backend pytest --cov=app --cov-report=html
@@ -427,6 +509,64 @@ ai-floor-plan-insights/
 ├── log.md                       # Change tracking
 └── README.md
 ```
+
+---
+
+## 🤖 AI Agent Workflow (Phase 2)
+
+### Complete 3-Agent Pipeline
+
+The system uses a sequential AI agent workflow powered by Google Gemini:
+
+```
+1️⃣ UPLOAD FLOOR PLAN + ADDRESS
+         ↓
+🤖 Agent #1: Floor Plan Analyst (Gemini Vision)
+   └─ Analyzes image to extract:
+      • Bedrooms, bathrooms, square footage
+      • Room types and dimensions
+      • Features (balcony, walk-in closet, etc.)
+      • Layout type (Traditional, Open Concept, etc.)
+   └─ Status: processing → parsing_complete (~5-10s)
+         ↓
+🤖 Agent #2: Market Insights Analyst (Gemini + CoreLogic)
+   └─ Fetches CoreLogic data:
+      • Comparable properties within 1 mile
+      • AVM (Automated Valuation Model)
+      • Property history and characteristics
+   └─ AI Analysis generates:
+      • Price estimate with confidence level
+      • Value range (low-high)
+      • Market trend (rising/stable/declining)
+      • Investment score (1-100)
+      • Rental income estimates
+      • Cap rate for investors
+      • Risk factors and opportunities
+   └─ Status: parsing_complete → enrichment_complete (~15-30s)
+         ↓
+🤖 Agent #3: Listing Copywriter (Gemini)
+   └─ Uses data from Agent #1 & #2 to generate:
+      • Attention-grabbing headline (60 chars)
+      • MLS-ready description (500-800 words)
+      • Key highlights (5-8 bullet points)
+      • Compelling call-to-action
+      • Social media captions (Instagram, Facebook, Twitter, LinkedIn)
+      • Email subject line
+      • SEO keywords (8-12 keywords)
+   └─ Customizable tone: professional, luxury, family, investor, modern
+   └─ Status: enrichment_complete → complete (~10-20s)
+         ↓
+✅ COMPLETE PROPERTY PACKAGE
+   └─ Floor plan analysis
+   └─ Market valuation and insights
+   └─ Professional listing copy
+   └─ Social media content
+   └─ Total time: 30-60 seconds
+```
+
+**All data stored in single JSONB column** (`extracted_data`) for maximum flexibility.
+
+**Fallback Logic**: If CoreLogic API is unavailable, Agent #2 uses square footage-based estimates (~$200/sqft) with clearly marked low confidence.
 
 ---
 
