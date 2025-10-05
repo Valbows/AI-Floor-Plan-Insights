@@ -49,17 +49,10 @@ class FloorPlanData(BaseModel):
 # CrewAI Tools
 # ================================
 
-@tool("Floor Plan Image Analyzer")
-def analyze_image_with_gemini(image_url: str, image_bytes_b64: str = None) -> str:
+def _analyze_with_gemini_vision(image_url: str, image_bytes_b64: str = None) -> str:
     """
-    Analyze a floor plan image using Google Gemini 2.5 Flash Vision with structured JSON output.
-    
-    Args:
-        image_url: URL to the floor plan image
-        image_bytes_b64: Base64 encoded image bytes (optional)
-    
-    Returns:
-        str: JSON string with structured floor plan data
+    Internal function to analyze floor plan with Gemini Vision.
+    Returns JSON string with structured data.
     """
     import google.generativeai as genai
     genai.configure(api_key=os.getenv('GOOGLE_GEMINI_API_KEY'))
@@ -108,10 +101,9 @@ Be precise with bedroom and bathroom counts. This is critical for real estate li
             response_data = requests.get(image_url).content
             image_part = {'mime_type': 'image/png', 'data': base64.b64encode(response_data).decode('utf-8')}
         
-        # Use structured output with JSON schema
+        # Use JSON mode (schema validation happens in Python)
         generation_config = genai.GenerationConfig(
-            response_mime_type="application/json",
-            response_schema=FloorPlanData  # Use Pydantic schema for validation
+            response_mime_type="application/json"
         )
         
         response = model.generate_content(
@@ -134,6 +126,21 @@ Be precise with bedroom and bathroom counts. This is critical for real estate li
             "notes": f"Error analyzing image: {str(e)}"
         }
         return json.dumps(error_response)
+
+
+@tool("Floor Plan Image Analyzer")
+def analyze_image_with_gemini(image_url: str, image_bytes_b64: str = None) -> str:
+    """
+    Tool wrapper for Gemini Vision floor plan analysis.
+    
+    Args:
+        image_url: URL to the floor plan image
+        image_bytes_b64: Base64 encoded image bytes (optional)
+    
+    Returns:
+        str: JSON string with structured floor plan data
+    """
+    return _analyze_with_gemini_vision(image_url, image_bytes_b64)
 
 
 # ================================
@@ -185,7 +192,7 @@ class FloorPlanAnalyst:
     
     def analyze_floor_plan(self, image_url: str = None, image_bytes: bytes = None) -> Dict[str, Any]:
         """
-        Analyze a floor plan image and extract structured data using CrewAI
+        Analyze a floor plan image and extract structured data using Gemini Vision
         
         Args:
             image_url: URL to the floor plan image (optional)
@@ -201,66 +208,26 @@ class FloorPlanAnalyst:
         image_bytes_b64 = None
         if image_bytes:
             image_bytes_b64 = base64.b64encode(image_bytes).decode('utf-8')
-        elif image_url:
-            # Ensure we have URL for the tool
-            pass
-        
-        # Create analysis task (tool returns JSON directly, just need to pass it through)
-        task_description = f"""
-Use the Floor Plan Image Analyzer tool to analyze the floor plan image.
-
-Image location: {image_url or 'provided bytes'}
-
-The tool will return a JSON object with complete floor plan analysis including:
-- Bedrooms and bathrooms count
-- Square footage
-- Room details with dimensions
-- Property features
-- Layout type
-
-Simply return the JSON result from the tool without modification.
-"""
-        
-        task = Task(
-            description=task_description,
-            agent=self.agent,
-            expected_output="JSON object with floor plan analysis data"
-        )
-        
-        # Create crew and execute
-        crew = Crew(
-            agents=[self.agent],
-            tasks=[task],
-            verbose=True
-        )
         
         try:
-            # Execute the task
-            result = crew.kickoff(inputs={'image_url': image_url or '', 'image_bytes_b64': image_bytes_b64 or ''})
+            # Call the Gemini Vision function directly (returns perfect JSON)
+            result_text = _analyze_with_gemini_vision(
+                image_url=image_url or '',
+                image_bytes_b64=image_bytes_b64 or ''
+            )
             
-            # Parse the result
-            result_text = str(result).strip()
-            
-            # Remove markdown code blocks if present
-            if result_text.startswith('```json'):
-                result_text = result_text[7:]
-            if result_text.startswith('```'):
-                result_text = result_text[3:]
-            if result_text.endswith('```'):
-                result_text = result_text[:-3]
-            
-            result_text = result_text.strip()
-            
-            # Parse JSON
+            # Parse JSON (tool returns valid JSON string)
             extracted_data = json.loads(result_text)
             
             # Validate against schema
             validated_data = FloorPlanData(**extracted_data)
             
+            print(f"✅ Floor plan analysis successful: {validated_data.bedrooms} BR, {validated_data.bathrooms} BA, {validated_data.square_footage} sq ft")
+            
             return validated_data.model_dump()
             
         except Exception as e:
-            print(f"CrewAI execution error: {str(e)}")
+            print(f"❌ Floor plan analysis error: {str(e)}")
             # Return partial data on error
             return {
                 'address': '',
@@ -270,7 +237,7 @@ Simply return the JSON result from the tool without modification.
                 'rooms': [],
                 'features': [],
                 'layout_type': '',
-                'notes': f'Error analyzing floor plan with CrewAI: {str(e)}'
+                'notes': f'Error analyzing floor plan: {str(e)}'
             }
     
     def get_agent_info(self) -> Dict[str, str]:
