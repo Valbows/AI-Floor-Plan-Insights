@@ -65,6 +65,14 @@ def create_app(config_name='development'):
     # JWT Authentication
     jwt = JWTManager(app)
     
+    # Allow OPTIONS requests without JWT (CORS preflight)
+    @app.before_request
+    def handle_preflight():
+        """Allow OPTIONS requests to bypass JWT authentication for CORS preflight"""
+        from flask import request
+        if request.method == "OPTIONS":
+            return '', 200
+    
     # Update Celery config
     celery.conf.update(app.config)
     
