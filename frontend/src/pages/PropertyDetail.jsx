@@ -1,22 +1,68 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { 
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
-  FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone
+  FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone, Check,
+  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X
 } from 'lucide-react'
 import axios from 'axios'
+import Chatbot from '../components/Chatbot'
 
 const PropertyDetail = () => {
   const { id } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState('details')
+  const [activeTab, setActiveTab] = useState('market')
+  const [showProgressOverlay, setShowProgressOverlay] = useState(searchParams.get('showProgress') === 'true')
+  const [analysisStep, setAnalysisStep] = useState(0)
+  
+  // Edit states
+  const [editMode, setEditMode] = useState(false) // Master edit mode toggle
+  const [editingField, setEditingField] = useState(null) // 'headline', 'description', 'social_facebook', etc.
+  const [editedContent, setEditedContent] = useState({})
+  const [saving, setSaving] = useState(false)
+
+  const analysisSteps = [
+    { icon: Upload, text: 'Uploading floor plan...', color: 'text-blue-600' },
+    { icon: Eye, text: 'Analyzing layout and rooms...', color: 'text-purple-600' },
+    { icon: DollarSign, text: 'Calculating market value...', color: 'text-green-600' },
+    { icon: FileText, text: 'Generating listing content...', color: 'text-orange-600' }
+  ]
 
   useEffect(() => {
     loadProperty()
   }, [id])
+
+  // Progress overlay animation
+  useEffect(() => {
+    if (showProgressOverlay) {
+      const interval = setInterval(() => {
+        setAnalysisStep(prev => {
+          if (prev < analysisSteps.length - 1) {
+            return prev + 1
+          }
+          // Keep cycling through steps while processing
+          return 0
+        })
+      }, 3000) // 3 seconds per step
+      
+      return () => clearInterval(interval)
+    }
+  }, [showProgressOverlay])
+
+  // Hide overlay when property analysis is complete
+  useEffect(() => {
+    if (showProgressOverlay && property?.status === 'complete') {
+      // Wait a moment to show completion, then hide overlay
+      setTimeout(() => {
+        setShowProgressOverlay(false)
+        setSearchParams({}) // Remove query param
+      }, 1500)
+    }
+  }, [property?.status, showProgressOverlay])
 
   // Separate effect for polling
   useEffect(() => {
@@ -67,6 +113,61 @@ const PropertyDetail = () => {
     alert(`${label} copied to clipboard!`)
   }
 
+  const startEditing = (field, currentValue) => {
+    setEditingField(field)
+    setEditedContent({ ...editedContent, [field]: currentValue })
+  }
+
+  const cancelEditing = () => {
+    setEditingField(null)
+    setEditedContent({})
+  }
+
+  const saveEdit = async (field) => {
+    setSaving(true)
+    try {
+      // Determine if it's a property detail or listing copy field
+      const isPropertyDetail = ['address', 'square_footage', 'bedrooms', 'bathrooms', 'layout_type'].includes(field)
+      
+      if (isPropertyDetail) {
+        // Update extracted_data in the backend
+        await axios.patch(`/api/properties/${id}/details`, {
+          [field]: editedContent[field]
+        })
+        
+        // Update local state
+        setProperty(prev => ({
+          ...prev,
+          extracted_data: {
+            ...prev.extracted_data,
+            [field]: editedContent[field]
+          }
+        }))
+      } else {
+        // Update listing_copy in the backend
+        await axios.patch(`/api/properties/${id}/listing`, {
+          [field]: editedContent[field]
+        })
+        
+        // Update local state
+        setProperty(prev => ({
+          ...prev,
+          listing_copy: {
+            ...prev.listing_copy,
+            [field]: editedContent[field]
+          }
+        }))
+      }
+      
+      setEditingField(null)
+      alert('Changes saved successfully!')
+    } catch (err) {
+      alert('Failed to save changes. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -93,164 +194,326 @@ const PropertyDetail = () => {
   const extracted = property.extracted_data || {}
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-white relative">
+      {/* Progress Overlay */}
+      {showProgressOverlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="text-center mb-8">
+              <Loader className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Analyzing Your Property</h3>
+              <p className="text-gray-600">Please wait while our AI processes your floor plan...</p>
+            </div>
+
+            {/* Analysis Steps */}
+            <div className="space-y-4">
+              {analysisSteps.map((step, index) => {
+                const StepIcon = step.icon
+                const isActive = index === analysisStep
+                const isCompleted = index < analysisStep
+                
+                return (
+                  <div 
+                    key={index}
+                    className={`flex items-center space-x-3 p-4 rounded-lg transition-all ${
+                      isActive ? 'bg-blue-50 border-2 border-blue-200 scale-105' : 
+                      isCompleted ? 'bg-green-50 border-2 border-green-200' : 
+                      'bg-gray-50 border-2 border-gray-200 opacity-50'
+                    }`}
+                  >
+                    <div className={`flex-shrink-0 ${isActive ? 'animate-pulse' : ''}`}>
+                      {isCompleted ? (
+                        <CheckCircle className="w-6 h-6 text-green-600" />
+                      ) : (
+                        <StepIcon className={`w-6 h-6 ${isActive ? step.color : 'text-gray-400'}`} />
+                      )}
+                    </div>
+                    <p className={`text-sm font-medium ${
+                      isActive ? 'text-gray-900' : 
+                      isCompleted ? 'text-green-700' : 
+                      'text-gray-500'
+                    }`}>
+                      {step.text}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-6">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${((analysisStep + 1) / analysisSteps.length) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Step {analysisStep + 1} of {analysisSteps.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Link to="/dashboard" className="text-gray-600 hover:text-gray-900">
-                <ArrowLeft className="w-6 h-6" />
+              <Link to="/dashboard" className="text-gray-400 hover:text-gray-900 transition-colors">
+                <ArrowLeft className="w-5 h-5" />
               </Link>
-              <h1 className="text-xl font-bold text-gray-900">Property Details</h1>
+              <h1 className="text-lg font-medium text-gray-900">Property Details</h1>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    setEditMode(!editMode)
+                    if (editMode) {
+                      setEditingField(null)
+                      setEditedContent({})
+                    }
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    editMode 
+                      ? 'bg-gray-500 text-white hover:bg-gray-600' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {editMode ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+                  <span className="text-sm font-medium">{editMode ? 'Cancel' : 'Edit Property'}</span>
+                </button>
+                {editMode && editingField && (
+                  <button
+                    onClick={() => saveEdit(editingField)}
+                    disabled={saving}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span className="text-sm font-medium">{saving ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
+                )}
+              </div>
             </div>
             {getStatusBadge(property.status)}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT COLUMN - Floor Plan Image */}
-          <div className="lg:col-span-1">
-            <div className="card sticky top-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Floor Plan</h2>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* LEFT COLUMN - Floor Plan + Property Details (Scrollable) */}
+          <div className="space-y-4">
+            {/* Floor Plan Image */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
               {property.image_url ? (
                 <img 
                   src={property.image_url} 
                   alt="Floor Plan" 
-                  className="w-full rounded-lg border border-gray-200"
+                  className="w-full rounded-lg"
                 />
               ) : (
-                <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
-                  <Home className="w-16 h-16 text-gray-400" />
+                <div className="bg-white rounded-lg h-96 flex items-center justify-center">
+                  <Home className="w-16 h-16 text-gray-300" />
                 </div>
               )}
             </div>
-          </div>
 
-          {/* RIGHT COLUMN - Tabbed Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Tab Navigation */}
-            <div className="card">
-              <div className="flex border-b border-gray-200">
-                <button
-                  onClick={() => setActiveTab('details')}
-                  className={`flex items-center space-x-2 px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
-                    activeTab === 'details'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Info className="w-4 h-4" />
-                  <span>Property Details</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('market')}
-                  className={`flex items-center space-x-2 px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
-                    activeTab === 'market'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <LineChart className="w-4 h-4" />
-                  <span>Market Insights</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('marketing')}
-                  className={`flex items-center space-x-2 px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
-                    activeTab === 'marketing'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Megaphone className="w-4 h-4" />
-                  <span>Marketing Content</span>
-                </button>
+            {/* Property Details Section */}
+            <div className="space-y-4">
+            {/* Address */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Address</h3>
+                {editMode && (editingField === 'address' ? (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => saveEdit('address')}
+                      disabled={saving}
+                      className="p-1 bg-green-600 text-white hover:bg-green-700 rounded transition text-xs flex items-center space-x-1"
+                    >
+                      <Save className="w-3 h-3" />
+                      <span>Save</span>
+                    </button>
+                    <button
+                      onClick={cancelEditing}
+                      className="p-1 bg-gray-500 text-white hover:bg-gray-600 rounded transition"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => startEditing('address', extracted.address || '')}
+                    className="p-1 hover:bg-gray-100 rounded transition"
+                    title="Edit address"
+                  >
+                    <Edit2 className="w-3 h-3 text-gray-600" />
+                  </button>
+                ))}
+              </div>
+              {editMode ? (
+                <input
+                  type="text"
+                  value={editingField === 'address' ? editedContent.address : (extracted.address || '')}
+                  onChange={(e) => {
+                    setEditingField('address')
+                    setEditedContent({ ...editedContent, address: e.target.value })
+                  }}
+                  className="w-full text-sm text-gray-900 bg-white border-2 border-blue-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter property address"
+                />
+              ) : (
+                <p className="text-sm text-gray-900">
+                  {extracted.address || 'Not specified'}
+                </p>
+              )}
+            </div>
+
+            {/* Key Stats - Metrics Card */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-wider">Property Metrics</h3>
+                {editMode && <Edit2 className="w-4 h-4 text-blue-700" />}
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-900">Square Footage:</span>
+                  {editMode ? (
+                    <input
+                      type="number"
+                      value={editingField === 'square_footage' ? editedContent.square_footage : (extracted.square_footage || 0)}
+                      onChange={(e) => {
+                        setEditingField('square_footage')
+                        setEditedContent({ ...editedContent, square_footage: parseInt(e.target.value) || 0 })
+                      }}
+                      className="w-32 text-lg font-bold text-blue-900 bg-white border-2 border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold text-blue-900">{extracted.square_footage || 0} sq ft</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-900">Bedrooms:</span>
+                  {editMode ? (
+                    <input
+                      type="number"
+                      value={editingField === 'bedrooms' ? editedContent.bedrooms : (extracted.bedrooms || 0)}
+                      onChange={(e) => {
+                        setEditingField('bedrooms')
+                        setEditedContent({ ...editedContent, bedrooms: parseInt(e.target.value) || 0 })
+                      }}
+                      className="w-20 text-lg font-bold text-blue-900 bg-white border-2 border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold text-blue-900">{extracted.bedrooms || 0}</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-900">Bathrooms:</span>
+                  {editMode ? (
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={editingField === 'bathrooms' ? editedContent.bathrooms : (extracted.bathrooms || 0)}
+                      onChange={(e) => {
+                        setEditingField('bathrooms')
+                        setEditedContent({ ...editedContent, bathrooms: parseFloat(e.target.value) || 0 })
+                      }}
+                      className="w-20 text-lg font-bold text-blue-900 bg-white border-2 border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold text-blue-900">{extracted.bathrooms || 0}</span>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Tab Content */}
-            {activeTab === 'details' && (
-              <div className="space-y-6">
-                {/* Address */}
-                <div className="card">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">Address</h2>
-                  <p className="text-gray-700">
-                    {extracted.address || 'Not specified'}
-                  </p>
-                </div>
-
-                {/* Key Stats */}
-                <div className="card">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Property Details</h2>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <Bed className="w-8 h-8 text-primary-600 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{extracted.bedrooms || 0}</p>
-                      <p className="text-sm text-gray-600">Bedrooms</p>
-                    </div>
-                    <div className="text-center">
-                      <Bath className="w-8 h-8 text-primary-600 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{extracted.bathrooms || 0}</p>
-                      <p className="text-sm text-gray-600">Bathrooms</p>
-                    </div>
-                    <div className="text-center">
-                      <Maximize className="w-8 h-8 text-primary-600 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{extracted.square_footage || 0}</p>
-                      <p className="text-sm text-gray-600">Sq Ft</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Layout Type */}
-                {extracted.layout_type && (
-                  <div className="card">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">Layout</h2>
-                    <p className="text-gray-700">{extracted.layout_type}</p>
-                  </div>
-                )}
-
-                {/* Features */}
-                {extracted.features && extracted.features.length > 0 && (
-                  <div className="card">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">Features</h2>
-                    <div className="flex flex-wrap gap-2">
-                      {extracted.features.map((feature, index) => (
-                        <span 
-                          key={index}
-                          className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm"
-                        >
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Rooms */}
-                {extracted.rooms && extracted.rooms.length > 0 && (
-                  <div className="card">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">Rooms</h2>
-                    <div className="space-y-2">
-                      {extracted.rooms.map((room, index) => (
-                        <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
-                          <span className="font-medium text-gray-900">{room.type}</span>
-                          <span className="text-gray-600">{room.dimensions}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* AI Notes */}
-                {extracted.notes && (
-                  <div className="card bg-yellow-50 border-yellow-200">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">AI Analysis Notes</h2>
-                    <p className="text-sm text-gray-700">{extracted.notes}</p>
-                  </div>
-                )}
+            {/* Layout Type */}
+            {extracted.layout_type && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Layout Type</h3>
+                <p className="text-sm text-gray-900">{extracted.layout_type}</p>
               </div>
             )}
+
+            {/* Features */}
+            {extracted.features && extracted.features.length > 0 && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Features</h3>
+                <ul className="space-y-1">
+                  {extracted.features.slice(0, 6).map((feature, index) => (
+                    <li key={index} className="flex items-start text-xs text-gray-700">
+                      <span className="text-gray-400 mr-2">•</span>
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                  {extracted.features.length > 6 && (
+                    <li className="text-xs text-gray-500 italic">+{extracted.features.length - 6} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* Room Facilities - Icon Grid */}
+            {extracted.rooms && extracted.rooms.length > 0 && (
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Room Facilities</h3>
+                <div className="grid grid-cols-4 gap-2">
+                  {extracted.rooms.slice(0, 8).map((room, index) => (
+                    <div key={index} className="flex flex-col items-center text-center p-2 hover:bg-gray-50 rounded transition-colors">
+                      <div className="w-8 h-8 mb-1 text-gray-400">
+                        {room.type.toLowerCase().includes('bed') && <Bed className="w-full h-full" />}
+                        {room.type.toLowerCase().includes('bath') && <Bath className="w-full h-full" />}
+                        {room.type.toLowerCase().includes('living') && <Home className="w-full h-full" />}
+                        {room.type.toLowerCase().includes('kitchen') && <UtensilsCrossed className="w-full h-full" />}
+                        {!['bed', 'bath', 'living', 'kitchen'].some(t => room.type.toLowerCase().includes(t)) && <Maximize className="w-full h-full" />}
+                      </div>
+                      <p className="text-xs text-gray-600 truncate w-full">{room.type}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI Notes */}
+            {extracted.notes && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <h3 className="text-xs font-semibold text-amber-900 uppercase tracking-wider mb-1">AI Analysis</h3>
+                <p className="text-xs text-amber-900 leading-relaxed">{extracted.notes}</p>
+              </div>
+            )}
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN - Tabbed Content (Market & Marketing) - Sticky */}
+          <div className="lg:sticky lg:top-4 lg:self-start space-y-6" style={{maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto'}}>
+            {/* Tab Navigation */}
+            <div className="border-b border-gray-200">
+              <div className="flex space-x-8">
+                <button
+                  onClick={() => setActiveTab('market')}
+                  className={`pb-3 font-medium text-sm transition-colors border-b-2 ${
+                    activeTab === 'market'
+                      ? 'border-gray-900 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Market Insights
+                </button>
+                <button
+                  onClick={() => setActiveTab('marketing')}
+                  className={`pb-3 font-medium text-sm transition-colors border-b-2 ${
+                    activeTab === 'marketing'
+                      ? 'border-gray-900 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Marketing Content
+                </button>
+              </div>
+            </div>
 
             {activeTab === 'market' && (
               <div className="space-y-6">
@@ -258,7 +521,7 @@ const PropertyDetail = () => {
                 {extracted.market_insights ? (
                   <>
                     {/* Price Estimate */}
-                    <div className="card bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-gray-900 flex items-center">
                           <DollarSign className="w-5 h-5 mr-2 text-green-600" />
@@ -285,7 +548,7 @@ const PropertyDetail = () => {
                     </div>
 
                     {/* Market Trend */}
-                    <div className="card">
+                    <div className="border border-gray-200 rounded-lg p-6">
                       <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
                         Market Trend
@@ -326,7 +589,7 @@ const PropertyDetail = () => {
                     </div>
 
                     {/* Investment Analysis */}
-                    <div className="card">
+                    <div className="border border-gray-200 rounded-lg p-6">
                       <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <Building2 className="w-5 h-5 mr-2 text-purple-600" />
                         Investment Analysis
@@ -383,7 +646,7 @@ const PropertyDetail = () => {
 
                     {/* Comparable Properties */}
                     {extracted.market_insights.comparable_properties?.length > 0 && (
-                      <div className="card">
+                      <div className="border border-gray-200 rounded-lg p-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4">Comparable Properties</h2>
                         <p className="text-sm text-gray-600 mb-3">
                           {extracted.market_insights.comparable_properties.length} similar properties found nearby
@@ -405,9 +668,21 @@ const PropertyDetail = () => {
                     )}
                   </>
                 ) : (
-                  <div className="card text-center py-12">
-                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600">Market insights are being analyzed...</p>
+                  <div className="border border-gray-200 rounded-lg p-12 text-center">
+                    <Loader className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Analyzing Market Data</h3>
+                    <p className="text-sm text-gray-600 mb-4">Our AI is gathering comparable properties and calculating market value...</p>
+                    <div className="max-w-md mx-auto">
+                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span>Floor plan analysis complete</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs text-blue-600 mt-2">
+                        <Loader className="w-4 h-4 animate-spin" />
+                        <span>Processing market insights...</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4">This usually takes 1-2 minutes</p>
                   </div>
                 )}
               </div>
@@ -419,43 +694,126 @@ const PropertyDetail = () => {
                 {extracted.listing_copy ? (
                   <>
                     {/* Headline */}
-                    <div className="card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
                       <div className="flex items-center justify-between mb-3">
                         <h2 className="text-lg font-semibold text-gray-900 flex items-center">
                           <FileText className="w-5 h-5 mr-2 text-blue-600" />
                           Listing Headline
                         </h2>
-                        <button
-                          onClick={() => copyToClipboard(extracted.listing_copy.headline, 'Headline')}
-                          className="p-2 hover:bg-blue-100 rounded-lg transition"
-                        >
-                          <Copy className="w-4 h-4 text-blue-600" />
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          {editMode && (editingField === 'headline' ? (
+                            <>
+                              <button
+                                onClick={() => saveEdit('headline')}
+                                disabled={saving}
+                                className="p-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition flex items-center space-x-1"
+                              >
+                                <Save className="w-4 h-4" />
+                                <span className="text-xs">Save</span>
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="p-2 bg-gray-500 text-white hover:bg-gray-600 rounded-lg transition"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => startEditing('headline', extracted.listing_copy.headline)}
+                              className="p-2 hover:bg-blue-100 rounded-lg transition"
+                              title="Edit headline"
+                            >
+                              <Edit2 className="w-4 h-4 text-blue-600" />
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => copyToClipboard(extracted.listing_copy.headline, 'Headline')}
+                            className="p-2 hover:bg-blue-100 rounded-lg transition"
+                            title="Copy to clipboard"
+                          >
+                            <Copy className="w-4 h-4 text-blue-600" />
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-xl font-bold text-blue-900">
-                        {extracted.listing_copy.headline}
-                      </p>
+                      {editMode ? (
+                        <input
+                          type="text"
+                          value={editingField === 'headline' ? editedContent.headline : (extracted.listing_copy.headline || '')}
+                          onChange={(e) => {
+                            setEditingField('headline')
+                            setEditedContent({ ...editedContent, headline: e.target.value })
+                          }}
+                          className="w-full text-xl font-bold text-blue-900 bg-white border-2 border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter listing headline"
+                        />
+                      ) : (
+                        <p className="text-xl font-bold text-blue-900">
+                          {extracted.listing_copy.headline}
+                        </p>
+                      )}
                     </div>
 
                     {/* Description */}
-                    <div className="card">
+                    <div className="border border-gray-200 rounded-lg p-6">
                       <div className="flex items-center justify-between mb-3">
                         <h2 className="text-lg font-semibold text-gray-900">MLS Description</h2>
-                        <button
-                          onClick={() => copyToClipboard(extracted.listing_copy.description, 'Description')}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition"
-                        >
-                          <Copy className="w-4 h-4 text-gray-600" />
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          {editMode && (editingField === 'description' ? (
+                            <>
+                              <button
+                                onClick={() => saveEdit('description')}
+                                disabled={saving}
+                                className="p-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition flex items-center space-x-1"
+                              >
+                                <Save className="w-4 h-4" />
+                                <span className="text-xs">Save</span>
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="p-2 bg-gray-500 text-white hover:bg-gray-600 rounded-lg transition"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => startEditing('description', extracted.listing_copy.description)}
+                              className="p-2 hover:bg-gray-100 rounded-lg transition"
+                              title="Edit description"
+                            >
+                              <Edit2 className="w-4 h-4 text-gray-600" />
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => copyToClipboard(extracted.listing_copy.description, 'Description')}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition"
+                            title="Copy to clipboard"
+                          >
+                            <Copy className="w-4 h-4 text-gray-600" />
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
-                        {extracted.listing_copy.description}
-                      </p>
+                      {editMode ? (
+                        <textarea
+                          value={editingField === 'description' ? editedContent.description : (extracted.listing_copy.description || '')}
+                          onChange={(e) => {
+                            setEditingField('description')
+                            setEditedContent({ ...editedContent, description: e.target.value })
+                          }}
+                          className="w-full text-sm text-gray-700 bg-white border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500 min-h-[200px]"
+                          placeholder="Enter MLS description"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                          {extracted.listing_copy.description}
+                        </p>
+                      )}
                     </div>
 
                     {/* Highlights */}
                     {extracted.listing_copy.highlights?.length > 0 && (
-                      <div className="card">
+                      <div className="border border-gray-200 rounded-lg p-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-3">Key Highlights</h2>
                         <ul className="space-y-2">
                           {extracted.listing_copy.highlights.map((highlight, idx) => (
@@ -470,7 +828,7 @@ const PropertyDetail = () => {
 
                     {/* Social Media */}
                     {extracted.social_variants && (
-                      <div className="card">
+                      <div className="border border-gray-200 rounded-lg p-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                           <Share2 className="w-5 h-5 mr-2 text-indigo-600" />
                           Social Media
@@ -482,9 +840,10 @@ const PropertyDetail = () => {
                                 <span className="text-xs font-semibold text-gray-700">Instagram</span>
                                 <button
                                   onClick={() => copyToClipboard(extracted.social_variants.instagram, 'Instagram caption')}
-                                  className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center"
+                                  className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                                  title="Copy to clipboard"
                                 >
-                                  <Copy className="w-3 h-3 mr-1" /> Copy
+                                  <Copy className="w-4 h-4" />
                                 </button>
                               </div>
                               <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
@@ -498,9 +857,10 @@ const PropertyDetail = () => {
                                 <span className="text-xs font-semibold text-gray-700">Facebook</span>
                                 <button
                                   onClick={() => copyToClipboard(extracted.social_variants.facebook, 'Facebook post')}
-                                  className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center"
+                                  className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                                  title="Copy to clipboard"
                                 >
-                                  <Copy className="w-3 h-3 mr-1" /> Copy
+                                  <Copy className="w-4 h-4" />
                                 </button>
                               </div>
                               <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
@@ -514,9 +874,10 @@ const PropertyDetail = () => {
                                 <span className="text-xs font-semibold text-gray-700">Twitter / X</span>
                                 <button
                                   onClick={() => copyToClipboard(extracted.social_variants.twitter, 'Tweet')}
-                                  className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center"
+                                  className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                                  title="Copy to clipboard"
                                 >
-                                  <Copy className="w-3 h-3 mr-1" /> Copy
+                                  <Copy className="w-4 h-4" />
                                 </button>
                               </div>
                               <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
@@ -529,7 +890,7 @@ const PropertyDetail = () => {
                     )}
 
                     {/* CTA & Email */}
-                    <div className="card">
+                    <div className="border border-gray-200 rounded-lg p-6">
                       <div className="space-y-3">
                         <div>
                           <span className="text-xs font-semibold text-gray-700">Call to Action</span>
@@ -543,8 +904,9 @@ const PropertyDetail = () => {
                               <span className="text-xs font-semibold text-gray-700">Email Subject Line</span>
                               <button
                                 onClick={() => copyToClipboard(extracted.listing_copy.email_subject, 'Email subject')}
-                                className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center">
-                                <Copy className="w-3 h-3 mr-1" /> Copy
+                                className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                                title="Copy to clipboard">
+                                <Copy className="w-4 h-4" />
                               </button>
                             </div>
                             <p className="text-sm text-gray-900">
@@ -557,7 +919,7 @@ const PropertyDetail = () => {
 
                     {/* SEO Keywords */}
                     {extracted.listing_copy.seo_keywords?.length > 0 && (
-                      <div className="card">
+                      <div className="border border-gray-200 rounded-lg p-6">
                         <h2 className="text-sm font-semibold text-gray-900 mb-2">SEO Keywords</h2>
                         <div className="flex flex-wrap gap-1">
                           {extracted.listing_copy.seo_keywords.map((keyword, idx) => (
@@ -570,9 +932,21 @@ const PropertyDetail = () => {
                     )}
                   </>
                 ) : (
-                  <div className="card text-center py-12">
-                    <Megaphone className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600">Marketing content is being generated...</p>
+                  <div className="border border-gray-200 rounded-lg p-12 text-center">
+                    <Loader className="w-12 h-12 text-orange-600 mx-auto mb-4 animate-spin" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Creating Marketing Content</h3>
+                    <p className="text-sm text-gray-600 mb-4">Our AI is crafting compelling listing descriptions and social media posts...</p>
+                    <div className="max-w-md mx-auto">
+                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span>Floor plan analysis complete</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs text-orange-600 mt-2">
+                        <Loader className="w-4 h-4 animate-spin" />
+                        <span>Generating marketing content...</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4">This usually takes 30-60 seconds</p>
                   </div>
                 )}
               </div>
@@ -580,6 +954,9 @@ const PropertyDetail = () => {
           </div>
         </div>
       </main>
+      
+      {/* Chatbot */}
+      <Chatbot />
     </div>
   )
 }

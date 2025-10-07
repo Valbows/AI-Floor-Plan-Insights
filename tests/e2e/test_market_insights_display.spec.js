@@ -154,8 +154,8 @@ test.describe('Market Insights Display', () => {
     await page.getByText('Market Insights').click();
     await page.waitForTimeout(1000);
 
-    // Should NOT show loading message
-    const loadingMessage = page.getByText(/Market insights are being analyzed/i);
+    // Should NOT show loading message (updated text from Ariel-Branch)
+    const loadingMessage = page.getByText(/Processing market insights/i);
     await expect(loadingMessage).not.toBeVisible();
 
     console.log('✅ No loading message displayed for completed property');
@@ -201,12 +201,12 @@ test.describe('Property without Market Insights', () => {
       // Verify page loaded
       await expect(page.getByRole('heading', { name: /Property Details/i }).first()).toBeVisible();
 
-      // Click Market Insights tab
-      await page.getByText('Market Insights').click();
+      // Click Market Insights tab (use button role to avoid matching text in content)
+      await page.getByRole('button', { name: 'Market Insights' }).click();
       await page.waitForTimeout(1000);
 
-      // Should show "being analyzed" message
-      await expect(page.getByText(/Market insights are being analyzed/i)).toBeVisible();
+      // Should show "Processing market insights..." message (updated from Ariel-Branch)
+      await expect(page.getByText(/Processing market insights/i)).toBeVisible();
       
       console.log('✅ Loading message displayed for incomplete property');
     } else {
