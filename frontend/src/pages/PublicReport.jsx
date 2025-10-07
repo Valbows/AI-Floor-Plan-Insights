@@ -13,7 +13,12 @@ import {
   AlertCircle,
   Loader,
   ExternalLink,
-  CheckCircle
+  CheckCircle,
+  ZoomIn,
+  ZoomOut,
+  X,
+  Maximize2,
+  Building2
 } from 'lucide-react'
 
 const PublicReport = () => {
@@ -22,6 +27,8 @@ const PublicReport = () => {
   const [error, setError] = useState('')
   const [property, setProperty] = useState(null)
   const [tokenInfo, setTokenInfo] = useState(null)
+  const [imageZoomed, setImageZoomed] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState(1)
 
   useEffect(() => {
     loadPropertyReport()
@@ -92,6 +99,7 @@ const PublicReport = () => {
   const priceEstimate = marketInsights.price_estimate || {}
   const investmentAnalysis = marketInsights.investment_analysis || {}
   const marketingContent = extractedData.marketing_content || {}
+  const comparableProperties = marketInsights.comparable_properties || []
   
   const address = extractedData.address || property.address || 'Property Address'
   const price = priceEstimate.estimated_value || 0
@@ -100,6 +108,24 @@ const PublicReport = () => {
   const bathrooms = extractedData.bathrooms || 0
   const layoutType = extractedData.layout_type || ''
   const investmentScore = investmentAnalysis.investment_score || 0
+
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.25, 3))
+  }
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.25, 1))
+  }
+
+  const handleImageClick = () => {
+    setImageZoomed(true)
+    setZoomLevel(1)
+  }
+
+  const closeZoom = () => {
+    setImageZoomed(false)
+    setZoomLevel(1)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -202,15 +228,63 @@ const PublicReport = () => {
           </div>
         </div>
 
-        {/* Floor Plan */}
+        {/* Floor Plan with Zoom */}
         {property.floor_plan_url && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Floor Plan</h2>
-            <div className="rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Floor Plan</h2>
+              <button
+                onClick={handleImageClick}
+                className="flex items-center space-x-2 px-3 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+              >
+                <Maximize2 className="w-4 h-4" />
+                <span>View Full Size</span>
+              </button>
+            </div>
+            <div className="rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity" onClick={handleImageClick}>
               <img
                 src={property.floor_plan_url}
                 alt="Floor Plan"
                 className="w-full h-auto"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Image Zoom Modal */}
+        {imageZoomed && (
+          <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onClick={closeZoom}>
+            <button
+              onClick={closeZoom}
+              className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+            >
+              <X className="w-6 h-6 text-gray-900" />
+            </button>
+            
+            <div className="absolute top-4 left-4 flex space-x-2 z-10">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
+                className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <ZoomIn className="w-6 h-6 text-gray-900" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
+                className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <ZoomOut className="w-6 h-6 text-gray-900" />
+              </button>
+              <div className="px-3 py-2 bg-white rounded-full text-sm font-medium text-gray-900">
+                {Math.round(zoomLevel * 100)}%
+              </div>
+            </div>
+
+            <div className="overflow-auto max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
+              <img
+                src={property.floor_plan_url}
+                alt="Floor Plan - Full Size"
+                style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.2s' }}
+                className="max-w-none"
               />
             </div>
           </div>
@@ -235,6 +309,77 @@ const PublicReport = () => {
                 <div key={index} className="flex items-center space-x-2">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                   <span className="text-gray-700">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Comparable Properties */}
+        {comparableProperties && comparableProperties.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <Building2 className="w-5 h-5 text-gray-900" />
+              <h2 className="text-lg font-semibold text-gray-900">Comparable Properties</h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Similar properties sold recently in this area</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {comparableProperties.slice(0, 6).map((comp, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                        {comp.address || comp.property_address || `Property ${index + 1}`}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {comp.distance_miles ? `${comp.distance_miles} mi away` : 'Nearby'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {comp.sale_price && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600">Sale Price</span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          ${parseInt(comp.sale_price).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {comp.sale_date && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-600">Sold Date</span>
+                        <span className="text-xs text-gray-700">
+                          {new Date(comp.sale_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                      <div className="flex items-center space-x-3 text-xs text-gray-600">
+                        {comp.bedrooms && (
+                          <span className="flex items-center space-x-1">
+                            <Bed className="w-3 h-3" />
+                            <span>{comp.bedrooms}</span>
+                          </span>
+                        )}
+                        {comp.bathrooms && (
+                          <span className="flex items-center space-x-1">
+                            <Bath className="w-3 h-3" />
+                            <span>{comp.bathrooms}</span>
+                          </span>
+                        )}
+                        {comp.square_feet && (
+                          <span className="flex items-center space-x-1">
+                            <Square className="w-3 h-3" />
+                            <span>{parseInt(comp.square_feet).toLocaleString()}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

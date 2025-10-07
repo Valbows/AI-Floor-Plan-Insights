@@ -195,21 +195,42 @@ const PropertyDetail = () => {
 
   const handleGenerateLink = async () => {
     setGeneratingLink(true)
+    setShareableLink(null) // Clear previous link
+    
     try {
+      // Get token from localStorage
+      const token = localStorage.getItem('token')
+      
+      if (!token) {
+        alert('Authentication required. Please log in again.')
+        setGeneratingLink(false)
+        return
+      }
+      
       // First try to get existing link
       try {
-        const response = await axios.get(`/api/properties/${id}/shareable-link`)
+        const response = await axios.get(`/api/properties/${id}/shareable-link`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
         setShareableLink(response.data)
       } catch (err) {
         // If no link exists, generate new one
         if (err.response?.status === 404) {
-          const response = await axios.post(`/api/properties/${id}/generate-link`)
+          const response = await axios.post(`/api/properties/${id}/generate-link`, {}, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
           setShareableLink(response.data)
         } else {
           throw err
         }
       }
     } catch (err) {
+      console.error('Error generating shareable link:', err)
       alert('Failed to generate shareable link. Please try again.')
     } finally {
       setGeneratingLink(false)
