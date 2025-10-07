@@ -22,10 +22,7 @@ class CoreLogicClient:
     - Comprehensive error handling
     """
     
-    # Default to production API (can be overridden with CORELOGIC_API_URL env var)
-    BASE_URL = os.getenv('CORELOGIC_API_URL', 'https://api-prod.corelogic.com') + "/property/v1"
-    AUTH_URL = os.getenv('CORELOGIC_API_URL', 'https://api-prod.corelogic.com') + "/oauth/token"
-    
+    # API URLs based on CoreLogic documentation
     def __init__(self, consumer_key: Optional[str] = None, consumer_secret: Optional[str] = None):
         """
         Initialize CoreLogic API client
@@ -37,10 +34,11 @@ class CoreLogicClient:
         self.consumer_key = consumer_key or os.getenv('CORELOGIC_CONSUMER_KEY')
         self.consumer_secret = consumer_secret or os.getenv('CORELOGIC_CONSUMER_SECRET')
         
-        # Build URLs using configured base
+        # Build URLs based on actual CoreLogic API documentation
         base_url = os.getenv('CORELOGIC_API_URL', 'https://api-prod.corelogic.com')
-        self.BASE_URL = f"{base_url}/property/v1"
         self.AUTH_URL = f"{base_url}/oauth/token"
+        self.PROPERTY_URL = f"{base_url}/property"  # For typeahead and property details
+        self.PROPERTY_V2_URL = "https://property.corelogicapi.com/v2"  # For AVM/RAM endpoints
         
         if not self.consumer_key or not self.consumer_secret:
             raise ValueError("CoreLogic credentials not found. Set CORELOGIC_CONSUMER_KEY and CORELOGIC_CONSUMER_SECRET")
@@ -63,13 +61,12 @@ class CoreLogicClient:
             if datetime.now() < self.token_expires_at - timedelta(minutes=5):
                 return self.access_token
         
-        # Request new token
+        # Request new token (grant_type as query parameter per CoreLogic API)
         try:
             response = requests.post(
-                self.AUTH_URL,
+                f"{self.AUTH_URL}?grant_type=client_credentials",
                 auth=(self.consumer_key, self.consumer_secret),
-                data={'grant_type': 'client_credentials'},
-                headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                headers={'Content-Length': '0'},
                 timeout=30
             )
             response.raise_for_status()
@@ -78,7 +75,8 @@ class CoreLogicClient:
             self.access_token = token_data['access_token']
             
             # Calculate expiry time (usually 3600 seconds)
-            expires_in = token_data.get('expires_in', 3600)
+            # Convert to int in case CoreLogic returns string
+            expires_in = int(token_data.get('expires_in', 3600))
             self.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
             
             return self.access_token
@@ -140,22 +138,22 @@ class CoreLogicClient:
     def search_property(self, address: str, city: Optional[str] = None, 
                        state: Optional[str] = None, zip_code: Optional[str] = None) -> Dict[str, Any]:
         """
-        Search for property by address
+        Search for property by address using CoreLogic typeahead endpoint
         
         Args:
-            address: Street address (e.g., "123 Main St")
-            city: City name (optional if in address)
-            state: State abbreviation (optional if in address)
-            zip_code: ZIP code (optional if in address)
+            address: Full address string (e.g., "919 MALCOLM AVE, LOS ANGELES, CA 90024")
+            city: City name (optional, can be in address)
+            state: State abbreviation (optional, can be in address)
+            zip_code: ZIP code (optional, can be in address)
         
         Returns:
             {
-                "clip_id": "CLIP-12345",
-                "address": "123 Main St",
-                "city": "Miami",
-                "state": "FL",
-                "zip": "33101",
-                "county": "Miami-Dade",
+                "clip_id": "06037:1081685",
+                "address": "919 MALCOLM AVE",
+                "city": "LOS ANGELES",
+                "state": "CA",
+                "zip": "90024",
+                "county": "LOS ANGELES",
                 "property_type": "Single Family",
                 "year_built": 2010,
                 "bedrooms": 3,
@@ -170,23 +168,44 @@ class CoreLogicClient:
         Raises:
             Exception: If property not found or API error
         """
-        params = {'address': address}
-        
+        # Build full address string for typeahead
+        full_address = address
         if city:
-            params['city'] = city
+            full_address += f", {city}"
         if state:
-            params['state'] = state
+            full_address += f", {state}"
         if zip_code:
-            params['zip'] = zip_code
+            full_address += f" {zip_code}"
         
-        result = self._make_request('search', params=params)
+        # Use typeahead endpoint per CoreLogic documentation
+        token = self._get_access_token()
+        try:
+            response = requests.get(
+                f"{self.PROPERTY_URL}/typeahead",
+                params={'input': full_address},
+                headers={
+                    'Authorization': f'Bearer {token}',
+                    'Accept': 'application/json'
+                },
+                timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                raise Exception(f"No property found for address: {full_address}")
+            else:
+                raise Exception(f"CoreLogic typeahead error: {e.response.status_code} - {e.response.text}")
+        except Exception as e:
+            raise Exception(f"Property search failed: {str(e)}")
         
-        # Extract and normalize property data
-        if not result.get('properties'):
-            raise Exception(f"No property found for address: {address}")
+        # Extract and normalize property data from typeahead results
+        results = result.get('results', [])
+        if not results:
+            raise Exception(f"No property found for address: {full_address}")
         
         # Return first matching property
-        property_data = result['properties'][0]
+        property_data = results[0]
         
         return {
             'clip_id': property_data.get('clipId'),
@@ -316,4 +335,63 @@ class CoreLogicClient:
             'value_range_low': avm_data.get('valueLow'),
             'value_range_high': avm_data.get('valueHigh'),
             'as_of_date': avm_data.get('asOfDate')
+        }
+    
+    def get_rent_amount_model(self, clip_id: str) -> Dict[str, Any]:
+        """
+        Get Rent Amount Model (RAM) - Estimated rental value and investment metrics
+        
+        Provides property-level estimated rental value including:
+        - Estimated monthly rental value
+        - Forecast standard deviation
+        - Rental value range (high/low)
+        - Capitalization (CAP) rate for investment analysis
+        
+        Args:
+            clip_id: Property CLIP ID
+        
+        Returns:
+            {
+                "estimated_rental_value": 2500,
+                "forecast_std_deviation": 0.1,
+                "rental_range_low": 2250,
+                "rental_range_high": 2750,
+                "cap_rate": 5.5,
+                "run_date": "2025-10-04"
+            }
+        
+        Raises:
+            Exception: If RAM unavailable or API error
+        """
+        # CoreLogic RAM endpoint per documentation
+        token = self._get_access_token()
+        try:
+            response = requests.get(
+                f"{self.PROPERTY_V2_URL}/avms/ram",
+                params={'clip': clip_id},
+                headers={
+                    'Authorization': f'Bearer {token}',
+                    'Accept': 'application/json'
+                },
+                timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+        except requests.exceptions.HTTPError as e:
+            raise Exception(f"RAM API error: {e.response.status_code} - {e.response.text}")
+        except Exception as e:
+            raise Exception(f"RAM request failed: {str(e)}")
+        
+        data = result.get('data', {})
+        model_output = data.get('modelOutput', {})
+        value_range = model_output.get('estimatedValueRange', {})
+        additional = model_output.get('additionalValues', {})
+        
+        return {
+            'estimated_rental_value': model_output.get('estimatedValue'),
+            'forecast_std_deviation': model_output.get('forecastStandardDeviation'),
+            'rental_range_low': value_range.get('low'),
+            'rental_range_high': value_range.get('high'),
+            'cap_rate': additional.get('capRate'),
+            'run_date': data.get('runDate')
         }

@@ -120,9 +120,13 @@ class ListingCopywriter:
     def __init__(self):
         """Initialize Listing Copywriter with CrewAI"""
         # Initialize Gemini 2.5 Flash LLM for CrewAI
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
-            google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY'),
+        # CrewAI uses LiteLLM routing internally
+        # Format: gemini/model-name (as per LiteLLM docs)
+        from crewai import LLM
+        
+        self.llm = LLM(
+            model="gemini/gemini-2.5-flash",  # LiteLLM format for Gemini 2.5 Flash
+            api_key=os.getenv('GEMINI_API_KEY'),  # LiteLLM expects GEMINI_API_KEY
             temperature=0.7  # Higher temperature for creative writing
         )
         
@@ -287,18 +291,24 @@ Respond with complete listing copy in JSON format matching the ListingCopy schem
             # Parse result
             result_text = str(result).strip()
             
-            # Remove markdown code blocks if present
-            if result_text.startswith('```json'):
-                result_text = result_text[7:]
-            if result_text.startswith('```'):
-                result_text = result_text[3:]
-            if result_text.endswith('```'):
-                result_text = result_text[:-3]
+            # Extract JSON from markdown code blocks using regex
+            import re
+            json_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', result_text, re.DOTALL)
+            if json_match:
+                result_text = json_match.group(1).strip()
+            else:
+                # Try to find JSON without markdown (look for { to })
+                json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+                if json_match:
+                    result_text = json_match.group(0).strip()
             
             result_text = result_text.strip()
             
             # Parse JSON
             listing_copy = json.loads(result_text)
+            
+            # Normalize keys to lowercase (CrewAI sometimes returns UPPERCASE)
+            listing_copy = {k.lower(): v for k, v in listing_copy.items()}
             
             # Validate against schema
             validated = ListingCopy(**listing_copy)

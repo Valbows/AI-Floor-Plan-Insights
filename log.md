@@ -1398,3 +1398,190 @@ Upload → Agent #1 (Floor Plan) → Agent #2 (Market) → Agent #3 (Listing) �
 **Next Phase**: Frontend development to display market insights and listing copy
 
 ---
+
+## 2025-10-06 16:00-21:00 EDT - Agent #2 Market Insights Critical Fixes
+
+### 🐛 Phase 2 - CrewAI JSON Parsing & Data Type Issues Resolved
+
+**Problem**:
+- Agent #2 (Market Insights Analyst) failing immediately with JSON parsing errors
+- Error message: `CrewAI market analysis error: '\n  "price_estimate"'`
+- Agent completing but returning fallback data instead of AI-generated insights
+- Data type mismatches causing Pydantic validation failures
+
+**Root Cause Analysis**:
+1. **CrewAI JSON Template Conflict**: Task description contained JSON schema with double braces `{{}}` that confused CrewAI's internal parser
+2. **Data Type Mismatches**: CrewAI returning human-readable strings instead of numbers:
+   - `"$8,530"` instead of `8530` (integer)
+   - `"3.5% - 4.5%"` instead of `3.5` (float)
+   - `"Variable"` instead of `null`
+   - `"Undeterminable"` instead of `null`
+3. **CoreLogic Token Bug**: `expires_in` returned as string but `timedelta()` requires integer
+4. **Agent #3 Case Sensitivity**: Previously fixed - listing copywriter expected UPPERCASE keys
+
+**Investigation Steps**:
+1. Added comprehensive DEBUG logging to trace execution flow
+2. Discovered error occurred immediately after `crew.kickoff()` call (within 7ms)
+3. Tested with multiple properties - consistent JSON parsing failure
+4. Analyzed CrewAI output format - found human-readable strings in numeric fields
+5. Identified CoreLogic authentication working but search API returning 404
+
+**Solutions Implemented**:
+
+**Fix 1: Simplified Task Description** (`market_insights_analyst.py` Lines 304-311)
+```python
+# Before (BROKEN):
+# JSON template with {{}} braces confuses CrewAI parser
+Provide your analysis in JSON format matching the MarketInsights schema:
+{{
+  "price_estimate": {{ "estimated_value": number, ... }},
+  ...
+}}
+
+# After (WORKING):
+# Plain text bullet points
+Provide your analysis in valid JSON format with the following structure:
+- price_estimate (object with estimated_value, confidence, ...)
+- market_trend (object with trend_direction, appreciation_rate, ...)
+```
+
+**Fix 2: Data Sanitization Method** (`market_insights_analyst.py` Lines 379-425)
+```python
+def _sanitize_market_data(self, data: Dict) -> Dict:
+    """Convert human-readable strings to proper numeric types"""
+    
+    def parse_number(value):
+        # Handle non-numeric strings
+        if value in ['unknown', 'undeterminable', 'n/a']:
+            return None
+        # Extract numbers from formatted strings
+        # "$8,530" → 8530
+        # "3.5%" → 3.5
+        # "Moderate" → None
+    
+    # Sanitize all numeric fields
+    mt['appreciation_rate'] = parse_number(mt.get('appreciation_rate'))
+    ia['estimated_rental_income'] = parse_number(ia.get('estimated_rental_income'))
+    ia['cap_rate'] = parse_number(ia.get('cap_rate'))
+```
+
+**Fix 3: CoreLogic Token Expiry** (`corelogic_client.py` Line 79)
+```python
+# Before:
+expires_in = token_data.get('expires_in', 3600)  # String from API
+
+# After:
+expires_in = int(token_data.get('expires_in', 3600))  # Convert to int
+```
+
+**Fix 4: Enhanced DEBUG Logging**
+```python
+print(f"[CrewAI] Starting market analysis for: {address}")
+print(f"[DEBUG] About to call crew.kickoff()")
+print(f"[DEBUG] crew.kickoff() completed successfully")
+print(f"[DEBUG] Parsed JSON successfully, sanitizing data types...")
+print(f"[DEBUG] Validation successful!")
+```
+
+**Files Modified**:
+- `backend/app/agents/market_insights_analyst.py` (Added sanitization, simplified schema)
+- `backend/app/clients/corelogic_client.py` (Fixed token expiry bug)
+- `test_e2e.py` (Created comprehensive E2E test script)
+
+**Testing**:
+
+**E2E Test Created** (`test_e2e.py` - 209 lines):
+- Automated login with JWT tokens
+- Property creation with floor plan upload
+- Waits for async AI processing (120s timeout)
+- Verifies all three agents completed
+- Checks CoreLogic vs fallback usage
+- Reports investment scores and pricing
+
+**Manual Test Results**:
+```bash
+Property: 777 Park Avenue, New York, NY 10065
+✅ Floor Plan Analysis: 0 BR, 1 BA, 494 sq ft (studio)
+✅ Market Insights Generated:
+   - Price Estimate: $1,050,000 (Range: $900K-$1.2M)
+   - Confidence: Medium
+   - Market Trend: Stable To Appreciating (6.4% appreciation)
+   - Investment Score: 75/100
+   - Rental Potential: High
+   - Est. Rental Income: $4,500/month
+   - Cap Rate: 3.78%
+✅ Listing Copy: Professional headline and description generated
+✅ Data Source: Tavily web search (CoreLogic fallback working)
+```
+
+**Why This Works**:
+1. **Simplified Schema**: Plain text descriptions don't confuse CrewAI parser
+2. **Robust Sanitization**: Handles all string→number conversions automatically
+3. **Graceful Fallbacks**: Returns `null` for unparseable values instead of crashing
+4. **Fixed Token Bug**: CoreLogic authentication now working correctly
+
+**Lessons Learned**:
+1. 💡 **CrewAI Sensitivity**: Complex JSON templates in task descriptions can break parsing
+2. 💡 **AI Output Variability**: LLMs return human-readable formats; always sanitize
+3. 💡 **Type Safety**: Add explicit type conversions for external API responses
+4. 💡 **DEBUG Logging**: Essential for tracing async workflow execution
+5. 💡 **Fallback Mechanisms**: Web search provides excellent market data when APIs fail
+6. 💡 **E2E Testing**: Automated tests catch integration issues faster than manual testing
+
+**Performance**:
+- Agent #2 execution: ~6-7 minutes (includes web research)
+- Full 3-agent workflow: ~7-8 minutes total
+- Token usage: Reasonable with Gemini 2.5 Flash
+
+**Production Readiness**:
+- ✅ Agent #2 fully functional with data sanitization
+- ✅ CoreLogic token bug fixed
+- ✅ Fallback to web search working perfectly
+- ✅ All three agents producing quality output
+- ✅ E2E test infrastructure in place
+
+**CoreLogic Status**:
+- ✅ OAuth authentication: Working
+- ✅ Property Typeahead API: Working
+- ✅ Property Details API: Working (when property ID known)
+- ❌ Property Search API: Not accessible with current subscription
+- 🔄 **Action Required**: Contact CoreLogic to enable Property Search API
+
+**CoreLogic Support Message Template**:
+```
+Subject: Request to Enable Property Search API
+
+Hello CoreLogic Support,
+
+I'm using the CoreLogic Property API and need to enable the Property Search 
+functionality. Currently, I can successfully:
+- Authenticate via OAuth ✅
+- Use Property Typeahead ✅
+- Retrieve property details (when I have property ID) ✅
+
+However, I need the ability to search for properties by address to obtain 
+the CoreLogic property ID.
+
+Specifically, I need:
+1. Property Search API - Convert address → property ID
+2. AVM (Automated Valuation Model)
+3. RAM (Rent Amount Model)
+4. Comparables API
+5. Sales History
+
+Could you please enable these APIs or advise on the required subscription tier?
+
+Thank you
+```
+
+**Git Commits**:
+```bash
+# To be committed:
+- Fix Agent #2 JSON parsing (simplified task description)
+- Add data sanitization for human-readable AI outputs
+- Fix CoreLogic token expiry bug
+- Create E2E test infrastructure
+- Update documentation
+```
+
+---

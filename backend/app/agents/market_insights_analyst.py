@@ -119,6 +119,30 @@ def get_avm_estimate(clip_id: str) -> str:
         return f"AVM not available: {str(e)}"
 
 
+@tool("CoreLogic Rent Amount Model")
+def get_rental_estimate(clip_id: str) -> str:
+    """
+    Get Rent Amount Model (RAM) from CoreLogic - estimated rental value and investment metrics.
+    
+    Provides:
+    - Estimated monthly rental value
+    - Rental value range (high/low with forecast standard deviation)
+    - CAP rate (Capitalization rate for investment analysis)
+    
+    Args:
+        clip_id: CoreLogic property ID
+    
+    Returns:
+        str: Rental estimates with CAP rate and investment metrics
+    """
+    try:
+        client = CoreLogicClient()
+        ram = client.get_rent_amount_model(clip_id)
+        return json.dumps(ram, indent=2)
+    except Exception as e:
+        return f"Rental estimate not available: {str(e)}"
+
+
 @tool("Tavily Web Search")
 def tavily_search_tool(query: str) -> str:
     """
@@ -184,9 +208,13 @@ class MarketInsightsAnalyst:
         self.corelogic = CoreLogicClient()
         
         # Initialize Gemini 2.5 Flash LLM for CrewAI
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
-            google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY'),
+        # CrewAI uses LiteLLM routing internally
+        # Format: gemini/model-name (as per LiteLLM docs)
+        from crewai import LLM
+        
+        self.llm = LLM(
+            model="gemini/gemini-2.5-flash",  # LiteLLM format for Gemini 2.5 Flash
+            api_key=os.getenv('GEMINI_API_KEY'),  # LiteLLM expects GEMINI_API_KEY
             temperature=0.1
         )
         
@@ -197,8 +225,13 @@ class MarketInsightsAnalyst:
         You specialize in analyzing comparable sales, market conditions, and investment potential 
         to provide data-driven insights for real estate professionals."""
         
-        # Build tools list (Tavily tool added below if API key available)
-        tools = [search_property_data, get_comparable_properties, get_avm_estimate]
+        # Build tools list (CoreLogic tools + optional Tavily)
+        tools = [
+            search_property_data,
+            get_comparable_properties,
+            get_avm_estimate,
+            get_rental_estimate  # NEW: Rent Amount Model for investment analysis
+        ]
         
         # Add Tavily web search tool if API key is available
         if os.getenv('TAVILY_API_KEY'):
@@ -260,50 +293,28 @@ TASKS:
 1. Use the CoreLogic Property Search tool to find property details
 2. Use the CoreLogic Comparables tool to find similar properties
 3. Use the CoreLogic AVM Estimate tool to get automated valuation
-4. If web search is available, research local market trends for the area
-5. Analyze all data and provide:
+4. Use the CoreLogic Rent Amount Model tool to get rental estimates and CAP rate
+5. If web search is available, research local market trends for the area
+6. Analyze all data and provide:
    - Price estimate with confidence level and reasoning
    - Market trend analysis (direction, appreciation, demand, inventory)
-   - Investment analysis (score 1-100, rental potential, cap rate, risks, opportunities)
+   - Investment analysis (score 1-100, rental potential, cap rate from RAM, risks, opportunities)
    - Executive summary with actionable insights
 
-Provide your analysis in JSON format matching the MarketInsights schema:
-{{
-  "price_estimate": {{
-    "estimated_value": number,
-    "confidence": "low/medium/high",
-    "value_range_low": number,
-    "value_range_high": number,
-    "reasoning": "detailed explanation"
-  }},
-  "market_trend": {{
-    "trend_direction": "rising/stable/declining",
-    "appreciation_rate": number or null,
-    "days_on_market_avg": number or null,
-    "inventory_level": "low/balanced/high",
-    "buyer_demand": "low/moderate/high/very_high",
-    "insights": "market insights"
-  }},
-  "investment_analysis": {{
-    "investment_score": number (1-100),
-    "rental_potential": "poor/fair/good/excellent",
-    "estimated_rental_income": number or null,
-    "cap_rate": number or null,
-    "appreciation_potential": "low/moderate/high",
-    "risk_factors": ["risk1", "risk2"],
-    "opportunities": ["opp1", "opp2"]
-  }},
-  "comparable_properties": [],
-  "summary": "executive summary"
-}}
+Provide your analysis in valid JSON format with the following structure:
+- price_estimate (object with estimated_value, confidence, value_range_low, value_range_high, reasoning)
+- market_trend (object with trend_direction, appreciation_rate, days_on_market_avg, inventory_level, buyer_demand, insights)
+- investment_analysis (object with investment_score 1-100, rental_potential, estimated_rental_income, cap_rate, appreciation_potential, risk_factors array, opportunities array)
+- comparable_properties (empty array for now)
+- summary (executive summary string)
 
-Be data-driven and specific. Use actual numbers from CoreLogic data.
+Return ONLY valid JSON matching the MarketInsights schema. Be data-driven and specific.
 """
             
             task = Task(
                 description=task_description,
                 agent=self.agent,
-                expected_output="JSON object with comprehensive market analysis"
+                expected_output="Valid JSON object with comprehensive market analysis matching MarketInsights schema"
             )
             
             # Create crew and execute
@@ -314,26 +325,49 @@ Be data-driven and specific. Use actual numbers from CoreLogic data.
             )
             
             print(f"[CrewAI] Starting market analysis for: {address}")
+            print(f"[DEBUG] About to call crew.kickoff()")
+            
             result = crew.kickoff(inputs={'address': address})
+            
+            print(f"[DEBUG] crew.kickoff() completed successfully")
+            print(f"[DEBUG] Result type: {type(result)}")
             
             # Parse result
             result_text = str(result).strip()
             
-            # Remove markdown code blocks if present
-            if result_text.startswith('```json'):
-                result_text = result_text[7:]
-            if result_text.startswith('```'):
-                result_text = result_text[3:]
-            if result_text.endswith('```'):
-                result_text = result_text[:-3]
+            # DEBUG: Log raw result
+            print(f"[DEBUG] Raw CrewAI result (first 500 chars): {result_text[:500]}")
+            
+            # Extract JSON from markdown code blocks using regex
+            import re
+            json_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', result_text, re.DOTALL)
+            if json_match:
+                result_text = json_match.group(1).strip()
+                print(f"[DEBUG] Extracted from markdown code block")
+            else:
+                # Try to find JSON without markdown (look for { to })
+                json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+                if json_match:
+                    result_text = json_match.group(0).strip()
+                    print(f"[DEBUG] Extracted raw JSON object")
+                else:
+                    print(f"[DEBUG] No JSON pattern found in result")
             
             result_text = result_text.strip()
+            print(f"[DEBUG] Final JSON to parse (first 300 chars): {result_text[:300]}")
             
             # Parse JSON
             insights_data = json.loads(result_text)
             
+            print(f"[DEBUG] Parsed JSON successfully, sanitizing data types...")
+            
+            # Sanitize data to match schema types
+            insights_data = self._sanitize_market_data(insights_data)
+            
             # Validate against schema
             validated = MarketInsights(**insights_data)
+            
+            print(f"[DEBUG] Validation successful!")
             
             return validated.model_dump()
             
@@ -341,6 +375,58 @@ Be data-driven and specific. Use actual numbers from CoreLogic data.
             print(f"CrewAI market analysis error: {str(e)}")
             # Return fallback data
             return self._generate_fallback_insights(property_data, str(e))
+    
+    def _sanitize_market_data(self, data: Dict) -> Dict:
+        """
+        Sanitize market data to match schema types.
+        Converts human-readable strings to proper numeric types.
+        """
+        import re
+        
+        def parse_number(value):
+            """Extract number from string like '$8,530' or '3.5%' or 'Moderate'"""
+            if value is None:
+                return None
+            if isinstance(value, (int, float)):
+                return value
+            if isinstance(value, str):
+                # Handle non-numeric strings
+                lower_val = value.lower()
+                if any(word in lower_val for word in ['unknown', 'undeterminable', 'n/a', 'none', 'null']):
+                    return None
+                # Remove $, %, commas, and extract first number
+                cleaned = re.sub(r'[,$%]', '', value)
+                numbers = re.findall(r'-?\d+\.?\d*', cleaned)
+                if numbers:
+                    try:
+                        return float(numbers[0]) if '.' in numbers[0] else int(numbers[0])
+                    except:
+                        pass
+            return None
+        
+        # Sanitize price_estimate
+        if 'price_estimate' in data and data['price_estimate']:
+            pe = data['price_estimate']
+            if pe.get('estimated_value') is None:
+                pe['estimated_value'] = 0
+            if pe.get('value_range_low') is None:
+                pe['value_range_low'] = 0
+            if pe.get('value_range_high') is None:
+                pe['value_range_high'] = 0
+        
+        # Sanitize market_trend
+        if 'market_trend' in data and data['market_trend']:
+            mt = data['market_trend']
+            mt['appreciation_rate'] = parse_number(mt.get('appreciation_rate'))
+            mt['days_on_market_avg'] = parse_number(mt.get('days_on_market_avg'))
+        
+        # Sanitize investment_analysis
+        if 'investment_analysis' in data and data['investment_analysis']:
+            ia = data['investment_analysis']
+            ia['estimated_rental_income'] = parse_number(ia.get('estimated_rental_income'))
+            ia['cap_rate'] = parse_number(ia.get('cap_rate'))
+        
+        return data
     
     def _generate_insights(self, property_data: Dict, corelogic_data: Dict, 
                           comps: List[Dict], avm: Optional[Dict]) -> Dict[str, Any]:
