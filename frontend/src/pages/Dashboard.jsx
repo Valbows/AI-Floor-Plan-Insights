@@ -367,11 +367,33 @@ const Dashboard = () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get('/api/properties')
+      
+      // Get token from localStorage
+      const token = localStorage.getItem('token')
+      
+      if (!token) {
+        setError('Authentication required. Please log in.')
+        setLoading(false)
+        return
+      }
+      
+      // Make request with explicit Authorization header
+      const response = await axios.get('/api/properties', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       setProperties(response.data.properties || [])
     } catch (err) {
       console.error('Error fetching properties:', err)
-      setError('Failed to load properties. Please try again.')
+      if (err.response?.status === 401) {
+        setError('Session expired. Please log in again.')
+        // Optional: Clear token and redirect to login
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      } else {
+        setError('Failed to load properties. Please try again.')
+      }
     } finally {
       setLoading(false)
     }

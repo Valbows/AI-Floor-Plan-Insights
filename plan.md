@@ -375,22 +375,28 @@
 
 ## Phase 4: Public Report & Buyer Experience
 
-### 4.1 Public API Endpoints
-- [ ] Implement GET `/api/public/report/<token>` (no auth)
-- [ ] Validate token and check expiration
-- [ ] Return sanitized property data (no agent info)
-- [ ] Implement POST `/api/public/report/<token>/log_view`
-- [ ] Add rate limiting for public endpoints
-- [ ] Write public endpoint tests
+### 4.1 Public API Endpoints ✅ October 7, 2025
+- [x] Implement GET `/api/public/report/<token>` (no auth) ✅
+- [x] Validate token and check expiration ✅
+- [x] Return sanitized property data (no agent info) ✅
+- [x] Implement POST `/api/public/report/<token>/log_view` ✅
+- [x] Implement GET `/api/public/report/<token>/validate` (bonus) ✅
+- [ ] Add rate limiting for public endpoints - DEFERRED
+- [ ] Write public endpoint tests - DEFERRED
 
-### 4.2 React - Public Report Page (Core)
-- [ ] Create public report layout component
-- [ ] Implement route `/report/<token>`
-- [ ] Display property header (address, price)
-- [ ] Show floor plan image viewer
-- [ ] Display listing description
-- [ ] Add mobile-responsive design
-- [ ] Write component tests
+### 4.2 React - Public Report Page (Core) ✅ October 7, 2025
+- [x] Create public report layout component ✅
+- [x] Implement route `/report/<token>` ✅
+- [x] Display property header (address, price) ✅
+- [x] Show floor plan image viewer ✅
+- [x] Display listing description ✅
+- [x] Add mobile-responsive design ✅
+- [x] Display key stats (beds, baths, sqft, layout) ✅
+- [x] Show investment score ✅
+- [x] Display market insights ✅
+- [x] Add error handling (404, 410 expired) ✅
+- [x] Implement view logging on page load ✅
+- [ ] Write component tests - DEFERRED
 
 ### 4.3 React - Interactive Features
 - [ ] Create comparable properties section
