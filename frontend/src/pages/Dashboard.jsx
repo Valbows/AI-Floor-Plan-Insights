@@ -338,9 +338,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [sortBy, setSortBy] = useState('newest')
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
   const [listItemsToShow, setListItemsToShow] = useState(10)
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' })
@@ -369,10 +366,10 @@ const Dashboard = () => {
     const address = extractedData.address || property.address || ''
     const matchesSearch = address.toLowerCase().includes(searchTerm.toLowerCase())
     
-    if (filterType === 'all') return matchesSearch
-    if (filterType === 'complete') return matchesSearch && property.status === 'complete'
-    if (filterType === 'processing') return matchesSearch && ['processing', 'parsing_complete', 'enrichment_complete'].includes(property.status)
-    return matchesSearch
+    // Only show properties with extracted data (hide those still in initial processing)
+    const hasBasicData = extractedData.bedrooms || extractedData.bathrooms || extractedData.square_footage
+    
+    return matchesSearch && hasBasicData
   })
 
   // Sort properties
@@ -466,45 +463,36 @@ const Dashboard = () => {
             My Properties
           </h1>
           
-          {/* Filter Buttons */}
-          <div className="flex items-center justify-center space-x-4 mb-8">
-            <button
-              onClick={() => setFilterType('all')}
-              className={`px-6 py-2 rounded-full text-sm transition-colors ${
-                filterType === 'all'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-              }`}
-            >
-              All Properties
-            </button>
-            <button
-              onClick={() => setFilterType('complete')}
-              className={`px-6 py-2 rounded-full text-sm transition-colors ${
-                filterType === 'complete'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-              }`}
-            >
-              Analyzed
-            </button>
-            <button
-              onClick={() => setFilterType('processing')}
-              className={`px-6 py-2 rounded-full text-sm transition-colors ${
-                filterType === 'processing'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-              }`}
-            >
-              Processing
-            </button>
+          {/* Search Bar */}
+          <div className="max-w-md mx-auto mb-8">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by address..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              />
+            </div>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center justify-center space-x-8 text-sm text-gray-600 mb-8">
-            <span>{filteredProperties.length} properties</span>
-            <span>from ${properties.reduce((sum, p) => sum + (p.market_insights?.price_estimate?.estimated_value || 0), 0).toLocaleString()}</span>
-          </div>
+          {filteredProperties.length > 0 && (
+            <div className="flex items-center justify-center space-x-8 text-sm text-gray-600 mb-8">
+              <span>{filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'}</span>
+              {filteredProperties.filter(p => p.status === 'complete').length > 0 && (
+                <>
+                  <span className="text-gray-400">•</span>
+                  <span>Portfolio value: ${filteredProperties
+                    .filter(p => p.status === 'complete')
+                    .reduce((sum, p) => sum + (p.market_insights?.price_estimate?.estimated_value || 0), 0)
+                    .toLocaleString()}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Add Property Button */}
           <Link 
@@ -517,16 +505,15 @@ const Dashboard = () => {
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <select className="border border-gray-300 rounded px-3 py-2 text-sm bg-white">
-              <option>Sort by newest</option>
-              <option>Sort by status</option>
-              <option>Sort by price</option>
-              <option>Sort by size</option>
-              <option>Sort by bedrooms</option>
-            </select>
-          </div>
+        {filteredProperties.length > 0 && (
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                Showing {viewMode === 'list' && sortedProperties.length > listItemsToShow 
+                  ? `${listItemsToShow} of ${sortedProperties.length}` 
+                  : sortedProperties.length} {sortedProperties.length === 1 ? 'property' : 'properties'}
+              </div>
+            </div>
           <div className="flex items-center space-x-2">
             <button 
               onClick={() => setViewMode('grid')}
@@ -554,7 +541,8 @@ const Dashboard = () => {
               </div>
             </button>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (

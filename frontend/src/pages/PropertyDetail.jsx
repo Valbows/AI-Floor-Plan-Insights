@@ -4,7 +4,7 @@ import {
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
   FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone, Check,
-  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye
+  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X
 } from 'lucide-react'
 import axios from 'axios'
 import Chatbot from '../components/Chatbot'
@@ -18,6 +18,12 @@ const PropertyDetail = () => {
   const [activeTab, setActiveTab] = useState('market')
   const [showProgressOverlay, setShowProgressOverlay] = useState(searchParams.get('showProgress') === 'true')
   const [analysisStep, setAnalysisStep] = useState(0)
+  
+  // Edit states
+  const [editMode, setEditMode] = useState(false) // Master edit mode toggle
+  const [editingField, setEditingField] = useState(null) // 'headline', 'description', 'social_facebook', etc.
+  const [editedContent, setEditedContent] = useState({})
+  const [saving, setSaving] = useState(false)
 
   const analysisSteps = [
     { icon: Upload, text: 'Uploading floor plan...', color: 'text-blue-600' },
@@ -105,6 +111,61 @@ const PropertyDetail = () => {
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text)
     alert(`${label} copied to clipboard!`)
+  }
+
+  const startEditing = (field, currentValue) => {
+    setEditingField(field)
+    setEditedContent({ ...editedContent, [field]: currentValue })
+  }
+
+  const cancelEditing = () => {
+    setEditingField(null)
+    setEditedContent({})
+  }
+
+  const saveEdit = async (field) => {
+    setSaving(true)
+    try {
+      // Determine if it's a property detail or listing copy field
+      const isPropertyDetail = ['address', 'square_footage', 'bedrooms', 'bathrooms', 'layout_type'].includes(field)
+      
+      if (isPropertyDetail) {
+        // Update extracted_data in the backend
+        await axios.patch(`/api/properties/${id}/details`, {
+          [field]: editedContent[field]
+        })
+        
+        // Update local state
+        setProperty(prev => ({
+          ...prev,
+          extracted_data: {
+            ...prev.extracted_data,
+            [field]: editedContent[field]
+          }
+        }))
+      } else {
+        // Update listing_copy in the backend
+        await axios.patch(`/api/properties/${id}/listing`, {
+          [field]: editedContent[field]
+        })
+        
+        // Update local state
+        setProperty(prev => ({
+          ...prev,
+          listing_copy: {
+            ...prev.listing_copy,
+            [field]: editedContent[field]
+          }
+        }))
+      }
+      
+      setEditingField(null)
+      alert('Changes saved successfully!')
+    } catch (err) {
+      alert('Failed to save changes. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
@@ -202,6 +263,35 @@ const PropertyDetail = () => {
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <h1 className="text-lg font-medium text-gray-900">Property Details</h1>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    setEditMode(!editMode)
+                    if (editMode) {
+                      setEditingField(null)
+                      setEditedContent({})
+                    }
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    editMode 
+                      ? 'bg-gray-500 text-white hover:bg-gray-600' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {editMode ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+                  <span className="text-sm font-medium">{editMode ? 'Cancel' : 'Edit Property'}</span>
+                </button>
+                {editMode && editingField && (
+                  <button
+                    onClick={() => saveEdit(editingField)}
+                    disabled={saving}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span className="text-sm font-medium">{saving ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
+                )}
+              </div>
             </div>
             {getStatusBadge(property.status)}
           </div>
@@ -230,28 +320,112 @@ const PropertyDetail = () => {
             {/* Property Details Section */}
             <div className="space-y-4">
             {/* Address */}
-            <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Address</h3>
-              <p className="text-sm text-gray-900">
-                {extracted.address || 'Not specified'}
-              </p>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Address</h3>
+                {editMode && (editingField === 'address' ? (
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => saveEdit('address')}
+                      disabled={saving}
+                      className="p-1 bg-green-600 text-white hover:bg-green-700 rounded transition text-xs flex items-center space-x-1"
+                    >
+                      <Save className="w-3 h-3" />
+                      <span>Save</span>
+                    </button>
+                    <button
+                      onClick={cancelEditing}
+                      className="p-1 bg-gray-500 text-white hover:bg-gray-600 rounded transition"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => startEditing('address', extracted.address || '')}
+                    className="p-1 hover:bg-gray-100 rounded transition"
+                    title="Edit address"
+                  >
+                    <Edit2 className="w-3 h-3 text-gray-600" />
+                  </button>
+                ))}
+              </div>
+              {editMode ? (
+                <input
+                  type="text"
+                  value={editingField === 'address' ? editedContent.address : (extracted.address || '')}
+                  onChange={(e) => {
+                    setEditingField('address')
+                    setEditedContent({ ...editedContent, address: e.target.value })
+                  }}
+                  className="w-full text-sm text-gray-900 bg-white border-2 border-blue-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter property address"
+                />
+              ) : (
+                <p className="text-sm text-gray-900">
+                  {extracted.address || 'Not specified'}
+                </p>
+              )}
             </div>
 
             {/* Key Stats - Metrics Card */}
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
-              <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-wider mb-2">Property Metrics</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-wider">Property Metrics</h3>
+                {editMode && <Edit2 className="w-4 h-4 text-blue-700" />}
+              </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-blue-900">Square Footage:</span>
-                  <span className="text-lg font-bold text-blue-900">{extracted.square_footage || 0} sq ft</span>
+                  {editMode ? (
+                    <input
+                      type="number"
+                      value={editingField === 'square_footage' ? editedContent.square_footage : (extracted.square_footage || 0)}
+                      onChange={(e) => {
+                        setEditingField('square_footage')
+                        setEditedContent({ ...editedContent, square_footage: parseInt(e.target.value) || 0 })
+                      }}
+                      className="w-32 text-lg font-bold text-blue-900 bg-white border-2 border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold text-blue-900">{extracted.square_footage || 0} sq ft</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-blue-900">Bedrooms:</span>
-                  <span className="text-lg font-bold text-blue-900">{extracted.bedrooms || 0}</span>
+                  {editMode ? (
+                    <input
+                      type="number"
+                      value={editingField === 'bedrooms' ? editedContent.bedrooms : (extracted.bedrooms || 0)}
+                      onChange={(e) => {
+                        setEditingField('bedrooms')
+                        setEditedContent({ ...editedContent, bedrooms: parseInt(e.target.value) || 0 })
+                      }}
+                      className="w-20 text-lg font-bold text-blue-900 bg-white border-2 border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold text-blue-900">{extracted.bedrooms || 0}</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-blue-900">Bathrooms:</span>
-                  <span className="text-lg font-bold text-blue-900">{extracted.bathrooms || 0}</span>
+                  {editMode ? (
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={editingField === 'bathrooms' ? editedContent.bathrooms : (extracted.bathrooms || 0)}
+                      onChange={(e) => {
+                        setEditingField('bathrooms')
+                        setEditedContent({ ...editedContent, bathrooms: parseFloat(e.target.value) || 0 })
+                      }}
+                      className="w-20 text-lg font-bold text-blue-900 bg-white border-2 border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold text-blue-900">{extracted.bathrooms || 0}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -526,32 +700,115 @@ const PropertyDetail = () => {
                           <FileText className="w-5 h-5 mr-2 text-blue-600" />
                           Listing Headline
                         </h2>
-                        <button
-                          onClick={() => copyToClipboard(extracted.listing_copy.headline, 'Headline')}
-                          className="p-2 hover:bg-blue-100 rounded-lg transition"
-                        >
-                          <Copy className="w-4 h-4 text-blue-600" />
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          {editMode && (editingField === 'headline' ? (
+                            <>
+                              <button
+                                onClick={() => saveEdit('headline')}
+                                disabled={saving}
+                                className="p-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition flex items-center space-x-1"
+                              >
+                                <Save className="w-4 h-4" />
+                                <span className="text-xs">Save</span>
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="p-2 bg-gray-500 text-white hover:bg-gray-600 rounded-lg transition"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => startEditing('headline', extracted.listing_copy.headline)}
+                              className="p-2 hover:bg-blue-100 rounded-lg transition"
+                              title="Edit headline"
+                            >
+                              <Edit2 className="w-4 h-4 text-blue-600" />
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => copyToClipboard(extracted.listing_copy.headline, 'Headline')}
+                            className="p-2 hover:bg-blue-100 rounded-lg transition"
+                            title="Copy to clipboard"
+                          >
+                            <Copy className="w-4 h-4 text-blue-600" />
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-xl font-bold text-blue-900">
-                        {extracted.listing_copy.headline}
-                      </p>
+                      {editMode ? (
+                        <input
+                          type="text"
+                          value={editingField === 'headline' ? editedContent.headline : (extracted.listing_copy.headline || '')}
+                          onChange={(e) => {
+                            setEditingField('headline')
+                            setEditedContent({ ...editedContent, headline: e.target.value })
+                          }}
+                          className="w-full text-xl font-bold text-blue-900 bg-white border-2 border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter listing headline"
+                        />
+                      ) : (
+                        <p className="text-xl font-bold text-blue-900">
+                          {extracted.listing_copy.headline}
+                        </p>
+                      )}
                     </div>
 
                     {/* Description */}
                     <div className="border border-gray-200 rounded-lg p-6">
                       <div className="flex items-center justify-between mb-3">
                         <h2 className="text-lg font-semibold text-gray-900">MLS Description</h2>
-                        <button
-                          onClick={() => copyToClipboard(extracted.listing_copy.description, 'Description')}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition"
-                        >
-                          <Copy className="w-4 h-4 text-gray-600" />
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          {editMode && (editingField === 'description' ? (
+                            <>
+                              <button
+                                onClick={() => saveEdit('description')}
+                                disabled={saving}
+                                className="p-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition flex items-center space-x-1"
+                              >
+                                <Save className="w-4 h-4" />
+                                <span className="text-xs">Save</span>
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="p-2 bg-gray-500 text-white hover:bg-gray-600 rounded-lg transition"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => startEditing('description', extracted.listing_copy.description)}
+                              className="p-2 hover:bg-gray-100 rounded-lg transition"
+                              title="Edit description"
+                            >
+                              <Edit2 className="w-4 h-4 text-gray-600" />
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => copyToClipboard(extracted.listing_copy.description, 'Description')}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition"
+                            title="Copy to clipboard"
+                          >
+                            <Copy className="w-4 h-4 text-gray-600" />
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
-                        {extracted.listing_copy.description}
-                      </p>
+                      {editMode ? (
+                        <textarea
+                          value={editingField === 'description' ? editedContent.description : (extracted.listing_copy.description || '')}
+                          onChange={(e) => {
+                            setEditingField('description')
+                            setEditedContent({ ...editedContent, description: e.target.value })
+                          }}
+                          className="w-full text-sm text-gray-700 bg-white border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500 min-h-[200px]"
+                          placeholder="Enter MLS description"
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                          {extracted.listing_copy.description}
+                        </p>
+                      )}
                     </div>
 
                     {/* Highlights */}
