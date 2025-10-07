@@ -1795,3 +1795,282 @@ Frontend Display (Playwright verification):
 ```
 
 ---
+
+## 2025-10-07 00:50-01:07 EDT - Merge Ariel-Branch: Chatbot + Editing System + UX Improvements
+
+### ✅ Successfully Merged and Deployed
+
+**Objective**: Pull latest frontend enhancements from Ariel-Branch and integrate with Val-Branch backend.
+
+**Ariel-Branch Updates Identified**:
+```bash
+73d6fc7 - Add comprehensive editing system and improve dashboard UX
+2b4f2e2 - Enhance UX with improved chatbot and transparent loading overlay
+082e98e - Refactor Dashboard with table/list view toggle and add AI chatbot
+```
+
+**Merge Process**:
+1. **Fetch Latest**: `git fetch origin`
+2. **Merge with No-Commit**: `git merge origin/Ariel-Branch --no-commit`
+3. **Conflicts Resolved**:
+   - `backend/app/agents/listing_copywriter.py` - Kept Val-Branch (production fixes)
+   - `backend/app/agents/market_insights_analyst.py` - Kept Val-Branch (production fixes)
+   - Strategy: `git checkout --ours` to preserve backend logic
+4. **Rebuild & Test**: Full Docker rebuild + Playwright tests
+5. **Test Suite Updated**: Fixed loading message text and selectors
+
+**Files Changed** (6 files):
+```
+M  backend/app/agents/floor_plan_analyst.py          (GEMINI_API_KEY env var)
+A  frontend/src/components/Chatbot.jsx               (NEW - 173 lines)
+M  frontend/src/pages/Dashboard.jsx                  (Table view + sorting)
+M  frontend/src/pages/NewProperty.jsx                (Enhanced upload)
+M  frontend/src/pages/PropertyDetail.jsx             (Edit mode + overlay)
+M  tests/e2e/test_market_insights_display.spec.js    (Updated assertions)
+```
+
+---
+
+### 🎨 **NEW Features Added**
+
+#### 1. **AI Chatbot Component** (`Chatbot.jsx`)
+```javascript
+// Features:
+- Floating chat widget (bottom-right)
+- 6 suggested questions for common queries
+- Smart bot responses with context
+- Smooth open/close animations
+- Message history with timestamps
+- Auto-shows suggestions after bot responds
+```
+
+**Suggested Questions**:
+- "How do I upload a floor plan?"
+- "What does the AI analyze?"
+- "How accurate are the price estimates?"
+- "Can I export my property data?"
+- "How long does analysis take?"
+- "What file formats are supported?"
+
+#### 2. **Comprehensive Editing System**
+```javascript
+// PropertyDetail enhancements:
+- Edit mode toggle (master switch)
+- Inline editing for:
+  * Property details (address, sqft, beds, baths, layout)
+  * Listing headline
+  * MLS description
+  * Social media captions (Instagram, Facebook, Twitter)
+- Save/Cancel workflow with visual feedback
+- Auto-saves to backend via PATCH requests
+```
+
+**Edit Flow**:
+1. Click "Edit" button → Enters edit mode
+2. Click specific field → Shows editable input
+3. Make changes → Click "Save" or "Cancel"
+4. Backend updates via `/api/properties/{id}/details` or `/api/properties/{id}/listing`
+
+#### 3. **Dashboard Table/List View Toggle**
+```javascript
+// Dashboard improvements:
+- Toggle between card grid and professional table
+- Sortable columns: address, beds, baths, size, price, date, status
+- Expandable rows for detailed info
+- Column headers with sort indicators (↑↓)
+- Fixed width columns for consistent layout
+- Responsive design
+```
+
+**Sortable Columns**:
+- Address (alphabetical)
+- Bedrooms (numeric)
+- Bathrooms (numeric)
+- Layout Type (alphabetical)
+- Square Footage (numeric)
+- Price (numeric)
+- Date Added (chronological)
+- Status (alphabetical)
+
+#### 4. **Animated Progress Overlay**
+```javascript
+// Loading states:
+- Shows during property analysis
+- 4-step animation cycle:
+  1. Upload icon - "Uploading floor plan..."
+  2. Eye icon - "Analyzing layout and rooms..."
+  3. Dollar icon - "Calculating market value..."
+  4. FileText icon - "Generating listing content..."
+- Auto-hides when status = 'complete'
+- Transparent overlay with backdrop blur
+```
+
+---
+
+### 🔧 **Backend Updates**
+
+**Environment Variable Change**:
+```python
+# Before (Val-Branch):
+google_api_key=os.getenv('GOOGLE_GEMINI_API_KEY')
+
+# After (Ariel-Branch standard):
+google_api_key=os.getenv('GEMINI_API_KEY')
+```
+
+**Production Fixes Preserved**:
+- ✅ Agent #2 JSON parsing fixes (simplified task description)
+- ✅ Data sanitization (human-readable outputs)
+- ✅ CoreLogic token expiry bug fix
+- ✅ All Val-Branch backend improvements intact
+
+---
+
+### 🧪 **Test Suite Updates**
+
+**Changes Required**:
+```javascript
+// OLD (Val-Branch UI):
+"Market insights are being analyzed..."
+
+// NEW (Ariel-Branch UI):
+"Processing market insights..."
+
+// Test Updates:
+- Updated loading message assertions
+- Fixed button selector conflicts (use role-based selectors)
+- Added .first() for duplicate heading elements
+```
+
+**Test Results After Merge**:
+```bash
+Running 4 tests using 1 worker
+
+✅ should display market insights in frontend (passed)
+   - Price displayed: $300,000
+   - All market insights sections displayed correctly
+
+✅ should display marketing content tab (passed)
+   - Headline: 0 Bed, 0.0 Bath Home for Sale...
+   - Marketing content displayed correctly
+
+✅ should NOT display loading message for completed property (passed)
+   - No loading message displayed for completed property
+
+✅ should show appropriate message for property without market insights (passed)
+   - Loading message displayed for incomplete property
+
+4 passed (23.2s) ✅
+```
+
+---
+
+### 🚀 **Deployment Process**
+
+**Steps Executed**:
+```bash
+# 1. Stop all services
+docker-compose down
+
+# 2. Rebuild with merged code
+docker-compose up -d --build
+
+# 3. Verify services healthy
+docker-compose ps
+# ✅ Backend: healthy
+# ✅ Celery: healthy
+# ✅ Redis: healthy
+# ✅ Frontend: healthy
+
+# 4. Run test suite
+npx playwright test test_market_insights_display.spec.js
+# ✅ 4/4 tests passing
+
+# 5. Manual verification
+open http://localhost:5173
+# ✅ Chatbot visible
+# ✅ Table view works
+# ✅ All tabs functional
+```
+
+---
+
+### 📊 **Val-Branch Current State**
+
+**Complete Feature Set**:
+- ✅ All Phase 1 & 2 backend functionality
+- ✅ All 3 AI agents (production-ready)
+- ✅ Agent #2 fixes (JSON parsing, data sanitization)
+- ✅ CoreLogic token bug fix
+- ✅ Modern frontend UI (Ariel-Branch base)
+- ✅ **NEW**: AI Chatbot assistant
+- ✅ **NEW**: Comprehensive editing system
+- ✅ **NEW**: Table view with sorting
+- ✅ **NEW**: Animated progress overlays
+- ✅ E2E test infrastructure with Playwright
+- ✅ Automated frontend verification tests
+
+**Git History**:
+```bash
+cc0d7da (HEAD, origin/Val-Branch) ← Merge Ariel-Branch: Add Chatbot, editing system, and UX improvements
+5de555e                             Add Playwright E2E tests for market insights frontend display
+98dffdb                             Update log.md - Add frontend merge notes
+d945c5d                             Merge Ariel-Branch frontend into Val-Branch
+c236a98                             Fix Agent #2 Market Insights (JSON parsing & data sanitization)
+```
+
+---
+
+### 🎯 **User Experience Improvements**
+
+**Before This Merge**:
+- Basic property cards in dashboard
+- View-only property details
+- No user assistance
+- Static loading states
+
+**After This Merge**:
+- ✅ Professional table + card views
+- ✅ Inline editing capabilities
+- ✅ AI chatbot for help
+- ✅ Animated progress feedback
+- ✅ Sortable data columns
+- ✅ Better visual hierarchy
+
+---
+
+### ✅ **Production Readiness**
+
+**System Status**:
+- ✅ Backend: Healthy (all agents working)
+- ✅ Frontend: Healthy (new features functional)
+- ✅ Tests: 4/4 passing
+- ✅ Database: 48/50 properties with complete data
+- ✅ Docker: All containers healthy
+- ✅ GitHub: Pushed to Val-Branch
+
+**User Impact**:
+- **Agents**: Can now edit property details and listings
+- **End Users**: Better UX with chatbot support
+- **Developers**: Clear edit workflows and progress indicators
+- **Stakeholders**: Professional table view for data analysis
+
+---
+
+### 📝 **Lessons Learned**
+
+1. 💡 **Preserve Backend in Merges**: Always use `--ours` for production backend when frontend changes
+2. 💡 **Update Tests After UI Changes**: Loading messages and button text may change
+3. 💡 **Rebuild Docker After Merges**: Ensures all file changes are reflected
+4. 💡 **Test Before Commit**: Run full test suite after merge resolution
+5. 💡 **Use Role Selectors**: More stable than text matching for buttons
+
+---
+
+**Git Commits**:
+```bash
+cc0d7da - ✅ Merge Ariel-Branch: Add Chatbot, editing system, and UX improvements (PUSHED)
+5de555e - ✅ Add Playwright E2E tests for market insights frontend display (PUSHED)
+```
+
+---
