@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2 } from 'lucide-react'
 import axios from 'axios'
+import Chatbot from '../components/Chatbot'
 
 const StatusBadge = ({ status }) => {
   const statusConfig = {
@@ -45,6 +46,170 @@ const StatusBadge = ({ status }) => {
       {config.icon}
       <span>{config.text}</span>
     </span>
+  )
+}
+
+const PropertyTable = ({ properties, sortConfig, onSort }) => {
+  const navigate = useNavigate()
+  const [expandedRows, setExpandedRows] = useState(new Set())
+  
+  const toggleExpand = (propertyId, e) => {
+    e.stopPropagation()
+    setExpandedRows(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(propertyId)) {
+        newSet.delete(propertyId)
+      } else {
+        newSet.add(propertyId)
+      }
+      return newSet
+    })
+  }
+  
+  const SortableHeader = ({ column, label, align = 'left', width }) => {
+    const isSorted = sortConfig.key === column
+    const alignClass = align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
+    
+    return (
+      <th 
+        className={`${alignClass} py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none ${width || ''}`}
+        onClick={() => onSort(column)}
+      >
+        <div className={`inline-flex items-center gap-1 ${align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start'}`}>
+          <span className="whitespace-nowrap">{label}</span>
+          <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center">
+            {isSorted ? (
+              sortConfig.direction === 'asc' ? 
+                <ChevronUp className="w-3 h-3" /> : 
+                <ChevronDown className="w-3 h-3" />
+            ) : (
+              <div className="w-3 h-3" />
+            )}
+          </div>
+        </div>
+      </th>
+    )
+  }
+  
+  return (
+    <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
+      <div className="overflow-x-auto">
+        <table className="w-full" style={{tableLayout: 'fixed', width: '1400px'}}>
+        <thead>
+          <tr className="border-b border-gray-200 bg-gray-50">
+            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{width: '80px'}}>Floor Plan</th>
+            <SortableHeader column="address" label="Address" align="left" width="w-64" />
+            <SortableHeader column="bedrooms" label="Beds" align="center" width="w-20" />
+            <SortableHeader column="bathrooms" label="Baths" align="center" width="w-20" />
+            <SortableHeader column="layout" label="Layout" align="left" width="w-36" />
+            <SortableHeader column="size" label="Size" align="right" width="w-28" />
+            <SortableHeader column="price" label="Price" align="right" width="w-32" />
+            <SortableHeader column="date" label="Date Added" align="left" width="w-28" />
+            <SortableHeader column="status" label="Status" align="center" width="w-36" />
+            <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{width: '80px'}}>Details</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {properties.map((property) => {
+            const extractedData = property.extracted_data || {}
+            const marketData = property.market_insights || {}
+            const address = extractedData.address || property.address || 'Property Address'
+            const price = marketData.price_estimate?.estimated_value || 0
+            const sqft = extractedData.square_footage || 0
+            const bedrooms = extractedData.bedrooms || 0
+            const bathrooms = extractedData.bathrooms || 0
+            
+            const isExpanded = expandedRows.has(property.id)
+            
+            return (
+              <React.Fragment key={property.id}>
+                <tr 
+                  onClick={() => navigate(`/properties/${property.id}`)}
+                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <td className="py-4 px-4" style={{width: '80px', minWidth: '80px'}}>
+                    <div className="w-12 h-12 bg-gray-50 rounded border border-gray-200 flex items-center justify-center flex-shrink-0">
+                      {property.image_url ? (
+                        <img
+                          src={property.image_url}
+                          alt="Floor plan"
+                          className="w-full h-full object-contain p-1"
+                        />
+                      ) : (
+                        <Home className="w-5 h-5 text-gray-300" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-4 px-4" style={{minWidth: '250px'}}>
+                    <p className="text-sm font-medium text-gray-900">{address}</p>
+                  </td>
+                  <td className="py-4 px-4 text-center whitespace-nowrap" style={{width: '80px', minWidth: '80px'}}>
+                    <span className="text-sm text-gray-900">{bedrooms || '-'}</span>
+                  </td>
+                  <td className="py-4 px-4 text-center whitespace-nowrap" style={{width: '80px', minWidth: '80px'}}>
+                    <span className="text-sm text-gray-900">{bathrooms || '-'}</span>
+                  </td>
+                  <td className="py-4 px-4 whitespace-nowrap" style={{minWidth: '150px'}}>
+                    <span className="text-sm text-gray-700">{extractedData.layout_type || '-'}</span>
+                  </td>
+                  <td className="py-4 px-4 text-right whitespace-nowrap" style={{width: '120px', minWidth: '120px'}}>
+                    <span className="text-sm text-gray-900">{sqft > 0 ? `${sqft.toLocaleString()} sq ft` : '-'}</span>
+                  </td>
+                  <td className="py-4 px-4 text-right whitespace-nowrap" style={{width: '130px', minWidth: '130px'}}>
+                    <span className="text-sm font-semibold text-gray-900">{price > 0 ? `$${price.toLocaleString()}` : '-'}</span>
+                  </td>
+                  <td className="py-4 px-4 whitespace-nowrap" style={{width: '110px', minWidth: '110px'}}>
+                    <span className="text-xs text-gray-500">{new Date(property.created_at).toLocaleDateString()}</span>
+                  </td>
+                  <td className="py-4 px-4 whitespace-nowrap" style={{width: '150px', minWidth: '150px'}}>
+                    <div className="flex justify-center">
+                      <StatusBadge status={property.status} />
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 text-center" style={{width: '80px', minWidth: '80px'}}>
+                    <button
+                      onClick={(e) => toggleExpand(property.id, e)}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                      title={isExpanded ? 'Collapse' : 'Expand details'}
+                    >
+                      {isExpanded ? <Minimize2 className="w-4 h-4 text-gray-600" /> : <Maximize2 className="w-4 h-4 text-gray-600" />}
+                    </button>
+                  </td>
+                </tr>
+                {isExpanded && (
+                  <tr className="bg-gray-50">
+                    <td colSpan="10" className="py-4 px-6">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-semibold text-gray-700">Full Address:</span>
+                          <p className="text-gray-900 mt-1">{address}</p>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">Layout Type:</span>
+                          <p className="text-gray-900 mt-1">{extractedData.layout_type || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">Property Details:</span>
+                          <p className="text-gray-900 mt-1">{bedrooms} Beds • {bathrooms} Baths • {sqft > 0 ? `${sqft.toLocaleString()} sq ft` : 'Size pending'}</p>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">Estimated Value:</span>
+                          <p className="text-gray-900 mt-1 font-semibold">{price > 0 ? `$${price.toLocaleString()}` : 'Analyzing...'}</p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            )
+          })}
+        </tbody>
+        </table>
+      </div>
+      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
+        Click <Maximize2 className="w-3 h-3 inline" /> to expand row details • Scroll horizontally if needed
+      </div>
+    </div>
   )
 }
 
@@ -176,6 +341,9 @@ const Dashboard = () => {
   const [filterType, setFilterType] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [sortBy, setSortBy] = useState('newest')
+  const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
+  const [listItemsToShow, setListItemsToShow] = useState(10)
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' })
 
   useEffect(() => {
     fetchProperties()
@@ -206,6 +374,65 @@ const Dashboard = () => {
     if (filterType === 'processing') return matchesSearch && ['processing', 'parsing_complete', 'enrichment_complete'].includes(property.status)
     return matchesSearch
   })
+
+  // Sort properties
+  const sortedProperties = [...filteredProperties].sort((a, b) => {
+    const aData = a.extracted_data || {}
+    const bData = b.extracted_data || {}
+    const aMarket = a.market_insights || {}
+    const bMarket = b.market_insights || {}
+    
+    let aValue, bValue
+    
+    switch (sortConfig.key) {
+      case 'address':
+        aValue = (aData.address || a.address || '').toLowerCase()
+        bValue = (bData.address || b.address || '').toLowerCase()
+        break
+      case 'bedrooms':
+        aValue = aData.bedrooms || 0
+        bValue = bData.bedrooms || 0
+        break
+      case 'bathrooms':
+        aValue = aData.bathrooms || 0
+        bValue = bData.bathrooms || 0
+        break
+      case 'layout':
+        aValue = (aData.layout_type || '').toLowerCase()
+        bValue = (bData.layout_type || '').toLowerCase()
+        break
+      case 'size':
+        aValue = aData.square_footage || 0
+        bValue = bData.square_footage || 0
+        break
+      case 'price':
+        aValue = aMarket.price_estimate?.estimated_value || 0
+        bValue = bMarket.price_estimate?.estimated_value || 0
+        break
+      case 'date':
+        aValue = new Date(a.created_at).getTime()
+        bValue = new Date(b.created_at).getTime()
+        break
+      case 'status':
+        const statusOrder = { complete: 4, enrichment_complete: 3, parsing_complete: 2, processing: 1, failed: 0 }
+        aValue = statusOrder[a.status] || 0
+        bValue = statusOrder[b.status] || 0
+        break
+      default:
+        return 0
+    }
+    
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
+    return 0
+  })
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }))
+  }
 
 
   return (
@@ -301,7 +528,12 @@ const Dashboard = () => {
             </select>
           </div>
           <div className="flex items-center space-x-2">
-            <button className="p-2 bg-gray-900 text-white rounded">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'grid' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
               <div className="grid grid-cols-2 gap-0.5 w-4 h-4">
                 <div className="bg-current rounded-sm"></div>
                 <div className="bg-current rounded-sm"></div>
@@ -309,7 +541,12 @@ const Dashboard = () => {
                 <div className="bg-current rounded-sm"></div>
               </div>
             </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600 rounded">
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'list' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
               <div className="flex flex-col space-y-1 w-4 h-4">
                 <div className="h-0.5 bg-current rounded"></div>
                 <div className="h-0.5 bg-current rounded"></div>
@@ -361,12 +598,35 @@ const Dashboard = () => {
         )}
 
 
-        {/* Properties Grid */}
-        {!loading && !error && filteredProperties.length > 0 && (
+        {/* Properties Grid View */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredProperties.map((property) => (
+            {sortedProperties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
+          </div>
+        )}
+
+        {/* Properties Table/List View */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'list' && (
+          <div className="space-y-6">
+            <PropertyTable 
+              properties={sortedProperties.slice(0, listItemsToShow)} 
+              sortConfig={sortConfig}
+              onSort={handleSort}
+            />
+            
+            {/* Load More Button */}
+            {sortedProperties.length > listItemsToShow && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setListItemsToShow(prev => prev + 10)}
+                  className="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Load More ({sortedProperties.length - listItemsToShow} remaining)
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -391,6 +651,9 @@ const Dashboard = () => {
         )}
 
       </main>
+      
+      {/* Chatbot */}
+      <Chatbot />
       
       {/* Footer */}
       <footer className="mt-20 py-16 bg-black w-full">
