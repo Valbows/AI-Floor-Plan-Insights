@@ -11,6 +11,7 @@ const Chatbot = () => {
     }
   ])
   const [inputValue, setInputValue] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(true)
 
   const suggestedQuestions = [
     "How do I upload a floor plan?",
@@ -32,6 +33,7 @@ const Chatbot = () => {
     }
     setMessages(prev => [...prev, userMessage])
     setInputValue('')
+    setShowSuggestions(false)
 
     // Simulate bot response
     setTimeout(() => {
@@ -41,6 +43,11 @@ const Chatbot = () => {
         timestamp: new Date()
       }
       setMessages(prev => [...prev, botResponse])
+      
+      // Show suggestions again after bot responds
+      setTimeout(() => {
+        setShowSuggestions(true)
+      }, 100)
     }, 500)
   }
 
@@ -121,14 +128,14 @@ const Chatbot = () => {
             ))}
 
             {/* Suggested Questions */}
-            {messages.length === 1 && (
-              <div className="space-y-2">
-                <p className="text-xs text-gray-500 font-semibold">Suggested questions:</p>
+            {showSuggestions && (
+              <div className="space-y-2 animate-fadeIn">
+                <p className="text-xs text-gray-500 font-semibold">💡 Suggested questions:</p>
                 {suggestedQuestions.map((question, index) => (
                   <button
                     key={index}
                     onClick={() => handleQuestionClick(question)}
-                    className="w-full text-left text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-2 rounded border border-gray-200 transition-colors"
+                    className="w-full text-left text-xs bg-blue-50 hover:bg-blue-100 text-blue-900 px-3 py-2 rounded-lg border border-blue-200 transition-colors"
                   >
                     {question}
                   </button>

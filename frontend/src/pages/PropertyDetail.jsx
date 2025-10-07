@@ -1,23 +1,62 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { 
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
   FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone, Check,
-  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield
+  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye
 } from 'lucide-react'
 import axios from 'axios'
+import Chatbot from '../components/Chatbot'
 
 const PropertyDetail = () => {
   const { id } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('market')
+  const [showProgressOverlay, setShowProgressOverlay] = useState(searchParams.get('showProgress') === 'true')
+  const [analysisStep, setAnalysisStep] = useState(0)
+
+  const analysisSteps = [
+    { icon: Upload, text: 'Uploading floor plan...', color: 'text-blue-600' },
+    { icon: Eye, text: 'Analyzing layout and rooms...', color: 'text-purple-600' },
+    { icon: DollarSign, text: 'Calculating market value...', color: 'text-green-600' },
+    { icon: FileText, text: 'Generating listing content...', color: 'text-orange-600' }
+  ]
 
   useEffect(() => {
     loadProperty()
   }, [id])
+
+  // Progress overlay animation
+  useEffect(() => {
+    if (showProgressOverlay) {
+      const interval = setInterval(() => {
+        setAnalysisStep(prev => {
+          if (prev < analysisSteps.length - 1) {
+            return prev + 1
+          }
+          // Keep cycling through steps while processing
+          return 0
+        })
+      }, 3000) // 3 seconds per step
+      
+      return () => clearInterval(interval)
+    }
+  }, [showProgressOverlay])
+
+  // Hide overlay when property analysis is complete
+  useEffect(() => {
+    if (showProgressOverlay && property?.status === 'complete') {
+      // Wait a moment to show completion, then hide overlay
+      setTimeout(() => {
+        setShowProgressOverlay(false)
+        setSearchParams({}) // Remove query param
+      }, 1500)
+    }
+  }, [property?.status, showProgressOverlay])
 
   // Separate effect for polling
   useEffect(() => {
@@ -94,7 +133,67 @@ const PropertyDetail = () => {
   const extracted = property.extracted_data || {}
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white relative">
+      {/* Progress Overlay */}
+      {showProgressOverlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="text-center mb-8">
+              <Loader className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Analyzing Your Property</h3>
+              <p className="text-gray-600">Please wait while our AI processes your floor plan...</p>
+            </div>
+
+            {/* Analysis Steps */}
+            <div className="space-y-4">
+              {analysisSteps.map((step, index) => {
+                const StepIcon = step.icon
+                const isActive = index === analysisStep
+                const isCompleted = index < analysisStep
+                
+                return (
+                  <div 
+                    key={index}
+                    className={`flex items-center space-x-3 p-4 rounded-lg transition-all ${
+                      isActive ? 'bg-blue-50 border-2 border-blue-200 scale-105' : 
+                      isCompleted ? 'bg-green-50 border-2 border-green-200' : 
+                      'bg-gray-50 border-2 border-gray-200 opacity-50'
+                    }`}
+                  >
+                    <div className={`flex-shrink-0 ${isActive ? 'animate-pulse' : ''}`}>
+                      {isCompleted ? (
+                        <CheckCircle className="w-6 h-6 text-green-600" />
+                      ) : (
+                        <StepIcon className={`w-6 h-6 ${isActive ? step.color : 'text-gray-400'}`} />
+                      )}
+                    </div>
+                    <p className={`text-sm font-medium ${
+                      isActive ? 'text-gray-900' : 
+                      isCompleted ? 'text-green-700' : 
+                      'text-gray-500'
+                    }`}>
+                      {step.text}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-6">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${((analysisStep + 1) / analysisSteps.length) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Step {analysisStep + 1} of {analysisSteps.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -396,8 +495,20 @@ const PropertyDetail = () => {
                   </>
                 ) : (
                   <div className="border border-gray-200 rounded-lg p-12 text-center">
-                    <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">Market insights are being analyzed...</p>
+                    <Loader className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Analyzing Market Data</h3>
+                    <p className="text-sm text-gray-600 mb-4">Our AI is gathering comparable properties and calculating market value...</p>
+                    <div className="max-w-md mx-auto">
+                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span>Floor plan analysis complete</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs text-blue-600 mt-2">
+                        <Loader className="w-4 h-4 animate-spin" />
+                        <span>Processing market insights...</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4">This usually takes 1-2 minutes</p>
                   </div>
                 )}
               </div>
@@ -565,8 +676,20 @@ const PropertyDetail = () => {
                   </>
                 ) : (
                   <div className="border border-gray-200 rounded-lg p-12 text-center">
-                    <Megaphone className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">Marketing content is being generated...</p>
+                    <Loader className="w-12 h-12 text-orange-600 mx-auto mb-4 animate-spin" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Creating Marketing Content</h3>
+                    <p className="text-sm text-gray-600 mb-4">Our AI is crafting compelling listing descriptions and social media posts...</p>
+                    <div className="max-w-md mx-auto">
+                      <div className="flex items-center space-x-2 text-xs text-gray-500">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span>Floor plan analysis complete</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs text-orange-600 mt-2">
+                        <Loader className="w-4 h-4 animate-spin" />
+                        <span>Generating marketing content...</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4">This usually takes 30-60 seconds</p>
                   </div>
                 )}
               </div>
@@ -574,6 +697,9 @@ const PropertyDetail = () => {
           </div>
         </div>
       </main>
+      
+      {/* Chatbot */}
+      <Chatbot />
     </div>
   )
 }

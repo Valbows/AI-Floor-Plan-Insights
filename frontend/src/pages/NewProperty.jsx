@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Home, ArrowLeft, Upload, AlertCircle, CheckCircle } from 'lucide-react'
+import { Home, ArrowLeft, Upload, AlertCircle, CheckCircle, Loader, Eye, DollarSign, FileText } from 'lucide-react'
 import axios from 'axios'
+import Chatbot from '../components/Chatbot'
 
 const NewProperty = () => {
   const [file, setFile] = useState(null)
@@ -10,7 +11,29 @@ const NewProperty = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [analysisStep, setAnalysisStep] = useState(0)
   const navigate = useNavigate()
+
+  const analysisSteps = [
+    { icon: Upload, text: 'Uploading floor plan...', color: 'text-blue-600' },
+    { icon: Eye, text: 'Analyzing layout and rooms...', color: 'text-purple-600' },
+    { icon: DollarSign, text: 'Calculating market value...', color: 'text-green-600' },
+    { icon: FileText, text: 'Generating listing content...', color: 'text-orange-600' }
+  ]
+
+  useEffect(() => {
+    if (loading && !success) {
+      const interval = setInterval(() => {
+        setAnalysisStep(prev => {
+          if (prev < analysisSteps.length - 1) {
+            return prev + 1
+          }
+          return prev
+        })
+      }, 2500) // 2.5 seconds per step
+      return () => clearInterval(interval)
+    }
+  }, [loading, success])
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -59,27 +82,29 @@ const NewProperty = () => {
 
     setLoading(true)
     setError('')
+    setAnalysisStep(0)
+    const startTime = Date.now()
 
     try {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('address', address)
 
+      // Start API call and immediately redirect with loading state
       const response = await axios.post('/api/properties/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
 
-      setSuccess(true)
+      const propertyId = response.data.property.id
       
-      // Redirect to property detail after 2 seconds
-      setTimeout(() => {
-        navigate(`/properties/${response.data.property.id}`)
-      }, 2000)
+      // Immediately redirect to property page with loading overlay
+      navigate(`/properties/${propertyId}?showProgress=true`)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to upload floor plan')
       setLoading(false)
+      setAnalysisStep(0)
     }
   }
 
@@ -97,14 +122,7 @@ const NewProperty = () => {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {success ? (
-          <div className="card text-center py-12">
-            <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Successful!</h3>
-            <p className="text-gray-600 mb-4">AI is analyzing your floor plan...</p>
-            <p className="text-sm text-gray-500">Redirecting to property details...</p>
-          </div>
-        ) : (
+        {!loading && (
           <div className="card">
             {error && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
@@ -186,6 +204,9 @@ const NewProperty = () => {
           </div>
         )}
       </main>
+      
+      {/* Chatbot */}
+      <Chatbot />
     </div>
   )
 }
