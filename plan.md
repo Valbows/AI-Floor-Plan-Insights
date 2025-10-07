@@ -363,13 +363,13 @@
 - [x] Implement export analytics to CSV ✅
 - [ ] Write component tests - DEFERRED
 
-### 3.5 Shareable Link Generation
-- [ ] Implement POST `/api/properties/<id>/generate-link`
-- [ ] Create unique shareable URL tokens
-- [ ] Store token in database with expiration
-- [ ] Add copy-to-clipboard UI
-- [ ] Display shareable URL on dashboard
-- [ ] Write link generation tests
+### 3.5 Shareable Link Generation ✅ October 7, 2025
+- [x] Implement POST `/api/properties/<id>/generate-link` ✅
+- [x] Create unique shareable URL tokens ✅
+- [x] Store token in database with expiration ✅
+- [x] Add copy-to-clipboard UI ✅
+- [x] Display shareable URL in PropertyDetail ✅
+- [ ] Write link generation tests - DEFERRED
 
 ---
 

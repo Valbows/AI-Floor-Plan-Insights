@@ -30,6 +30,12 @@ const PropertyDetail = () => {
   // Delete states
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  
+  // Share states
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareableLink, setShareableLink] = useState(null)
+  const [generatingLink, setGeneratingLink] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const analysisSteps = [
     { icon: Upload, text: 'Uploading floor plan...', color: 'text-blue-600' },
@@ -187,6 +193,43 @@ const PropertyDetail = () => {
     }
   }
 
+  const handleGenerateLink = async () => {
+    setGeneratingLink(true)
+    try {
+      // First try to get existing link
+      try {
+        const response = await axios.get(`/api/properties/${id}/shareable-link`)
+        setShareableLink(response.data)
+      } catch (err) {
+        // If no link exists, generate new one
+        if (err.response?.status === 404) {
+          const response = await axios.post(`/api/properties/${id}/generate-link`)
+          setShareableLink(response.data)
+        } else {
+          throw err
+        }
+      }
+    } catch (err) {
+      alert('Failed to generate shareable link. Please try again.')
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  const handleCopyLink = () => {
+    if (shareableLink) {
+      navigator.clipboard.writeText(shareableLink.shareable_url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const openShareModal = async () => {
+    setShowShareModal(true)
+    // Load existing link when modal opens
+    await handleGenerateLink()
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -299,6 +342,14 @@ const PropertyDetail = () => {
                 >
                   {editMode ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
                   <span className="text-sm font-medium">{editMode ? 'Cancel' : 'Edit Property'}</span>
+                </button>
+                <button
+                  onClick={openShareModal}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                  disabled={editMode}
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Share</span>
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(true)}
@@ -995,6 +1046,105 @@ const PropertyDetail = () => {
           </div>
         </div>
       </main>
+      
+      {/* Share Link Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <Share2 className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Share Property</h3>
+                  <p className="text-sm text-gray-600">Generate a public link to share this property</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowShareModal(false)
+                  setCopied(false)
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {generatingLink ? (
+              <div className="text-center py-8">
+                <Loader className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
+                <p className="text-sm text-gray-600">Generating shareable link...</p>
+              </div>
+            ) : shareableLink ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Shareable Link
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={shareableLink.shareable_url}
+                      readOnly
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    <button
+                      onClick={handleCopyLink}
+                      className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+                        copied
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span className="text-sm font-medium">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          <span className="text-sm font-medium">Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Expires:</span>
+                    <span className="font-medium text-gray-900">
+                      {new Date(shareableLink.expires_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    This link will remain active for 30 days. Anyone with this link can view the property details.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowShareModal(false)
+                      setCopied(false)
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm text-gray-600">Failed to load shareable link.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (

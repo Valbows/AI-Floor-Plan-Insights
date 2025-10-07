@@ -98,10 +98,27 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{width: '80px'}}>Floor Plan</th>
-            <SortableHeader column="address" label="Address" align="left" width="w-64" />
-            <SortableHeader column="bedrooms" label="Beds" align="center" width="w-20" />
-            <SortableHeader column="bathrooms" label="Baths" align="center" width="w-20" />
-            <SortableHeader column="layout" label="Layout" align="left" width="w-36" />
+            <SortableHeader column="address" label="Address" align="left" />
+            <SortableHeader column="bedrooms" label="Beds" align="center" />
+            <SortableHeader column="bathrooms" label="Baths" align="center" />
+            <th 
+              className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+              style={{width: '200px', maxWidth: '200px'}}
+              onClick={() => onSort('layout')}
+            >
+              <div className="inline-flex items-center gap-1">
+                <span className="whitespace-nowrap">Layout</span>
+                <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center">
+                  {sortConfig.key === 'layout' ? (
+                    sortConfig.direction === 'asc' ? 
+                      <ChevronUp className="w-3 h-3" /> : 
+                      <ChevronDown className="w-3 h-3" />
+                  ) : (
+                    <div className="w-3 h-3" />
+                  )}
+                </div>
+              </div>
+            </th>
             <SortableHeader column="size" label="Size" align="right" width="w-28" />
             <SortableHeader column="price" label="Price" align="right" width="w-32" />
             <SortableHeader column="date" label="Date Added" align="left" width="w-28" />
@@ -112,7 +129,7 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
         <tbody className="divide-y divide-gray-100">
           {properties.map((property) => {
             const extractedData = property.extracted_data || {}
-            const marketData = property.market_insights || {}
+            const marketData = extractedData.market_insights || {}
             const address = extractedData.address || property.address || 'Property Address'
             const price = marketData.price_estimate?.estimated_value || 0
             const sqft = extractedData.square_footage || 0
@@ -149,8 +166,8 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
                   <td className="py-4 px-4 text-center whitespace-nowrap" style={{width: '80px', minWidth: '80px'}}>
                     <span className="text-sm text-gray-900">{bathrooms || '-'}</span>
                   </td>
-                  <td className="py-4 px-4 whitespace-nowrap" style={{minWidth: '150px'}}>
-                    <span className="text-sm text-gray-700">{extractedData.layout_type || '-'}</span>
+                  <td className="py-4 px-4" style={{width: '200px', maxWidth: '200px'}}>
+                    <span className="text-sm text-gray-700 line-clamp-2">{extractedData.layout_type || '-'}</span>
                   </td>
                   <td className="py-4 px-4 text-right whitespace-nowrap" style={{width: '120px', minWidth: '120px'}}>
                     <span className="text-sm text-gray-900">{sqft > 0 ? `${sqft.toLocaleString()} sq ft` : '-'}</span>
@@ -216,7 +233,7 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
 const PropertyCard = ({ property }) => {
   const navigate = useNavigate()
   const extractedData = property.extracted_data || {}
-  const marketData = property.market_insights || {}
+  const marketData = extractedData.market_insights || {}
   const address = extractedData.address || property.address || 'Property Address'
   const price = marketData.price_estimate?.estimated_value || 0
   const sqft = extractedData.square_footage || 0

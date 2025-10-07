@@ -570,3 +570,136 @@ def get_property_analytics(property_id):
             'error': 'Failed to fetch analytics',
             'message': str(e)
         }), 500
+
+
+@properties_bp.route('/<property_id>/generate-link', methods=['POST'])
+@jwt_required()
+def generate_shareable_link(property_id):
+    """
+    Generate a unique shareable link for a property
+    
+    Headers:
+        Authorization: Bearer <jwt_token>
+    
+    Request Body (optional):
+        {
+            "expiration_days": 30  // Default: 30 days
+        }
+    
+    Returns:
+        {
+            "token": "abc123...",
+            "shareable_url": "http://localhost:5173/report/abc123...",
+            "expires_at": "2025-02-01T00:00:00Z"
+        }
+    """
+    try:
+        user_id = get_jwt_identity()
+        
+        # Verify property ownership
+        db = get_db()
+        result = db.table('properties').select('id').eq('id', property_id).eq('agent_id', user_id).execute()
+        
+        if not result.data:
+            return jsonify({
+                'error': 'Property not found',
+                'message': 'Property does not exist or you do not have access'
+            }), 404
+        
+        # Get expiration days from request or use default
+        data = request.get_json() or {}
+        expiration_days = data.get('expiration_days', 30)
+        
+        # Generate unique token
+        token = str(uuid.uuid4())
+        
+        # Calculate expiration date
+        from datetime import timedelta
+        expires_at = datetime.utcnow() + timedelta(days=expiration_days)
+        
+        # Store token in database
+        admin_db = get_admin_db()
+        admin_db.table('shareable_links').insert({
+            'property_id': property_id,
+            'token': token,
+            'expires_at': expires_at.isoformat(),
+            'created_by': user_id,
+            'is_active': True
+        }).execute()
+        
+        # Build shareable URL (use environment variable or default)
+        base_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+        shareable_url = f"{base_url}/report/{token}"
+        
+        return jsonify({
+            'token': token,
+            'shareable_url': shareable_url,
+            'expires_at': expires_at.isoformat()
+        }), 201
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to generate shareable link',
+            'message': str(e)
+        }), 500
+
+
+@properties_bp.route('/<property_id>/shareable-link', methods=['GET'])
+@jwt_required()
+def get_shareable_link(property_id):
+    """
+    Get the active shareable link for a property
+    
+    Headers:
+        Authorization: Bearer <jwt_token>
+    
+    Returns:
+        {
+            "token": "abc123...",
+            "shareable_url": "http://localhost:5173/report/abc123...",
+            "expires_at": "2025-02-01T00:00:00Z",
+            "created_at": "2025-01-01T00:00:00Z"
+        }
+        
+        Or 404 if no active link exists
+    """
+    try:
+        user_id = get_jwt_identity()
+        
+        # Verify property ownership
+        db = get_db()
+        result = db.table('properties').select('id').eq('id', property_id).eq('agent_id', user_id).execute()
+        
+        if not result.data:
+            return jsonify({
+                'error': 'Property not found',
+                'message': 'Property does not exist or you do not have access'
+            }), 404
+        
+        # Fetch active shareable link
+        link_result = db.table('shareable_links').select('*').eq('property_id', property_id).eq('is_active', True).order('created_at', desc=True).limit(1).execute()
+        
+        if not link_result.data:
+            return jsonify({
+                'error': 'No shareable link found',
+                'message': 'No active shareable link exists for this property'
+            }), 404
+        
+        link = link_result.data[0]
+        
+        # Build shareable URL
+        base_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+        shareable_url = f"{base_url}/report/{link['token']}"
+        
+        return jsonify({
+            'token': link['token'],
+            'shareable_url': shareable_url,
+            'expires_at': link['expires_at'],
+            'created_at': link.get('created_at', link['expires_at'])
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to fetch shareable link',
+            'message': str(e)
+        }), 500
