@@ -514,3 +514,59 @@ def delete_property(property_id):
             'error': 'Failed to delete property',
             'message': str(e)
         }), 500
+
+
+@properties_bp.route('/<property_id>/analytics', methods=['GET'])
+@jwt_required()
+def get_property_analytics(property_id):
+    """
+    Get analytics data for a property (view count, timestamps, user agents)
+    
+    Headers:
+        Authorization: Bearer <jwt_token>
+    
+    Returns:
+        {
+            "view_count": 10,
+            "unique_viewers": 5,
+            "views": [
+                {
+                    "viewed_at": "2025-01-01T10:00:00Z",
+                    "user_agent": "Mozilla/5.0...",
+                    "ip_address": "192.168.1.1"
+                }
+            ]
+        }
+    """
+    try:
+        user_id = get_jwt_identity()
+        
+        # Verify property ownership
+        db = get_db()
+        result = db.table('properties').select('id').eq('id', property_id).eq('agent_id', user_id).execute()
+        
+        if not result.data:
+            return jsonify({
+                'error': 'Property not found',
+                'message': 'Property does not exist or you do not have access'
+            }), 404
+        
+        # Fetch analytics from property_views table
+        views_result = db.table('property_views').select('*').eq('property_id', property_id).order('viewed_at', desc=True).execute()
+        
+        views = views_result.data if views_result.data else []
+        
+        # Calculate unique viewers (by IP address)
+        unique_ips = set(view.get('ip_address') for view in views if view.get('ip_address'))
+        
+        return jsonify({
+            'view_count': len(views),
+            'unique_viewers': len(unique_ips),
+            'views': views
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to fetch analytics',
+            'message': str(e)
+        }), 500

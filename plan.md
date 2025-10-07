@@ -353,15 +353,15 @@
 - [x] Display parsed floor plan data (from Phase 1)
 - [x] Display market insights and comps (from Phase 1)
 - [x] Show suggested price range (from Phase 1)
-- [ ] Add property deletion with confirmation - DEFERRED
+- [x] Add property deletion with confirmation ✅ October 7, 2025
 
-### 3.4 React Dashboard - Analytics
-- [ ] Create analytics view component
-- [ ] Display view count and timestamps
-- [ ] Add simple charts (views over time)
-- [ ] Show user agent statistics
-- [ ] Implement export analytics to CSV
-- [ ] Write component tests
+### 3.4 React Dashboard - Analytics ✅ October 7, 2025
+- [x] Create analytics view component ✅
+- [x] Display view count and timestamps ✅
+- [x] Add simple charts (views over time) ✅
+- [x] Show user agent statistics ✅
+- [x] Implement export analytics to CSV ✅
+- [ ] Write component tests - DEFERRED
 
 ### 3.5 Shareable Link Generation
 - [ ] Implement POST `/api/properties/<id>/generate-link`

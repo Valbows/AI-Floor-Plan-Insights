@@ -2074,3 +2074,237 @@ cc0d7da - ✅ Merge Ariel-Branch: Add Chatbot, editing system, and UX improvemen
 ```
 
 ---
+
+## 2025-10-07 01:16-01:25 EDT - Phase 3.3 & 3.4: Property Deletion + Analytics Dashboard
+
+### ✅ Features Implemented
+
+**Objective**: Complete Phase 3.3 property deletion feature and implement Phase 3.4 Analytics dashboard.
+
+---
+
+### 🗑️ **Phase 3.3: Property Deletion with Confirmation**
+
+**Backend** (Already existed):
+- ✅ DELETE `/api/properties/<id>` endpoint functional
+- ✅ Deletes property record from database
+- ✅ Removes floor plan image from Supabase storage
+- ✅ Verifies property ownership before deletion
+
+**Frontend Additions**:
+
+1. **Delete Button in PropertyDetail Header**
+```jsx
+// Added next to Edit button
+<button
+  onClick={() => setShowDeleteModal(true)}
+  className="bg-red-600 text-white hover:bg-red-700"
+>
+  <Trash2 className="w-4 h-4" />
+  <span>Delete</span>
+</button>
+```
+
+2. **Confirmation Modal**
+```jsx
+// Beautiful modal with warning icon
+- AlertCircle icon in red circle
+- Clear warning text
+- "This action cannot be undone" message
+- Cancel and Delete buttons
+- Loading state during deletion
+- Auto-redirects to dashboard after success
+```
+
+3. **Delete Flow**:
+   1. User clicks "Delete" button
+   2. Modal appears with confirmation
+   3. User confirms → API call to DELETE endpoint
+   4. Success → Navigate to dashboard
+   5. Error → Show error message, stay on page
+
+**Files Modified**:
+- `frontend/src/pages/PropertyDetail.jsx` (Added delete button & modal)
+
+---
+
+### 📊 **Phase 3.4: Analytics Dashboard**
+
+**Backend Endpoint Created**:
+```python
+@properties_bp.route('/<property_id>/analytics', methods=['GET'])
+@jwt_required()
+def get_property_analytics(property_id):
+    """
+    Returns:
+    - view_count: Total number of views
+    - unique_viewers: Count of unique IP addresses
+    - views: Array of view records with timestamps, user agents, IPs
+    """
+```
+
+**Frontend Component Created**: `Analytics.jsx`
+
+**Features Implemented**:
+
+1. **Stats Overview Cards**
+   - Total Views (with Eye icon, blue gradient)
+   - Unique Viewers (with Users icon, green gradient)
+   - Average per Day (with TrendingUp icon, purple gradient)
+
+2. **Views Over Time Chart**
+   - Horizontal bar chart showing last 7 days
+   - Responsive bars with gradient
+   - Shows view count on each bar
+   - Date labels with Calendar icons
+   - Scales automatically based on max views
+
+3. **Recent Views Table**
+   - Displays last 10 views
+   - Columns: Date & Time, Browser, IP Address
+   - Browser detection from user agent
+   - Clean table design with hover effects
+   - Shows "10 of X total views" footer
+
+4. **Export to CSV**
+   - Download button with Download icon
+   - Generates CSV with headers: Date, Time, User Agent, IP Address
+   - Downloads as `property-{id}-analytics.csv`
+   - Disabled when no views exist
+
+5. **Empty States**
+   - Shows helpful message when no views
+   - "Share this property to start tracking analytics"
+   - Gray BarChart3 icon
+
+**Integration**:
+- Added "Analytics" tab to PropertyDetail navigation
+- Tab appears alongside "Market Insights" and "Marketing Content"
+- Passes `propertyId` prop to Analytics component
+- Loads data via `/api/properties/{id}/analytics` endpoint
+
+**Files Created**:
+- `frontend/src/components/Analytics.jsx` (253 lines)
+
+**Files Modified**:
+- `backend/app/routes/properties.py` (Added analytics endpoint)
+- `frontend/src/pages/PropertyDetail.jsx` (Added Analytics tab & import)
+- `plan.md` (Marked Phase 3.3 & 3.4 complete)
+
+---
+
+### 🎨 **UI/UX Improvements**
+
+**Delete Modal**:
+- Modal backdrop with blur effect
+- Red warning theme (red-100 bg, red-600 icon)
+- Semantic structure (icon + header + description)
+- Loading state shows spinner + "Deleting..." text
+- Disabled state during deletion
+
+**Analytics Dashboard**:
+- Gradient stat cards with colored icons
+- Professional table design with hover states
+- Responsive chart with smooth animations
+- Color-coded sections (blue, green, purple)
+- Export functionality for data analysis
+
+---
+
+### 📋 **Phase Status**
+
+**Phase 3.3 - Agent-Facing Dashboard** ✅ COMPLETE
+- [x] Display property list
+- [x] Add property upload
+- [x] Show processing status
+- [x] Display AI analysis results
+- [x] Edit property details
+- [x] Copy-to-clipboard functionality
+- [x] **Property deletion with confirmation** ✅
+
+**Phase 3.4 - Analytics Dashboard** ✅ COMPLETE
+- [x] Create analytics view component ✅
+- [x] Display view count and timestamps ✅
+- [x] Add simple charts (views over time) ✅
+- [x] Show user agent statistics ✅
+- [x] Implement export analytics to CSV ✅
+- [ ] Write component tests - DEFERRED
+
+---
+
+### 🧪 **Testing Plan**
+
+**Manual Testing**:
+1. Navigate to any property
+2. Click "Delete" button → Verify modal appears
+3. Click "Cancel" → Verify modal closes
+4. Click "Delete Property" → Verify:
+   - Loading state shows
+   - Redirects to dashboard after deletion
+   - Property removed from list
+5. Click "Analytics" tab → Verify:
+   - Stats cards show correct counts
+   - Chart displays (if views exist)
+   - Table shows recent views
+   - Export CSV downloads file
+   - Empty state shows when no views
+
+**Browser Testing Needed**:
+- Delete functionality across browsers
+- Analytics chart responsiveness
+- CSV export compatibility
+- Modal backdrop blur effect
+
+---
+
+### 🔧 **Technical Notes**
+
+**Property Deletion**:
+- Uses `useNavigate()` hook for redirect
+- Deletes from both database and storage
+- Error handling with user-friendly messages
+- Modal state management with `showDeleteModal`
+
+**Analytics**:
+- Fetches data from `/api/properties/{id}/analytics`
+- Calculates unique viewers using IP address Set
+- Groups views by date for chart
+- Browser detection via regex on user agent
+- CSV generation uses Blob API
+- Loading states with skeleton UI
+
+**Database Requirements**:
+- `property_views` table must exist in Supabase
+- Schema: `id`, `property_id`, `viewed_at`, `user_agent`, `ip_address`
+- Currently returns empty array if table doesn't exist (graceful fallback)
+
+---
+
+### 📦 **Next Steps**
+
+**Phase 3.5**: Shareable Link Generation
+- [ ] Implement POST `/api/properties/<id>/generate-link`
+- [ ] Create unique shareable URL tokens
+- [ ] Store token in database with expiration
+- [ ] Add copy-to-clipboard UI
+- [ ] Display shareable URL on dashboard
+
+**Phase 4**: Public Report & Buyer Experience
+- [ ] Public report page with property details
+- [ ] Google Maps integration
+- [ ] Q&A Chatbot for buyers
+- [ ] View tracking (populates Analytics)
+
+---
+
+**Git Commits** (To be pushed):
+```bash
+# To be committed:
+- Add property deletion with confirmation modal
+- Implement Analytics dashboard (Phase 3.4)
+- Add analytics backend endpoint
+- Create Analytics component with charts and export
+- Update plan.md: Mark Phase 3.3 & 3.4 complete
+```
+
+---

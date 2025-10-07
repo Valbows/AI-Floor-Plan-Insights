@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { 
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
   FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone, Check,
-  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X
+  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2
 } from 'lucide-react'
 import axios from 'axios'
 import Chatbot from '../components/Chatbot'
+import Analytics from '../components/Analytics'
 
 const PropertyDetail = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -24,6 +26,10 @@ const PropertyDetail = () => {
   const [editingField, setEditingField] = useState(null) // 'headline', 'description', 'social_facebook', etc.
   const [editedContent, setEditedContent] = useState({})
   const [saving, setSaving] = useState(false)
+  
+  // Delete states
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const analysisSteps = [
     { icon: Upload, text: 'Uploading floor plan...', color: 'text-blue-600' },
@@ -168,6 +174,19 @@ const PropertyDetail = () => {
     }
   }
 
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await axios.delete(`/api/properties/${id}`)
+      // Redirect to dashboard after successful deletion
+      navigate('/dashboard')
+    } catch (err) {
+      alert('Failed to delete property. Please try again.')
+      setDeleting(false)
+      setShowDeleteModal(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -280,6 +299,14 @@ const PropertyDetail = () => {
                 >
                   {editMode ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
                   <span className="text-sm font-medium">{editMode ? 'Cancel' : 'Edit Property'}</span>
+                </button>
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  disabled={editMode}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Delete</span>
                 </button>
                 {editMode && editingField && (
                   <button
@@ -511,6 +538,16 @@ const PropertyDetail = () => {
                   }`}
                 >
                   Marketing Content
+                </button>
+                <button
+                  onClick={() => setActiveTab('analytics')}
+                  className={`pb-3 font-medium text-sm transition-colors border-b-2 ${
+                    activeTab === 'analytics'
+                      ? 'border-gray-900 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Analytics
                 </button>
               </div>
             </div>
@@ -951,9 +988,64 @@ const PropertyDetail = () => {
                 )}
               </div>
             )}
+
+            {activeTab === 'analytics' && (
+              <Analytics propertyId={id} />
+            )}
           </div>
         </div>
       </main>
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-start mb-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  Delete Property?
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to delete this property? This action cannot be undone. 
+                  All property data, floor plans, and analysis will be permanently removed.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
+              >
+                {deleting ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Property</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Chatbot */}
       <Chatbot />
