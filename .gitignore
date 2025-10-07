@@ -48,7 +48,6 @@ env/
 .coverage
 htmlcov/
 *.cover
-.hypothesis/
 *.log
 
 # ================================
@@ -58,12 +57,18 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# ================================
+# Playwright
+# ================================
+test-results/
+playwright-report/
+playwright/.cache/
 .pnp
 .pnp.js
 frontend/build/
 frontend/dist/
 frontend/.env.local
-frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
 
