@@ -104,7 +104,7 @@ const PropertyDetail = () => {
       'processing': { icon: Loader, color: 'text-white', bg: '#666666', text: 'Processing' },
       'parsing_complete': { icon: Clock, color: 'text-white', bg: '#666666', text: 'Floor Plan Complete' },
       'enrichment_complete': { icon: BarChart3, color: 'text-white', bg: '#666666', text: 'Market Analysis Complete' },
-      'complete': { icon: CheckCircle, color: 'text-white', bg: '#22C55E', text: 'All Complete' },
+      'complete': { icon: CheckCircle, color: 'text-white', bg: '#000000', text: 'All Complete' },
       'failed': { icon: XCircle, color: 'text-white', bg: '#FF5959', text: 'Failed' },
       'enrichment_failed': { icon: AlertCircle, color: 'text-white', bg: '#FF5959', text: 'Market Data Failed' },
     }
@@ -112,8 +112,8 @@ const PropertyDetail = () => {
     const Icon = badge.icon
     
     return (
-      <span className="inline-flex items-center px-3 py-1 text-xs font-bold uppercase" style={{background: badge.bg, color: '#FFFFFF', borderRadius: '4px', letterSpacing: '1px'}}>
-        <Icon className="w-4 h-4 mr-1" />
+      <span className="inline-flex items-center px-4 py-2 text-xs font-black uppercase shadow-sm" style={{background: badge.bg, color: '#FFFFFF', borderRadius: '6px', letterSpacing: '1.5px'}}>
+        <Icon className="w-4 h-4 mr-2" />
         {badge.text}
       </span>
     )
@@ -558,25 +558,25 @@ const PropertyDetail = () => {
 
             {/* Layout Type */}
             {extracted.layout_type && (
-              <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Layout Type</h3>
-                <p className="text-sm text-gray-900">{extracted.layout_type}</p>
+              <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Layout Type</h3>
+                <p className="text-sm leading-relaxed" style={{color: '#000000'}}>{extracted.layout_type}</p>
               </div>
             )}
 
             {/* Features */}
             {extracted.features && extracted.features.length > 0 && (
-              <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Features</h3>
-                <ul className="space-y-1">
+              <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Features</h3>
+                <ul className="space-y-1.5">
                   {extracted.features.slice(0, 6).map((feature, index) => (
-                    <li key={index} className="flex items-start text-xs text-gray-700">
-                      <span className="text-gray-400 mr-2">•</span>
-                      <span>{feature}</span>
+                    <li key={index} className="flex items-start text-sm">
+                      <span className="mr-2" style={{color: '#FF5959'}}>•</span>
+                      <span style={{color: '#000000'}}>{feature}</span>
                     </li>
                   ))}
                   {extracted.features.length > 6 && (
-                    <li className="text-xs text-gray-500 italic">+{extracted.features.length - 6} more</li>
+                    <li className="text-xs font-medium" style={{color: '#666666'}}>+{extracted.features.length - 6} more</li>
                   )}
                 </ul>
               </div>
@@ -584,19 +584,19 @@ const PropertyDetail = () => {
 
             {/* Room Facilities - Icon Grid */}
             {extracted.rooms && extracted.rooms.length > 0 && (
-              <div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Room Facilities</h3>
+              <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                <h3 className="text-xs font-bold uppercase mb-3" style={{color: '#666666', letterSpacing: '1px'}}>Room Facilities</h3>
                 <div className="grid grid-cols-4 gap-2">
                   {extracted.rooms.slice(0, 8).map((room, index) => (
-                    <div key={index} className="flex flex-col items-center text-center p-2 hover:bg-gray-50 rounded transition-colors">
-                      <div className="w-8 h-8 mb-1 text-gray-400">
+                    <div key={index} className="flex flex-col items-center text-center p-2 rounded transition-colors" style={{background: '#FFFFFF'}} onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'} onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}>
+                      <div className="w-8 h-8 mb-1" style={{color: '#FF5959'}}>
                         {room.type.toLowerCase().includes('bed') && <Bed className="w-full h-full" />}
                         {room.type.toLowerCase().includes('bath') && <Bath className="w-full h-full" />}
                         {room.type.toLowerCase().includes('living') && <Home className="w-full h-full" />}
                         {room.type.toLowerCase().includes('kitchen') && <UtensilsCrossed className="w-full h-full" />}
                         {!['bed', 'bath', 'living', 'kitchen'].some(t => room.type.toLowerCase().includes(t)) && <Maximize className="w-full h-full" />}
                       </div>
-                      <p className="text-xs text-gray-600 truncate w-full">{room.type}</p>
+                      <p className="text-xs font-medium truncate w-full" style={{color: '#000000'}}>{room.type}</p>
                     </div>
                   ))}
                 </div>
@@ -883,14 +883,16 @@ const PropertyDetail = () => {
                               <button
                                 onClick={() => saveEdit('headline')}
                                 disabled={saving}
-                                className="p-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition flex items-center space-x-1"
+                                className="p-2 text-white transition flex items-center space-x-1"
+                                style={{background: saving ? '#CCCCCC' : '#22C55E', borderRadius: '4px'}}
                               >
                                 <Save className="w-4 h-4" />
-                                <span className="text-xs">Save</span>
+                                <span className="text-xs font-bold">Save</span>
                               </button>
                               <button
                                 onClick={cancelEditing}
-                                className="p-2 bg-gray-500 text-white hover:bg-gray-600 rounded-lg transition"
+                                className="p-2 text-white transition"
+                                style={{background: '#666666', borderRadius: '4px'}}
                               >
                                 <X className="w-4 h-4" />
                               </button>
@@ -898,18 +900,24 @@ const PropertyDetail = () => {
                           ) : (
                             <button
                               onClick={() => startEditing('headline', extracted.listing_copy.headline)}
-                              className="p-2 hover:bg-blue-100 rounded-lg transition"
+                              className="p-2 transition"
+                              style={{borderRadius: '4px', color: '#FF5959'}}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                               title="Edit headline"
                             >
-                              <Edit2 className="w-4 h-4 text-blue-600" />
+                              <Edit2 className="w-4 h-4" />
                             </button>
                           ))}
                           <button
                             onClick={() => copyToClipboard(extracted.listing_copy.headline, 'Headline')}
-                            className="p-2 hover:bg-blue-100 rounded-lg transition"
+                            className="p-2 transition"
+                            style={{borderRadius: '4px', color: '#FF5959'}}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                             title="Copy to clipboard"
                           >
-                            <Copy className="w-4 h-4 text-blue-600" />
+                            <Copy className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -921,34 +929,37 @@ const PropertyDetail = () => {
                             setEditingField('headline')
                             setEditedContent({ ...editedContent, headline: e.target.value })
                           }}
-                          className="w-full text-xl font-bold text-blue-900 bg-white border-2 border-blue-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full text-xl font-bold bg-white px-4 py-2 focus:outline-none"
+                          style={{border: '2px solid #FF5959', borderRadius: '4px', color: '#000000'}}
                           placeholder="Enter listing headline"
                         />
                       ) : (
-                        <p className="text-xl font-bold text-blue-900">
+                        <p className="text-xl font-bold" style={{color: '#000000'}}>
                           {extracted.listing_copy.headline}
                         </p>
                       )}
                     </div>
 
                     {/* Description */}
-                    <div className="border border-gray-200 rounded-lg p-6">
+                    <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                       <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-lg font-semibold text-gray-900">MLS Description</h2>
+                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>MLS Description</h2>
                         <div className="flex items-center space-x-2">
                           {editMode && (editingField === 'description' ? (
                             <>
                               <button
                                 onClick={() => saveEdit('description')}
                                 disabled={saving}
-                                className="p-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition flex items-center space-x-1"
+                                className="p-2 text-white transition flex items-center space-x-1"
+                                style={{background: saving ? '#CCCCCC' : '#22C55E', borderRadius: '4px'}}
                               >
                                 <Save className="w-4 h-4" />
-                                <span className="text-xs">Save</span>
+                                <span className="text-xs font-bold">Save</span>
                               </button>
                               <button
                                 onClick={cancelEditing}
-                                className="p-2 bg-gray-500 text-white hover:bg-gray-600 rounded-lg transition"
+                                className="p-2 text-white transition"
+                                style={{background: '#666666', borderRadius: '4px'}}
                               >
                                 <X className="w-4 h-4" />
                               </button>
@@ -956,18 +967,24 @@ const PropertyDetail = () => {
                           ) : (
                             <button
                               onClick={() => startEditing('description', extracted.listing_copy.description)}
-                              className="p-2 hover:bg-gray-100 rounded-lg transition"
+                              className="p-2 transition"
+                              style={{borderRadius: '4px', color: '#FF5959'}}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                               title="Edit description"
                             >
-                              <Edit2 className="w-4 h-4 text-gray-600" />
+                              <Edit2 className="w-4 h-4" />
                             </button>
                           ))}
                           <button
                             onClick={() => copyToClipboard(extracted.listing_copy.description, 'Description')}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition"
+                            className="p-2 transition"
+                            style={{borderRadius: '4px', color: '#FF5959'}}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                             title="Copy to clipboard"
                           >
-                            <Copy className="w-4 h-4 text-gray-600" />
+                            <Copy className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -978,11 +995,12 @@ const PropertyDetail = () => {
                             setEditingField('description')
                             setEditedContent({ ...editedContent, description: e.target.value })
                           }}
-                          className="w-full text-sm text-gray-700 bg-white border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-500 min-h-[200px]"
+                          className="w-full text-sm bg-white px-4 py-3 focus:outline-none min-h-[200px]"
+                          style={{border: '2px solid #FF5959', borderRadius: '4px', color: '#000000'}}
                           placeholder="Enter MLS description"
                         />
                       ) : (
-                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                        <p className="text-sm whitespace-pre-line leading-relaxed" style={{color: '#000000'}}>
                           {extracted.listing_copy.description}
                         </p>
                       )}
@@ -990,13 +1008,13 @@ const PropertyDetail = () => {
 
                     {/* Highlights */}
                     {extracted.listing_copy.highlights?.length > 0 && (
-                      <div className="border border-gray-200 rounded-lg p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-3">Key Highlights</h2>
+                      <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                        <h2 className="text-lg font-black uppercase mb-3" style={{color: '#000000', letterSpacing: '1px'}}>Key Highlights</h2>
                         <ul className="space-y-2">
                           {extracted.listing_copy.highlights.map((highlight, idx) => (
                             <li key={idx} className="flex items-start text-sm">
-                              <Star className="w-4 h-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
-                              <span className="text-gray-700">{highlight}</span>
+                              <Star className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{color: '#FF5959'}} />
+                              <span style={{color: '#000000'}}>{highlight}</span>
                             </li>
                           ))}
                         </ul>
@@ -1173,13 +1191,13 @@ const PropertyDetail = () => {
 
             {generatingLink ? (
               <div className="text-center py-8">
-                <Loader className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
-                <p className="text-sm text-gray-600">Generating shareable link...</p>
+                <Loader className="w-8 h-8 animate-spin mx-auto mb-4" style={{color: '#FF5959'}} />
+                <p className="text-sm" style={{color: '#666666'}}>Generating shareable link...</p>
               </div>
             ) : shareableLink ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold uppercase mb-2" style={{color: '#000000', letterSpacing: '1px'}}>
                     Shareable Link
                   </label>
                   <div className="flex items-center space-x-2">
@@ -1187,39 +1205,44 @@ const PropertyDetail = () => {
                       type="text"
                       value={shareableLink.shareable_url}
                       readOnly
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="flex-1 px-4 py-2 text-sm focus:outline-none"
+                      style={{border: '2px solid #000000', borderRadius: '4px', background: '#F6F1EB', color: '#000000'}}
                     />
                     <button
                       onClick={handleCopyLink}
-                      className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
-                        copied
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-green-600 text-white hover:bg-green-700'
-                      }`}
+                      className="px-4 py-2 transition-all flex items-center space-x-2 font-bold uppercase text-sm"
+                      style={{
+                        background: copied ? '#F0FDF4' : '#FF5959',
+                        color: copied ? '#22C55E' : '#FFFFFF',
+                        borderRadius: '4px',
+                        letterSpacing: '1px'
+                      }}
+                      onMouseEnter={(e) => {if (!copied) {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-1px)'}}}
+                      onMouseLeave={(e) => {if (!copied) {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'}}}
                     >
                       {copied ? (
                         <>
                           <Check className="w-4 h-4" />
-                          <span className="text-sm font-medium">Copied!</span>
+                          <span>Copied!</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-4 h-4" />
-                          <span className="text-sm font-medium">Copy</span>
+                          <span>Copy</span>
                         </>
                       )}
                     </button>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="rounded-lg p-4 space-y-2" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Expires:</span>
-                    <span className="font-medium text-gray-900">
+                    <span style={{color: '#666666'}}>Expires:</span>
+                    <span className="font-bold" style={{color: '#000000'}}>
                       {new Date(shareableLink.expires_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs" style={{color: '#666666'}}>
                     This link will remain active for 30 days. Anyone with this link can view the property details.
                   </p>
                 </div>

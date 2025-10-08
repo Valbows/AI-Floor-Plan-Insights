@@ -91,55 +91,58 @@ const Analytics = ({ propertyId }) => {
     <div className="space-y-6">
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card bg-gradient-to-br from-blue-50 to-blue-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">Total Views</p>
-              <p className="text-3xl font-bold text-blue-900">{totalViews}</p>
+        <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-xs font-bold uppercase mb-2 whitespace-nowrap" style={{color: '#666666', letterSpacing: '1px'}}>Total Views</p>
+              <p className="text-4xl font-black" style={{color: '#000000'}}>{totalViews}</p>
             </div>
-            <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center">
-              <Eye className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="card bg-gradient-to-br from-green-50 to-green-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-600 font-medium mb-1">Unique Viewers</p>
-              <p className="text-3xl font-bold text-green-900">{uniqueViewers}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
-              <Users className="w-6 h-6 text-green-600" />
+            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{background: '#F6F1EB'}}>
+              <Eye className="w-7 h-7" style={{color: '#FF5959'}} />
             </div>
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-purple-50 to-purple-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-purple-600 font-medium mb-1">Avg. per Day</p>
-              <p className="text-3xl font-bold text-purple-900">
+        <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-xs font-bold uppercase mb-2 whitespace-nowrap" style={{color: '#666666', letterSpacing: '1px'}}>Unique Viewers</p>
+              <p className="text-4xl font-black" style={{color: '#000000'}}>{uniqueViewers}</p>
+            </div>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{background: '#F6F1EB'}}>
+              <Users className="w-7 h-7" style={{color: '#FF5959'}} />
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-xs font-bold uppercase mb-2 whitespace-nowrap" style={{color: '#666666', letterSpacing: '1px'}}>Avg. per Day</p>
+              <p className="text-4xl font-black" style={{color: '#000000'}}>
                 {chartData.length > 0 ? Math.round(totalViews / chartData.length) : 0}
               </p>
             </div>
-            <div className="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
+            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" style={{background: '#F6F1EB'}}>
+              <TrendingUp className="w-7 h-7" style={{color: '#FF5959'}} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Views Chart */}
-      <div className="card">
+      <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+          <h3 className="text-lg font-black uppercase flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
+            <BarChart3 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
             Views Over Time (Last 7 Days)
           </h3>
           <button
             onClick={exportToCSV}
-            className="flex items-center space-x-2 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 text-sm font-bold uppercase transition-all"
+            style={{background: views.length === 0 ? '#CCCCCC' : 'transparent', color: views.length === 0 ? '#666666' : '#000000', border: `2px solid ${views.length === 0 ? '#CCCCCC' : '#000000'}`, borderRadius: '4px', letterSpacing: '1px', cursor: views.length === 0 ? 'not-allowed' : 'pointer'}}
+            onMouseEnter={(e) => {if (views.length > 0) {e.currentTarget.style.background = '#000000'; e.currentTarget.style.color = '#FFFFFF'}}}
+            onMouseLeave={(e) => {if (views.length > 0) {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#000000'}}}
             disabled={views.length === 0}
           >
             <Download className="w-4 h-4" />
@@ -155,12 +158,12 @@ const Analytics = ({ propertyId }) => {
                   <Calendar className="w-3 h-3 mr-1" />
                   {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
-                <div className="flex-1 bg-gray-100 rounded-full h-8 overflow-hidden">
+                <div className="flex-1 rounded-full h-8 overflow-hidden" style={{background: '#E5E5E5'}}>
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-full flex items-center justify-end pr-3 transition-all duration-500"
-                    style={{ width: `${(count / maxViews) * 100}%`, minWidth: '40px' }}
+                    className="h-full flex items-center justify-end pr-3 transition-all duration-500"
+                    style={{ width: `${(count / maxViews) * 100}%`, minWidth: '40px', background: '#FF5959' }}
                   >
-                    <span className="text-sm font-semibold text-white">{count}</span>
+                    <span className="text-sm font-bold text-white">{count}</span>
                   </div>
                 </div>
               </div>
@@ -176,15 +179,15 @@ const Analytics = ({ propertyId }) => {
 
       {/* Recent Views Table */}
       {views.length > 0 && (
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Views</h3>
+        <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+          <h3 className="text-lg font-black uppercase mb-4" style={{color: '#000000', letterSpacing: '1px'}}>Recent Views</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Date & Time</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Browser</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Location</th>
+                <tr style={{borderBottom: '2px solid #E5E5E5'}}>
+                  <th className="text-left py-3 px-4 text-xs font-bold uppercase" style={{color: '#666666', letterSpacing: '1px'}}>Date & Time</th>
+                  <th className="text-left py-3 px-4 text-xs font-bold uppercase" style={{color: '#666666', letterSpacing: '1px'}}>Browser</th>
+                  <th className="text-left py-3 px-4 text-xs font-bold uppercase" style={{color: '#666666', letterSpacing: '1px'}}>Location</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
