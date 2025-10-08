@@ -22,6 +22,7 @@ import {
   Send,
   Building2
 } from 'lucide-react'
+import PropertyMap from '../components/PropertyMap'
 
 const PublicReport = () => {
   const { token } = useParams()
@@ -475,6 +476,20 @@ const PublicReport = () => {
             <p className="text-gray-700 whitespace-pre-line leading-relaxed">
               {marketInsights.market_overview}
             </p>
+          </div>
+        )}
+
+        {/* Property Map */}
+        {address && (
+          <div className="mb-6">
+            <PropertyMap
+              address={address}
+              propertyData={{
+                bedrooms: bedrooms,
+                bathrooms: bathrooms,
+                square_footage: sqft
+              }}
+            />
           </div>
         )}
 

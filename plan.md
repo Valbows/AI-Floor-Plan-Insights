@@ -408,13 +408,15 @@
 - [x] **BONUS**: Performance optimization - Public URLs (94% faster Dashboard) ✅
 - [x] Fix Share button authentication issue ✅
 
-### 4.4 Google Maps Integration
-- [ ] Create Maps component wrapper
-- [ ] Display property location marker
-- [ ] Add nearby amenities markers (schools, stores)
-- [ ] Implement address geocoding
-- [ ] Add satellite/street view toggle
-- [ ] Write Maps component tests
+### 4.4 Google Maps Integration ⚠️ October 7, 2025 (Code Ready, Disabled)
+- [x] Create Maps component wrapper ✅
+- [x] Display property location marker (green) ✅
+- [x] Add nearby amenities markers (schools-blue, stores-red) ✅
+- [x] Implement address geocoding ✅
+- [x] Add satellite/street view toggle ✅
+- [x] Write Maps component tests (5/6 E2E tests passing) ✅
+- [ ] **STATUS**: Code complete but temporarily disabled due to Google Maps API key configuration issues
+- [ ] **TO ENABLE**: Configure API key restrictions in Google Cloud Console, then uncomment in PublicReport.jsx
 
 ### 4.5 Q&A Chatbot
 - [ ] Design chatbot UI component
