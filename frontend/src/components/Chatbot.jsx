@@ -81,7 +81,10 @@ const Chatbot = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-110 z-50"
+          className="fixed bottom-6 right-6 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-110 z-50"
+          style={{background: '#FF5959'}}
+          onMouseEnter={(e) => e.currentTarget.style.background = '#E54545'}
+          onMouseLeave={(e) => e.currentTarget.style.background = '#FF5959'}
           aria-label="Open chat"
         >
           <MessageCircle className="w-6 h-6" />
@@ -90,34 +93,39 @@ const Chatbot = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-lg shadow-2xl flex flex-col z-50 border border-gray-200">
+        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white flex flex-col z-50" style={{borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', border: '2px solid #000000'}}>
           {/* Header */}
-          <div className="bg-blue-600 text-white px-4 py-3 rounded-t-lg flex items-center justify-between">
+          <div className="bg-black text-white px-4 py-3 flex items-center justify-between" style={{borderTopLeftRadius: '10px', borderTopRightRadius: '10px', borderBottom: '4px solid #FF5959'}}>
             <div className="flex items-center space-x-2">
-              <MessageCircle className="w-5 h-5" />
-              <span className="font-semibold">AI Assistant</span>
+              <MessageCircle className="w-5 h-5" style={{color: '#FF5959'}} />
+              <span className="font-black uppercase tracking-tight" style={{letterSpacing: '1px'}}>AI Assistant</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="hover:bg-blue-700 rounded p-1 transition-colors"
+              className="rounded p-1 transition-colors"
+              style={{color: '#FF5959'}}
+              onMouseEnter={(e) => {e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}}
+              onMouseLeave={(e) => {e.currentTarget.style.background = 'transparent'}}
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{background: '#F6F1EB'}}>
             {messages.map((message, index) => (
               <div
                 key={index}
                 className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    message.type === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
+                  className="max-w-[80%] px-4 py-2"
+                  style={{
+                    background: message.type === 'user' ? '#FF5959' : '#FFFFFF',
+                    color: message.type === 'user' ? '#FFFFFF' : '#000000',
+                    borderRadius: '8px',
+                    border: message.type === 'user' ? 'none' : '1px solid #E5E5E5'
+                  }}
                 >
                   <p className="text-sm">{message.text}</p>
                   <span className="text-xs opacity-70 mt-1 block">
@@ -130,12 +138,15 @@ const Chatbot = () => {
             {/* Suggested Questions */}
             {showSuggestions && (
               <div className="space-y-2 animate-fadeIn">
-                <p className="text-xs text-gray-500 font-semibold">💡 Suggested questions:</p>
+                <p className="text-xs font-bold uppercase" style={{color: '#666666', letterSpacing: '1px'}}>💡 Suggested questions:</p>
                 {suggestedQuestions.map((question, index) => (
                   <button
                     key={index}
                     onClick={() => handleQuestionClick(question)}
-                    className="w-full text-left text-xs bg-blue-50 hover:bg-blue-100 text-blue-900 px-3 py-2 rounded-lg border border-blue-200 transition-colors"
+                    className="w-full text-left text-xs px-3 py-2 transition-all"
+                    style={{background: '#FFFFFF', color: '#000000', borderRadius: '4px', border: '1px solid #E5E5E5'}}
+                    onMouseEnter={(e) => {e.currentTarget.style.background = '#FFF5F5'; e.currentTarget.style.borderColor = '#FF5959'}}
+                    onMouseLeave={(e) => {e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E5E5E5'}}
                   >
                     {question}
                   </button>
@@ -145,7 +156,7 @@ const Chatbot = () => {
           </div>
 
           {/* Input */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="p-4" style={{borderTop: '2px solid #E5E5E5', background: '#FFFFFF'}}>
             <div className="flex space-x-2">
               <input
                 type="text"
@@ -153,11 +164,17 @@ const Chatbot = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
                 placeholder="Type your message..."
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-4 py-2 text-sm focus:outline-none transition-colors"
+                style={{border: '2px solid #000000', borderRadius: '4px'}}
+                onFocus={(e) => {e.target.style.borderColor = '#FF5959'; e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.1)'}}
+                onBlur={(e) => {e.target.style.borderColor = '#000000'; e.target.style.boxShadow = 'none'}}
               />
               <button
                 onClick={() => handleSendMessage(inputValue)}
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 transition-colors"
+                className="text-white px-4 py-2 transition-all"
+                style={{background: '#FF5959', borderRadius: '4px'}}
+                onMouseEnter={(e) => {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-1px)'}}
+                onMouseLeave={(e) => {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'}}
               >
                 <Send className="w-4 h-4" />
               </button>

@@ -66,7 +66,7 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
     })
   }
   
-  const SortableHeader = ({ column, label, align = 'left', width }) => {
+  const SortableHeader = ({ column, label, align = 'left', width, style }) => {
     const isSorted = sortConfig.key === column
     const alignClass = align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
     
@@ -74,6 +74,7 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
       <th 
         className={`${alignClass} py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none ${width || ''}`}
         onClick={() => onSort(column)}
+        style={style}
       >
         <div className={`inline-flex items-center gap-1 ${align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start'}`}>
           <span className="whitespace-nowrap">{label}</span>
@@ -94,13 +95,13 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
   return (
     <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
       <div className="overflow-x-auto">
-        <table className="w-full" style={{tableLayout: 'fixed', width: '1400px'}}>
+        <table className="w-full" style={{tableLayout: 'fixed'}}>
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{width: '80px'}}>Floor Plan</th>
-            <SortableHeader column="address" label="Address" align="left" />
-            <SortableHeader column="bedrooms" label="Beds" align="center" />
-            <SortableHeader column="bathrooms" label="Baths" align="center" />
+            <SortableHeader column="address" label="Address" align="left" style={{width: '200px', maxWidth: '200px'}} />
+            <SortableHeader column="bedrooms" label="Beds" align="center" style={{width: '60px', maxWidth: '60px'}} />
+            <SortableHeader column="bathrooms" label="Baths" align="center" style={{width: '60px', maxWidth: '60px'}} />
             <th 
               className="text-left py-3 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
               style={{width: '200px', maxWidth: '200px'}}
@@ -119,9 +120,9 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
                 </div>
               </div>
             </th>
-            <SortableHeader column="size" label="Size" align="right" width="w-28" />
+            <SortableHeader column="size" label="Size" align="right" style={{width: '100px', maxWidth: '100px'}} />
             <SortableHeader column="price" label="Price" align="right" width="w-32" />
-            <SortableHeader column="date" label="Date Added" align="left" width="w-28" />
+            <SortableHeader column="date" label="Date Added" align="left" style={{width: '90px', maxWidth: '90px'}} />
             <SortableHeader column="status" label="Status" align="center" width="w-36" />
             <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{width: '80px'}}>Details</th>
           </tr>
@@ -157,25 +158,25 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
                       )}
                     </div>
                   </td>
-                  <td className="py-4 px-4" style={{minWidth: '250px'}}>
-                    <p className="text-sm font-medium text-gray-900">{address}</p>
+                  <td className="py-4 px-4" style={{width: '200px', minWidth: '200px'}}>
+                    <p className="text-sm font-medium text-gray-900 leading-tight">{address}</p>
                   </td>
-                  <td className="py-4 px-4 text-center whitespace-nowrap" style={{width: '80px', minWidth: '80px'}}>
+                  <td className="py-4 px-4 text-center whitespace-nowrap" style={{width: '60px', minWidth: '60px'}}>
                     <span className="text-sm text-gray-900">{bedrooms || '-'}</span>
                   </td>
-                  <td className="py-4 px-4 text-center whitespace-nowrap" style={{width: '80px', minWidth: '80px'}}>
+                  <td className="py-4 px-4 text-center whitespace-nowrap" style={{width: '60px', minWidth: '60px'}}>
                     <span className="text-sm text-gray-900">{bathrooms || '-'}</span>
                   </td>
                   <td className="py-4 px-4" style={{width: '200px', maxWidth: '200px'}}>
                     <span className="text-sm text-gray-700 line-clamp-2">{extractedData.layout_type || '-'}</span>
                   </td>
-                  <td className="py-4 px-4 text-right whitespace-nowrap" style={{width: '120px', minWidth: '120px'}}>
+                  <td className="py-4 px-4 text-right whitespace-nowrap" style={{width: '100px', minWidth: '100px'}}>
                     <span className="text-sm text-gray-900">{sqft > 0 ? `${sqft.toLocaleString()} sq ft` : '-'}</span>
                   </td>
                   <td className="py-4 px-4 text-right whitespace-nowrap" style={{width: '130px', minWidth: '130px'}}>
                     <span className="text-sm font-semibold text-gray-900">{price > 0 ? `$${price.toLocaleString()}` : '-'}</span>
                   </td>
-                  <td className="py-4 px-4 whitespace-nowrap" style={{width: '110px', minWidth: '110px'}}>
+                  <td className="py-4 px-4 whitespace-nowrap" style={{width: '90px', minWidth: '90px'}}>
                     <span className="text-xs text-gray-500">{new Date(property.created_at).toLocaleDateString()}</span>
                   </td>
                   <td className="py-4 px-4 whitespace-nowrap" style={{width: '150px', minWidth: '150px'}}>
@@ -472,20 +473,23 @@ const Dashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen" style={{background: '#F6F1EB'}}>
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+      <header className="bg-black border-b-4" style={{borderBottomColor: '#FF5959'}}>
+        <div className="max-w-[1400px] mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Home className="w-5 h-5 text-gray-700" />
-              <span className="text-lg font-medium text-gray-900">FP AI</span>
+              <Home className="w-5 h-5" style={{color: '#FF5959'}} />
+              <span className="text-lg font-black uppercase tracking-tight text-white">FP AI</span>
             </div>
             <div className="flex items-center space-x-6">
-              <span className="text-sm text-gray-600">{user?.email}</span>
+              <span className="text-sm text-white">{user?.email}</span>
               <button
                 onClick={logout}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="transition-colors"
+                style={{color: '#FF5959'}}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -495,12 +499,13 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 py-16">
+      <main className="max-w-[1400px] mx-auto px-4 py-16">
         {/* Centered Title */}
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-light text-gray-900 mb-8 leading-tight">
-            My Properties
+          <h1 className="text-6xl font-black uppercase tracking-tight mb-2" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
+            MY <span style={{color: '#FF5959'}}>PROPERTIES</span>
           </h1>
+          <div className="w-24 h-1.5 mx-auto mb-8" style={{background: '#FF5959'}}></div>
           
           {/* Search Bar */}
           <div className="max-w-md mx-auto mb-8">
@@ -511,7 +516,10 @@ const Dashboard = () => {
                 placeholder="Search by address..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border-2 focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{borderColor: '#000000', borderRadius: '4px'}}
+                onFocus={(e) => {e.target.style.borderColor = '#FF5959'; e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)'}}
+                onBlur={(e) => {e.target.style.borderColor = '#000000'; e.target.style.boxShadow = 'none'}}
               />
             </div>
           </div>
@@ -536,7 +544,10 @@ const Dashboard = () => {
           {/* Add Property Button */}
           <Link 
             to="/properties/new"
-            className="inline-flex items-center space-x-2 bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center space-x-2 text-white px-8 py-4 font-bold uppercase tracking-wide transition-all"
+            style={{background: '#FF5959', borderRadius: '4px'}}
+            onMouseEnter={(e) => {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,89,89,0.3)'}}
+            onMouseLeave={(e) => {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'}}
           >
             <Plus className="w-4 h-4" />
             <span>Add Property</span>
@@ -556,9 +567,14 @@ const Dashboard = () => {
           <div className="flex items-center space-x-2">
             <button 
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded transition-colors ${
-                viewMode === 'grid' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
-              }`}
+              className="p-2 transition-colors"
+              style={{
+                background: viewMode === 'grid' ? '#FF5959' : 'transparent',
+                color: viewMode === 'grid' ? '#FFFFFF' : '#666666',
+                borderRadius: '4px'
+              }}
+              onMouseEnter={(e) => {if (viewMode !== 'grid') e.currentTarget.style.color = '#000000'}}
+              onMouseLeave={(e) => {if (viewMode !== 'grid') e.currentTarget.style.color = '#666666'}}
             >
               <div className="grid grid-cols-2 gap-0.5 w-4 h-4">
                 <div className="bg-current rounded-sm"></div>
@@ -569,9 +585,14 @@ const Dashboard = () => {
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded transition-colors ${
-                viewMode === 'list' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
-              }`}
+              className="p-2 transition-colors"
+              style={{
+                background: viewMode === 'list' ? '#FF5959' : 'transparent',
+                color: viewMode === 'list' ? '#FFFFFF' : '#666666',
+                borderRadius: '4px'
+              }}
+              onMouseEnter={(e) => {if (viewMode !== 'list') e.currentTarget.style.color = '#000000'}}
+              onMouseLeave={(e) => {if (viewMode !== 'list') e.currentTarget.style.color = '#666666'}}
             >
               <div className="flex flex-col space-y-1 w-4 h-4">
                 <div className="h-0.5 bg-current rounded"></div>
@@ -597,7 +618,10 @@ const Dashboard = () => {
             <p className="text-gray-800 mb-4">{error}</p>
             <button 
               onClick={fetchProperties} 
-              className="bg-gray-900 text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
+              className="text-white px-8 py-3 font-bold uppercase tracking-wide transition-all"
+              style={{background: '#FF5959', borderRadius: '4px'}}
+              onMouseEnter={(e) => {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-1px)'}}
+              onMouseLeave={(e) => {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'}}
             >
               Try Again
             </button>
@@ -616,7 +640,10 @@ const Dashboard = () => {
             </p>
             <Link 
               to="/properties/new" 
-              className="bg-gray-900 text-white px-8 py-3 rounded-md hover:bg-gray-800 transition-colors inline-flex items-center space-x-2"
+              className="text-white px-8 py-4 font-bold uppercase tracking-wide transition-all inline-flex items-center space-x-2"
+              style={{background: '#FF5959', borderRadius: '4px'}}
+              onMouseEnter={(e) => {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,89,89,0.3)'}}
+              onMouseLeave={(e) => {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'}}
             >
               <Plus className="w-5 h-5" />
               <span>Add Your First Property</span>
@@ -627,10 +654,27 @@ const Dashboard = () => {
 
         {/* Properties Grid View */}
         {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sortedProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {sortedProperties.slice(0, listItemsToShow).map((property) => (
+                <PropertyCard key={property.id} property={property} />
+              ))}
+            </div>
+            
+            {/* Load More Button */}
+            {sortedProperties.length > listItemsToShow && (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setListItemsToShow(prev => prev + 10)}
+                  className="px-8 py-3 text-sm font-bold uppercase tracking-wide transition-all"
+                  style={{background: 'transparent', color: '#000000', border: '3px solid #000000', borderRadius: '4px'}}
+                  onMouseEnter={(e) => {e.currentTarget.style.background = '#000000'; e.currentTarget.style.color = '#FFFFFF'}}
+                  onMouseLeave={(e) => {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#000000'}}
+                >
+                  Load More ({sortedProperties.length - listItemsToShow} remaining)
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -648,7 +692,10 @@ const Dashboard = () => {
               <div className="flex justify-center">
                 <button
                   onClick={() => setListItemsToShow(prev => prev + 10)}
-                  className="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="px-8 py-3 text-sm font-bold uppercase tracking-wide transition-all"
+                  style={{background: 'transparent', color: '#000000', border: '3px solid #000000', borderRadius: '4px'}}
+                  onMouseEnter={(e) => {e.currentTarget.style.background = '#000000'; e.currentTarget.style.color = '#FFFFFF'}}
+                  onMouseLeave={(e) => {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#000000'}}
                 >
                   Load More ({sortedProperties.length - listItemsToShow} remaining)
                 </button>
@@ -684,7 +731,7 @@ const Dashboard = () => {
       
       {/* Footer */}
       <footer className="mt-20 py-16 bg-black w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1400px] mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             {/* Company Info */}
             <div>

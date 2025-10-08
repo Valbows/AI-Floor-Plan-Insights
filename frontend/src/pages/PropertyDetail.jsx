@@ -101,19 +101,18 @@ const PropertyDetail = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      'processing': { icon: Loader, color: 'bg-yellow-100 text-yellow-800', text: 'Processing' },
-      'parsing_complete': { icon: Clock, color: 'bg-blue-100 text-blue-800', text: 'Floor Plan Complete' },
-      'enrichment_complete': { icon: BarChart3, color: 'bg-purple-100 text-purple-800', text: 'Market Analysis Complete' },
-      'complete': { icon: CheckCircle, color: 'bg-green-100 text-green-800', text: 'All Complete' },
-      'failed': { icon: XCircle, color: 'bg-red-100 text-red-800', text: 'Failed' },
-      'enrichment_failed': { icon: AlertCircle, color: 'bg-orange-100 text-orange-800', text: 'Market Data Failed' },
-      'listing_failed': { icon: AlertCircle, color: 'bg-orange-100 text-orange-800', text: 'Listing Failed' }
+      'processing': { icon: Loader, color: 'text-white', bg: '#666666', text: 'Processing' },
+      'parsing_complete': { icon: Clock, color: 'text-white', bg: '#666666', text: 'Floor Plan Complete' },
+      'enrichment_complete': { icon: BarChart3, color: 'text-white', bg: '#666666', text: 'Market Analysis Complete' },
+      'complete': { icon: CheckCircle, color: 'text-white', bg: '#22C55E', text: 'All Complete' },
+      'failed': { icon: XCircle, color: 'text-white', bg: '#FF5959', text: 'Failed' },
+      'enrichment_failed': { icon: AlertCircle, color: 'text-white', bg: '#FF5959', text: 'Market Data Failed' },
     }
     const badge = badges[status] || badges['processing']
     const Icon = badge.icon
     
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${badge.color}`}>
+      <span className="inline-flex items-center px-3 py-1 text-xs font-bold uppercase" style={{background: badge.bg, color: '#FFFFFF', borderRadius: '4px', letterSpacing: '1px'}}>
         <Icon className="w-4 h-4 mr-1" />
         {badge.text}
       </span>
@@ -261,12 +260,18 @@ const PropertyDetail = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{background: '#F6F1EB'}}>
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-          <XCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Property</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <Link to="/dashboard" className="btn-primary">
+          <XCircle className="w-16 h-16 mx-auto mb-4" style={{color: '#FF5959'}} />
+          <h2 className="text-2xl font-black uppercase mb-2" style={{color: '#000000'}}>Error Loading Property</h2>
+          <p className="mb-6" style={{color: '#666666'}}>{error}</p>
+          <Link 
+            to="/dashboard" 
+            className="inline-flex items-center space-x-2 text-white px-8 py-4 font-bold uppercase tracking-wide transition-all"
+            style={{background: '#FF5959', borderRadius: '4px'}}
+            onMouseEnter={(e) => {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-1px)'}}
+            onMouseLeave={(e) => {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'}}
+          >
             Back to Dashboard
           </Link>
         </div>
@@ -277,15 +282,15 @@ const PropertyDetail = () => {
   const extracted = property.extracted_data || {}
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="min-h-screen relative" style={{background: '#F6F1EB'}}>
       {/* Progress Overlay */}
       {showProgressOverlay && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)'}}>
+          <div className="bg-white p-10 max-w-md w-full mx-4" style={{borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)'}}>
             <div className="text-center mb-8">
-              <Loader className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Analyzing Your Property</h3>
-              <p className="text-gray-600">Please wait while our AI processes your floor plan...</p>
+              <Loader className="w-20 h-20 mx-auto mb-4 animate-spin" style={{color: '#FF5959'}} />
+              <h3 className="text-3xl font-black uppercase mb-3" style={{color: '#000000', letterSpacing: '-1px'}}>Analyzing Your <span style={{color: '#FF5959'}}>Property</span></h3>
+              <p className="text-base" style={{color: '#666666'}}>Please wait while our AI processes your floor plan...</p>
             </div>
 
             {/* Analysis Steps */}
@@ -298,24 +303,25 @@ const PropertyDetail = () => {
                 return (
                   <div 
                     key={index}
-                    className={`flex items-center space-x-3 p-4 rounded-lg transition-all ${
-                      isActive ? 'bg-blue-50 border-2 border-blue-200 scale-105' : 
-                      isCompleted ? 'bg-green-50 border-2 border-green-200' : 
-                      'bg-gray-50 border-2 border-gray-200 opacity-50'
-                    }`}
+                    className="flex items-center space-x-3 p-4 transition-all"
+                    style={{
+                      background: isActive ? '#FFF5F5' : isCompleted ? '#F0FDF4' : '#F6F1EB',
+                      border: `2px solid ${isActive ? '#FF5959' : isCompleted ? '#22C55E' : '#E5E5E5'}`,
+                      borderRadius: '8px',
+                      opacity: isActive || isCompleted ? 1 : 0.5,
+                      transform: isActive ? 'scale(1.02)' : 'scale(1)'
+                    }}
                   >
                     <div className={`flex-shrink-0 ${isActive ? 'animate-pulse' : ''}`}>
                       {isCompleted ? (
-                        <CheckCircle className="w-6 h-6 text-green-600" />
+                        <CheckCircle className="w-6 h-6" style={{color: '#22C55E'}} />
                       ) : (
-                        <StepIcon className={`w-6 h-6 ${isActive ? step.color : 'text-gray-400'}`} />
+                        <StepIcon className="w-6 h-6" style={{color: isActive ? '#FF5959' : '#999999'}} />
                       )}
                     </div>
-                    <p className={`text-sm font-medium ${
-                      isActive ? 'text-gray-900' : 
-                      isCompleted ? 'text-green-700' : 
-                      'text-gray-500'
-                    }`}>
+                    <p className="text-sm font-bold" style={{
+                      color: isActive ? '#000000' : isCompleted ? '#22C55E' : '#999999'
+                    }}>
                       {step.text}
                     </p>
                   </div>
@@ -324,13 +330,13 @@ const PropertyDetail = () => {
             </div>
 
             <div className="mt-6">
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full rounded-full h-2" style={{background: '#E5E5E5'}}>
                 <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${((analysisStep + 1) / analysisSteps.length) * 100}%` }}
+                  className="h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${((analysisStep + 1) / analysisSteps.length) * 100}%`, background: '#FF5959' }}
                 ></div>
               </div>
-              <p className="text-xs text-gray-500 mt-2 text-center">
+              <p className="text-xs font-bold mt-2 text-center uppercase" style={{color: '#666666', letterSpacing: '1px'}}>
                 Step {analysisStep + 1} of {analysisSteps.length}
               </p>
             </div>
@@ -338,14 +344,20 @@ const PropertyDetail = () => {
         </div>
       )}
 
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="bg-black border-b-4" style={{borderBottomColor: '#FF5959'}}>
+        <div className="max-w-[1400px] mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Link to="/dashboard" className="text-gray-400 hover:text-gray-900 transition-colors">
+              <Link 
+                to="/dashboard" 
+                className="transition-colors"
+                style={{color: '#FF5959'}}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
-              <h1 className="text-lg font-medium text-gray-900">Property Details</h1>
+              <h1 className="text-xl font-black uppercase tracking-tight text-white" style={{letterSpacing: '-1px'}}>Property Details</h1>
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => {
@@ -355,39 +367,51 @@ const PropertyDetail = () => {
                       setEditedContent({})
                     }
                   }}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                    editMode 
-                      ? 'bg-gray-500 text-white hover:bg-gray-600' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
+                  className="flex items-center space-x-2 px-5 py-2.5 transition-all font-bold uppercase text-sm"
+                  style={{
+                    background: editMode ? '#666666' : '#FF5959',
+                    color: '#FFFFFF',
+                    borderRadius: '4px',
+                    letterSpacing: '1px',
+                    boxShadow: editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = editMode ? '#555555' : '#E54545'
+                    e.currentTarget.style.transform = 'translateY(-1px)'
+                    e.currentTarget.style.boxShadow = editMode ? 'none' : '0 4px 12px rgba(255,89,89,0.4)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = editMode ? '#666666' : '#FF5959'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
+                  }}
+                  disabled={saving}
                 >
                   {editMode ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-                  <span className="text-sm font-medium">{editMode ? 'Cancel' : 'Edit Property'}</span>
-                </button>
-                <button
-                  onClick={openShareModal}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
-                  disabled={editMode}
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span className="text-sm font-medium">Share</span>
+                  <span>{editMode ? 'Cancel' : 'Edit'}</span>
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 transition-all font-bold uppercase text-sm"
+                  style={{background: 'transparent', color: editMode ? '#CCCCCC' : '#FF5959', border: `2px solid ${editMode ? '#CCCCCC' : '#FF5959'}`, borderRadius: '4px', letterSpacing: '1px', cursor: editMode ? 'not-allowed' : 'pointer'}}
+                  onMouseEnter={(e) => {if (!editMode) {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.color = '#FFFFFF'}}}
+                  onMouseLeave={(e) => {if (!editMode) {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FF5959'}}}
                   disabled={editMode}
                 >
                   <Trash2 className="w-4 h-4" />
-                  <span className="text-sm font-medium">Delete</span>
+                  <span>Delete</span>
                 </button>
                 {editMode && editingField && (
                   <button
                     onClick={() => saveEdit(editingField)}
                     disabled={saving}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
+                    className="flex items-center space-x-2 px-4 py-2 text-white transition-all font-bold uppercase text-sm"
+                    style={{background: saving ? '#CCCCCC' : '#22C55E', borderRadius: '4px', letterSpacing: '1px', cursor: saving ? 'not-allowed' : 'pointer'}}
+                    onMouseEnter={(e) => {if (!saving) e.currentTarget.style.background = '#16A34A'}}
+                    onMouseLeave={(e) => {if (!saving) e.currentTarget.style.background = '#22C55E'}}
                   >
                     <Save className="w-4 h-4" />
-                    <span className="text-sm font-medium">{saving ? 'Saving...' : 'Save Changes'}</span>
+                    <span>{saving ? 'Saving...' : 'Save Changes'}</span>
                   </button>
                 )}
               </div>
@@ -397,7 +421,7 @@ const PropertyDetail = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-[1400px] mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* LEFT COLUMN - Floor Plan + Property Details (Scrollable) */}
           <div className="space-y-4">
@@ -468,14 +492,14 @@ const PropertyDetail = () => {
             </div>
 
             {/* Key Stats - Metrics Card */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+            <div className="rounded-lg p-4" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-wider">Property Metrics</h3>
-                {editMode && <Edit2 className="w-4 h-4 text-blue-700" />}
+                <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#000000', letterSpacing: '1px'}}>Property Metrics</h3>
+                {editMode && <Edit2 className="w-4 h-4" style={{color: '#FF5959'}} />}
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-900">Square Footage:</span>
+                  <span className="text-sm font-medium" style={{color: '#000000'}}>Square Footage:</span>
                   {editMode ? (
                     <input
                       type="number"
@@ -484,15 +508,16 @@ const PropertyDetail = () => {
                         setEditingField('square_footage')
                         setEditedContent({ ...editedContent, square_footage: parseInt(e.target.value) || 0 })
                       }}
-                      className="w-32 text-lg font-bold text-blue-900 bg-white border-2 border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                      className="w-32 text-lg font-bold bg-white px-2 py-1 focus:outline-none text-right"
+                      style={{border: '2px solid #FF5959', borderRadius: '4px', color: '#000000'}}
                       placeholder="0"
                     />
                   ) : (
-                    <span className="text-lg font-bold text-blue-900">{extracted.square_footage || 0} sq ft</span>
+                    <span className="text-lg font-bold" style={{color: '#000000'}}>{extracted.square_footage || 0} sq ft</span>
                   )}
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-900">Bedrooms:</span>
+                  <span className="text-sm font-medium" style={{color: '#000000'}}>Bedrooms:</span>
                   {editMode ? (
                     <input
                       type="number"
@@ -501,15 +526,16 @@ const PropertyDetail = () => {
                         setEditingField('bedrooms')
                         setEditedContent({ ...editedContent, bedrooms: parseInt(e.target.value) || 0 })
                       }}
-                      className="w-20 text-lg font-bold text-blue-900 bg-white border-2 border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                      className="w-20 text-lg font-bold bg-white px-2 py-1 focus:outline-none text-right"
+                      style={{border: '2px solid #FF5959', borderRadius: '4px', color: '#000000'}}
                       placeholder="0"
                     />
                   ) : (
-                    <span className="text-lg font-bold text-blue-900">{extracted.bedrooms || 0}</span>
+                    <span className="text-lg font-bold" style={{color: '#000000'}}>{extracted.bedrooms || 0}</span>
                   )}
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-900">Bathrooms:</span>
+                  <span className="text-sm font-medium" style={{color: '#000000'}}>Bathrooms:</span>
                   {editMode ? (
                     <input
                       type="number"
@@ -519,11 +545,12 @@ const PropertyDetail = () => {
                         setEditingField('bathrooms')
                         setEditedContent({ ...editedContent, bathrooms: parseFloat(e.target.value) || 0 })
                       }}
-                      className="w-20 text-lg font-bold text-blue-900 bg-white border-2 border-blue-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                      className="w-20 text-lg font-bold bg-white px-2 py-1 focus:outline-none text-right"
+                      style={{border: '2px solid #FF5959', borderRadius: '4px', color: '#000000'}}
                       placeholder="0"
                     />
                   ) : (
-                    <span className="text-lg font-bold text-blue-900">{extracted.bathrooms || 0}</span>
+                    <span className="text-lg font-bold" style={{color: '#000000'}}>{extracted.bathrooms || 0}</span>
                   )}
                 </div>
               </div>
@@ -578,9 +605,9 @@ const PropertyDetail = () => {
 
             {/* AI Notes */}
             {extracted.notes && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <h3 className="text-xs font-semibold text-amber-900 uppercase tracking-wider mb-1">AI Analysis</h3>
-                <p className="text-xs text-amber-900 leading-relaxed">{extracted.notes}</p>
+              <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>AI Analysis</h3>
+                <p className="text-sm leading-relaxed" style={{color: '#000000'}}>{extracted.notes}</p>
               </div>
             )}
             </div>
@@ -589,39 +616,79 @@ const PropertyDetail = () => {
           {/* RIGHT COLUMN - Tabbed Content (Market & Marketing) - Sticky */}
           <div className="lg:sticky lg:top-4 lg:self-start space-y-6" style={{maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto'}}>
             {/* Tab Navigation */}
-            <div className="border-b border-gray-200">
-              <div className="flex space-x-8">
-                <button
-                  onClick={() => setActiveTab('market')}
-                  className={`pb-3 font-medium text-sm transition-colors border-b-2 ${
-                    activeTab === 'market'
-                      ? 'border-gray-900 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Market Insights
-                </button>
-                <button
-                  onClick={() => setActiveTab('marketing')}
-                  className={`pb-3 font-medium text-sm transition-colors border-b-2 ${
-                    activeTab === 'marketing'
-                      ? 'border-gray-900 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Marketing Content
-                </button>
-                <button
-                  onClick={() => setActiveTab('analytics')}
-                  className={`pb-3 font-medium text-sm transition-colors border-b-2 ${
-                    activeTab === 'analytics'
-                      ? 'border-gray-900 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Analytics
-                </button>
-              </div>
+            <div className="flex space-x-2 p-1" style={{background: '#F6F1EB', borderRadius: '8px'}}>
+              <button
+                onClick={() => setActiveTab('market')}
+                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                style={{
+                  background: activeTab === 'market' ? '#FF5959' : 'transparent',
+                  color: activeTab === 'market' ? '#FFFFFF' : '#666666',
+                  borderRadius: '6px',
+                  letterSpacing: '1px'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== 'market') {
+                    e.currentTarget.style.background = '#FFFFFF'
+                    e.currentTarget.style.color = '#000000'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'market') {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#666666'
+                  }
+                }}
+              >
+                Market Insights
+              </button>
+              <button
+                onClick={() => setActiveTab('marketing')}
+                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                style={{
+                  background: activeTab === 'marketing' ? '#FF5959' : 'transparent',
+                  color: activeTab === 'marketing' ? '#FFFFFF' : '#666666',
+                  borderRadius: '6px',
+                  letterSpacing: '1px'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== 'marketing') {
+                    e.currentTarget.style.background = '#FFFFFF'
+                    e.currentTarget.style.color = '#000000'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'marketing') {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#666666'
+                  }
+                }}
+              >
+                Marketing Content
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                style={{
+                  background: activeTab === 'analytics' ? '#FF5959' : 'transparent',
+                  color: activeTab === 'analytics' ? '#FFFFFF' : '#666666',
+                  borderRadius: '6px',
+                  letterSpacing: '1px'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== 'analytics') {
+                    e.currentTarget.style.background = '#FFFFFF'
+                    e.currentTarget.style.color = '#000000'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'analytics') {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#666666'
+                  }
+                }}
+              >
+                Analytics
+              </button>
             </div>
 
             {activeTab === 'market' && (
@@ -630,21 +697,22 @@ const PropertyDetail = () => {
                 {extracted.market_insights ? (
                   <>
                     {/* Price Estimate */}
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+                    <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #FF5959'}}>
                       <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                          <DollarSign className="w-5 h-5 mr-2 text-green-600" />
+                        <h2 className="text-lg font-black uppercase flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
+                          <DollarSign className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                           Price Estimate
                         </h2>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          extracted.market_insights.price_estimate?.confidence === 'high' ? 'bg-green-200 text-green-800' :
-                          extracted.market_insights.price_estimate?.confidence === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                          'bg-gray-200 text-gray-800'
-                        }`}>
+                        <span className="px-3 py-1 text-xs font-bold uppercase" style={{
+                          background: extracted.market_insights.price_estimate?.confidence === 'high' ? '#22C55E' : extracted.market_insights.price_estimate?.confidence === 'medium' ? '#666666' : '#CCCCCC',
+                          color: '#FFFFFF',
+                          borderRadius: '4px',
+                          letterSpacing: '1px'
+                        }}>
                           {extracted.market_insights.price_estimate?.confidence || 'low'} confidence
                         </span>
                       </div>
-                      <p className="text-3xl font-bold text-green-700 mb-2">
+                      <p className="text-4xl font-black mb-2" style={{color: '#FF5959'}}>
                         ${(extracted.market_insights.price_estimate?.estimated_value || 0).toLocaleString()}
                       </p>
                       <p className="text-sm text-gray-600 mb-3">
@@ -657,9 +725,9 @@ const PropertyDetail = () => {
                     </div>
 
                     {/* Market Trend */}
-                    <div className="border border-gray-200 rounded-lg p-6">
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                    <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                      <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
+                        <TrendingUp className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                         Market Trend
                       </h2>
                       <div className="grid grid-cols-2 gap-3 text-sm">
@@ -698,22 +766,22 @@ const PropertyDetail = () => {
                     </div>
 
                     {/* Investment Analysis */}
-                    <div className="border border-gray-200 rounded-lg p-6">
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Building2 className="w-5 h-5 mr-2 text-purple-600" />
+                    <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                      <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
+                        <Building2 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                         Investment Analysis
                       </h2>
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-gray-600">Investment Score</span>
-                          <span className="text-lg font-bold text-purple-700">
-                            {extracted.market_insights.investment_analysis?.investment_score || 0}/100
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium" style={{color: '#666666'}}>Investment Score</span>
+                          <span className="text-3xl font-black" style={{color: '#000000'}}>
+                            {extracted.market_insights.investment_analysis?.investment_score || 0}<span className="text-lg" style={{color: '#666666'}}>/100</span>
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full rounded-full h-3" style={{background: '#E5E5E5'}}>
                           <div 
-                            className="bg-purple-600 h-2 rounded-full" 
-                            style={{ width: `${extracted.market_insights.investment_analysis?.investment_score || 0}%` }}
+                            className="h-3 rounded-full transition-all" 
+                            style={{ width: `${extracted.market_insights.investment_analysis?.investment_score || 0}%`, background: '#FF5959' }}
                           ></div>
                         </div>
                       </div>
@@ -803,10 +871,10 @@ const PropertyDetail = () => {
                 {extracted.listing_copy ? (
                   <>
                     {/* Headline */}
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                    <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                       <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                          <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                        <h2 className="text-lg font-black uppercase flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
+                          <FileText className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                           Listing Headline
                         </h2>
                         <div className="flex items-center space-x-2">
@@ -937,59 +1005,68 @@ const PropertyDetail = () => {
 
                     {/* Social Media */}
                     {extracted.social_variants && (
-                      <div className="border border-gray-200 rounded-lg p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                          <Share2 className="w-5 h-5 mr-2 text-indigo-600" />
+                      <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                        <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
+                          <Share2 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                           Social Media
                         </h2>
                         <div className="space-y-3">
                           {extracted.social_variants.instagram && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-semibold text-gray-700">Instagram</span>
+                            <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Instagram</span>
                                 <button
                                   onClick={() => copyToClipboard(extracted.social_variants.instagram, 'Instagram caption')}
-                                  className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                                  className="p-1.5 transition-all"
+                                  style={{color: '#FF5959', borderRadius: '4px'}}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                   title="Copy to clipboard"
                                 >
                                   <Copy className="w-4 h-4" />
                                 </button>
                               </div>
-                              <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                              <p className="text-sm leading-relaxed" style={{color: '#000000'}}>
                                 {extracted.social_variants.instagram}
                               </p>
                             </div>
                           )}
                           {extracted.social_variants.facebook && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-semibold text-gray-700">Facebook</span>
+                            <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Facebook</span>
                                 <button
                                   onClick={() => copyToClipboard(extracted.social_variants.facebook, 'Facebook post')}
-                                  className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                                  className="p-1.5 transition-all"
+                                  style={{color: '#FF5959', borderRadius: '4px'}}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                   title="Copy to clipboard"
                                 >
                                   <Copy className="w-4 h-4" />
                                 </button>
                               </div>
-                              <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                              <p className="text-sm leading-relaxed" style={{color: '#000000'}}>
                                 {extracted.social_variants.facebook}
                               </p>
                             </div>
                           )}
                           {extracted.social_variants.twitter && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-semibold text-gray-700">Twitter / X</span>
+                            <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Twitter / X</span>
                                 <button
                                   onClick={() => copyToClipboard(extracted.social_variants.twitter, 'Tweet')}
-                                  className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                                  className="p-1.5 transition-all"
+                                  style={{color: '#FF5959', borderRadius: '4px'}}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                   title="Copy to clipboard"
                                 >
                                   <Copy className="w-4 h-4" />
                                 </button>
                               </div>
-                              <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                              <p className="text-sm leading-relaxed" style={{color: '#000000'}}>
                                 {extracted.social_variants.twitter}
                               </p>
                             </div>
@@ -999,26 +1076,29 @@ const PropertyDetail = () => {
                     )}
 
                     {/* CTA & Email */}
-                    <div className="border border-gray-200 rounded-lg p-6">
-                      <div className="space-y-3">
-                        <div>
-                          <span className="text-xs font-semibold text-gray-700">Call to Action</span>
-                          <p className="text-sm text-gray-900 font-medium mt-1">
+                    <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                      <div className="space-y-4">
+                        <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                          <span className="text-xs font-bold uppercase block mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Call to Action</span>
+                          <p className="text-sm font-medium" style={{color: '#000000'}}>
                             {extracted.listing_copy.call_to_action}
                           </p>
                         </div>
                         {extracted.listing_copy.email_subject && (
-                          <div className="pt-3 border-t">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-semibold text-gray-700">Email Subject Line</span>
+                          <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-bold uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Email Subject Line</span>
                               <button
                                 onClick={() => copyToClipboard(extracted.listing_copy.email_subject, 'Email subject')}
-                                className="p-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                                className="p-1.5 transition-all"
+                                style={{color: '#FF5959', borderRadius: '4px'}}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                 title="Copy to clipboard">
                                 <Copy className="w-4 h-4" />
                               </button>
                             </div>
-                            <p className="text-sm text-gray-900">
+                            <p className="text-sm" style={{color: '#000000'}}>
                               {extracted.listing_copy.email_subject}
                             </p>
                           </div>
@@ -1028,11 +1108,11 @@ const PropertyDetail = () => {
 
                     {/* SEO Keywords */}
                     {extracted.listing_copy.seo_keywords?.length > 0 && (
-                      <div className="border border-gray-200 rounded-lg p-6">
-                        <h2 className="text-sm font-semibold text-gray-900 mb-2">SEO Keywords</h2>
-                        <div className="flex flex-wrap gap-1">
+                      <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                        <h2 className="text-sm font-bold uppercase mb-3" style={{color: '#000000', letterSpacing: '1px'}}>SEO Keywords</h2>
+                        <div className="flex flex-wrap gap-2">
                           {extracted.listing_copy.seo_keywords.map((keyword, idx) => (
-                            <span key={idx} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                            <span key={idx} className="text-xs px-3 py-1.5 font-medium" style={{background: '#F6F1EB', color: '#000000', borderRadius: '4px', border: '1px solid #E5E5E5'}}>
                               {keyword}
                             </span>
                           ))}
@@ -1070,26 +1150,24 @@ const PropertyDetail = () => {
       
       {/* Share Link Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)'}}>
+          <div className="bg-white max-w-lg w-full p-8" style={{borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', border: '2px solid #000000'}}>
             <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <Share2 className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Share Property</h3>
-                  <p className="text-sm text-gray-600">Generate a public link to share this property</p>
-                </div>
+              <div>
+                <h3 className="text-2xl font-black uppercase mb-2" style={{color: '#000000', letterSpacing: '-1px'}}>Share <span style={{color: '#FF5959'}}>Property</span></h3>
+                <p className="text-sm" style={{color: '#666666'}}>Generate a public link to share this property</p>
               </div>
               <button
                 onClick={() => {
                   setShowShareModal(false)
                   setCopied(false)
                 }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="transition-colors p-1"
+                style={{color: '#FF5959'}}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
@@ -1218,6 +1296,35 @@ const PropertyDetail = () => {
         </div>
       )}
       
+      {/* Floating Share Button - Sticky Side Box */}
+      <button
+        onClick={openShareModal}
+        className="fixed text-white shadow-lg transition-all duration-200 z-40 flex flex-col items-center justify-center space-y-2"
+        style={{
+          background: '#FF5959',
+          width: '80px',
+          height: '100px',
+          top: '50%',
+          right: '0',
+          transform: 'translateY(-50%)',
+          borderTopLeftRadius: '12px',
+          borderBottomLeftRadius: '12px',
+          borderRight: 'none'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#E54545'
+          e.currentTarget.style.width = '90px'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = '#FF5959'
+          e.currentTarget.style.width = '80px'
+        }}
+        title="Share Property"
+      >
+        <Share2 className="w-8 h-8" />
+        <span className="text-xs font-black uppercase" style={{letterSpacing: '1px'}}>Share</span>
+      </button>
+
       {/* Chatbot */}
       <Chatbot />
     </div>

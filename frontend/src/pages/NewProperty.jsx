@@ -109,35 +109,56 @@ const NewProperty = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen" style={{background: '#F6F1EB'}}>
+      <header className="bg-black border-b-4" style={{borderBottomColor: '#FF5959'}}>
+        <div className="max-w-[1400px] mx-auto px-4 py-4">
           <div className="flex items-center space-x-3">
-            <Link to="/dashboard" className="text-gray-600 hover:text-gray-900">
+            <Link 
+              to="/dashboard" 
+              className="transition-colors"
+              style={{color: '#FF5959'}}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
+            >
               <ArrowLeft className="w-6 h-6" />
             </Link>
-            <h1 className="text-xl font-bold text-gray-900">Upload Floor Plan</h1>
+            <h1 className="text-2xl font-black uppercase tracking-tight text-white" style={{letterSpacing: '-1px'}}>Upload Floor Plan</h1>
           </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1400px] mx-auto px-4 py-16">
         {!loading && (
-          <div className="card">
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                <AlertCircle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
+          <div className="max-w-3xl mx-auto">
+            {/* Page Title */}
+            <div className="text-center mb-12">
+              <h1 className="text-5xl font-black uppercase tracking-tight mb-3" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
+                UPLOAD <span style={{color: '#FF5959'}}>FLOOR PLAN</span>
+              </h1>
+              <div className="w-24 h-1.5 mx-auto mb-6" style={{background: '#FF5959'}}></div>
+              <p className="text-lg" style={{color: '#666666'}}>Let our AI analyze your property and generate insights instantly</p>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-white p-10" style={{borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}>
+              {error && (
+                <div className="mb-8 p-4 flex items-start" style={{background: '#FEE2E2', border: '2px solid #FF5959', borderRadius: '4px'}}>
+                  <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" style={{color: '#FF5959'}} />
+                  <p className="text-sm font-medium" style={{color: '#FF5959'}}>{error}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-8">
               {/* File Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Floor Plan Image *
+                <label className="block text-base font-bold uppercase mb-4" style={{color: '#000000', letterSpacing: '1px'}}>
+                  1. Upload Floor Plan Image
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+                <div 
+                  className="border-2 border-dashed p-12 text-center transition-all cursor-pointer" 
+                  style={{borderColor: file ? '#FF5959' : '#000000', borderRadius: '8px', background: file ? '#FFF5F5' : 'transparent'}}
+                  onMouseEnter={(e) => {if (!file) e.currentTarget.style.borderColor = '#FF5959'}}
+                  onMouseLeave={(e) => {if (!file) e.currentTarget.style.borderColor = '#000000'}}
+                >
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,application/pdf"
@@ -145,63 +166,97 @@ const NewProperty = () => {
                     className="hidden"
                     id="file-upload"
                   />
-                  <label htmlFor="file-upload" className="cursor-pointer">
+                  <label htmlFor="file-upload" className="cursor-pointer block">
                     {preview ? (
-                      <img src={preview} alt="Preview" className="max-h-64 mx-auto mb-4 rounded" />
+                      <div>
+                        <img src={preview} alt="Preview" className="max-h-80 mx-auto mb-4 rounded-lg shadow-md" />
+                        <div className="inline-flex items-center space-x-2 px-4 py-2 font-bold uppercase text-sm" style={{background: '#FF5959', color: '#FFFFFF', borderRadius: '4px'}}>
+                          <Upload className="w-4 h-4" />
+                          <span>Change Image</span>
+                        </div>
+                      </div>
                     ) : (
-                      <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <div>
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style={{background: '#F6F1EB'}}>
+                          <Upload className="w-10 h-10" style={{color: '#FF5959'}} />
+                        </div>
+                        <p className="text-lg font-bold mb-2" style={{color: '#000000'}}>
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-sm" style={{color: '#666666'}}>PNG, JPG, or PDF (max 10MB)</p>
+                      </div>
                     )}
-                    <p className="text-sm text-gray-600 mb-2">
-                      {file ? file.name : 'Click to upload or drag and drop'}
-                    </p>
-                    <p className="text-xs text-gray-500">PNG, JPG, or PDF (max 10MB)</p>
+                    {file && !preview && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium" style={{color: '#000000'}}>{file.name}</p>
+                        <p className="text-xs" style={{color: '#666666'}}>{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                    )}
                   </label>
                 </div>
               </div>
 
               {/* Address Input */}
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                  Property Address *
+                <label htmlFor="address" className="block text-base font-bold uppercase mb-4" style={{color: '#000000', letterSpacing: '1px'}}>
+                  2. Enter Property Address
                 </label>
                 <input
                   id="address"
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="input-field"
+                  className="w-full px-5 py-4 border-2 focus:outline-none transition-colors text-base"
+                  style={{borderColor: '#000000', borderRadius: '8px'}}
+                  onFocus={(e) => {e.target.style.borderColor = '#FF5959'; e.target.style.boxShadow = '0 0 0 3px rgba(255,89,89,0.1)'}}
+                  onBlur={(e) => {e.target.style.borderColor = '#000000'; e.target.style.boxShadow = 'none'}}
                   placeholder="123 Main Street, City, State ZIP"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter the full property address
+                <p className="text-sm mt-2" style={{color: '#666666'}}>
+                  Enter the complete property address for accurate analysis
                 </p>
               </div>
 
               {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading || !file}
-                className="w-full btn-primary"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Uploading & Analyzing...
-                  </>
-                ) : (
-                  'Upload Floor Plan'
-                )}
-              </button>
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  disabled={loading || !file || !address.trim()}
+                  className="w-full text-white px-8 py-5 font-black uppercase tracking-wide transition-all text-lg flex items-center justify-center"
+                  style={{background: loading || !file || !address.trim() ? '#CCCCCC' : '#FF5959', borderRadius: '8px', cursor: loading || !file || !address.trim() ? 'not-allowed' : 'pointer'}}
+                  onMouseEnter={(e) => {if (!loading && file && address.trim()) {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(255,89,89,0.4)'}}}
+                  onMouseLeave={(e) => {if (!loading && file && address.trim()) {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'}}}
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Analyzing Your Property...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-6 h-6 mr-2" />
+                      Start AI Analysis
+                    </>
+                  )}
+                </button>
 
-              <p className="text-xs text-gray-500 text-center">
-                AI will automatically analyze the floor plan and extract property details
-              </p>
+                <div className="mt-6 p-4 rounded-lg" style={{background: '#F6F1EB'}}>
+                  <p className="text-sm font-medium mb-2" style={{color: '#000000'}}>What happens next?</p>
+                  <ul className="text-sm space-y-1" style={{color: '#666666'}}>
+                    <li>✓ AI analyzes floor plan layout and dimensions</li>
+                    <li>✓ Extracts bedrooms, bathrooms, and square footage</li>
+                    <li>✓ Generates market value estimates</li>
+                    <li>✓ Creates professional listing content</li>
+                  </ul>
+                </div>
+              </div>
             </form>
           </div>
+        </div>
         )}
       </main>
       
