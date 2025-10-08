@@ -4,7 +4,7 @@ import {
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
   FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone, Check,
-  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2
+  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2
 } from 'lucide-react'
 import axios from 'axios'
 import Chatbot from '../components/Chatbot'
@@ -29,6 +29,10 @@ const PropertyDetail = () => {
   
   // Delete states
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  
+  // Floor plan zoom states
+  const [showFloorPlanModal, setShowFloorPlanModal] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState(1)
   const [deleting, setDeleting] = useState(false)
   
   // Share states
@@ -122,6 +126,24 @@ const PropertyDetail = () => {
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text)
     alert(`${label} copied to clipboard!`)
+  }
+
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.25, 3))
+  }
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.25, 1))
+  }
+
+  const openFloorPlanModal = () => {
+    setShowFloorPlanModal(true)
+    setZoomLevel(1)
+  }
+
+  const closeFloorPlanModal = () => {
+    setShowFloorPlanModal(false)
+    setZoomLevel(1)
   }
 
   const startEditing = (field, currentValue) => {
@@ -426,16 +448,36 @@ const PropertyDetail = () => {
           {/* LEFT COLUMN - Floor Plan + Property Details (Scrollable) */}
           <div className="space-y-4">
             {/* Floor Plan Image */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '2px solid #000000'}}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Floor Plan</h3>
+                {property.image_url && (
+                  <button
+                    onClick={openFloorPlanModal}
+                    className="flex items-center space-x-2 px-3 py-2 text-sm font-bold uppercase transition-all"
+                    style={{color: '#FF5959', background: 'transparent', border: '2px solid #FF5959', borderRadius: '4px', letterSpacing: '1px'}}
+                    onMouseEnter={(e) => {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.color = '#FFFFFF'}}
+                    onMouseLeave={(e) => {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FF5959'}}
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                    <span>View Full Size</span>
+                  </button>
+                )}
+              </div>
               {property.image_url ? (
-                <img 
-                  src={property.image_url} 
-                  alt="Floor Plan" 
-                  className="w-full rounded-lg"
-                />
+                <div 
+                  className="cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={openFloorPlanModal}
+                >
+                  <img 
+                    src={property.image_url} 
+                    alt="Floor Plan" 
+                    className="w-full rounded-lg"
+                  />
+                </div>
               ) : (
                 <div className="bg-white rounded-lg h-96 flex items-center justify-center">
-                  <Home className="w-16 h-16 text-gray-300" />
+                  <Home className="w-16 h-16" style={{color: '#CCCCCC'}} />
                 </div>
               )}
             </div>
@@ -1347,6 +1389,45 @@ const PropertyDetail = () => {
         <Share2 className="w-8 h-8" />
         <span className="text-xs font-black uppercase" style={{letterSpacing: '1px'}}>Share</span>
       </button>
+
+      {/* Floor Plan Zoom Modal */}
+      {showFloorPlanModal && property.image_url && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onClick={closeFloorPlanModal}>
+          <button
+            onClick={closeFloorPlanModal}
+            className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+          >
+            <X className="w-6 h-6 text-gray-900" />
+          </button>
+          
+          <div className="absolute top-4 left-4 flex space-x-2 z-10">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
+              className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <ZoomIn className="w-6 h-6 text-gray-900" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
+              className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <ZoomOut className="w-6 h-6 text-gray-900" />
+            </button>
+            <div className="px-3 py-2 bg-white rounded-full text-sm font-medium text-gray-900">
+              {Math.round(zoomLevel * 100)}%
+            </div>
+          </div>
+
+          <div className="overflow-auto max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={property.image_url}
+              alt="Floor Plan - Full Size"
+              style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.2s' }}
+              className="max-w-none"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Chatbot */}
       <Chatbot />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2 } from 'lucide-react'
+import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, Square } from 'lucide-react'
 import axios from 'axios'
 import Chatbot from '../components/Chatbot'
 
@@ -52,6 +52,7 @@ const StatusBadge = ({ status }) => {
 const PropertyTable = ({ properties, sortConfig, onSort }) => {
   const navigate = useNavigate()
   const [expandedRows, setExpandedRows] = useState(new Set())
+  const [hoveredImage, setHoveredImage] = useState(null)
   
   const toggleExpand = (propertyId, e) => {
     e.stopPropagation()
@@ -95,7 +96,7 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
   return (
     <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
       <div className="overflow-x-auto">
-        <table className="w-full" style={{tableLayout: 'fixed'}}>
+        <table className="w-full group/table" style={{tableLayout: 'fixed'}}>
         <thead>
           <tr className="border-b" style={{borderColor: '#E5E5E5', background: '#F6F1EB'}}>
             <th className="text-left py-3 px-4 text-xs font-bold uppercase" style={{width: '80px', color: '#666666', letterSpacing: '1px'}}>Floor Plan</th>
@@ -123,7 +124,6 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
             <SortableHeader column="size" label="Size" align="right" style={{width: '100px', maxWidth: '100px'}} />
             <SortableHeader column="price" label="Price" align="right" width="w-32" />
             <SortableHeader column="date" label="Date Added" align="left" style={{width: '90px', maxWidth: '90px'}} />
-            <SortableHeader column="status" label="Status" align="center" width="w-36" />
             <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{width: '80px'}}>Details</th>
           </tr>
         </thead>
@@ -143,20 +143,20 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
               <React.Fragment key={property.id}>
                 <tr 
                   onClick={() => navigate(`/properties/${property.id}`)}
-                  className="cursor-pointer transition-colors"
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  className="cursor-pointer transition-all group/row group-hover/table:opacity-40 hover:!opacity-100"
+                  onMouseEnter={(e) => {e.currentTarget.style.zIndex = '10'}}
+                  onMouseLeave={(e) => {e.currentTarget.style.zIndex = '1'}}
                 >
                   <td className="py-4 px-4" style={{width: '80px', minWidth: '80px'}}>
-                    <div className="w-12 h-12 rounded flex items-center justify-center flex-shrink-0" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                    <div className="w-16 h-16 rounded flex items-center justify-center flex-shrink-0 p-1" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
                       {property.image_url ? (
                         <img
                           src={property.image_url}
                           alt="Floor plan"
-                          className="w-full h-full object-contain p-1"
+                          className="max-w-full max-h-full object-contain"
                         />
                       ) : (
-                        <Home className="w-5 h-5" style={{color: '#CCCCCC'}} />
+                        <Home className="w-6 h-6" style={{color: '#CCCCCC'}} />
                       )}
                     </div>
                   </td>
@@ -181,11 +181,6 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
                   <td className="py-4 px-4 whitespace-nowrap" style={{width: '90px', minWidth: '90px'}}>
                     <span className="text-xs text-gray-500">{new Date(property.created_at).toLocaleDateString()}</span>
                   </td>
-                  <td className="py-4 px-4 whitespace-nowrap" style={{width: '150px', minWidth: '150px'}}>
-                    <div className="flex justify-center">
-                      <StatusBadge status={property.status} />
-                    </div>
-                  </td>
                   <td className="py-4 px-4 text-center" style={{width: '80px', minWidth: '80px'}}>
                     <button
                       onClick={(e) => toggleExpand(property.id, e)}
@@ -201,24 +196,34 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
                 </tr>
                 {isExpanded && (
                   <tr style={{background: '#F6F1EB'}}>
-                    <td colSpan="10" className="py-4 px-6">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                    <td colSpan="9" className="py-5 px-6">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                         <div>
-                          <span className="font-semibold text-gray-700">Full Address:</span>
-                          <p className="text-gray-900 mt-1">{address}</p>
+                          <p className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Full Address</p>
+                          <p className="text-sm font-medium" style={{color: '#000000'}}>{address}</p>
                         </div>
                         <div>
-                          <span className="font-semibold text-gray-700">Layout Type:</span>
-                          <p className="text-gray-900 mt-1">{extractedData.layout_type || 'Not specified'}</p>
+                          <p className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Layout Type</p>
+                          <p className="text-sm font-medium" style={{color: '#000000'}}>{extractedData.layout_type || 'Not specified'}</p>
                         </div>
                         <div>
-                          <span className="font-semibold text-gray-700">Property Details:</span>
-                          <p className="text-gray-900 mt-1">{bedrooms} Beds • {bathrooms} Baths • {sqft > 0 ? `${sqft.toLocaleString()} sq ft` : 'Size pending'}</p>
+                          <p className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Property Details</p>
+                          <p className="text-sm font-medium" style={{color: '#000000'}}>{bedrooms} Beds • {bathrooms} Baths • {sqft > 0 ? `${sqft.toLocaleString()} sq ft` : 'Size pending'}</p>
                         </div>
                         <div>
-                          <span className="font-semibold text-gray-700">Estimated Value:</span>
-                          <p className="text-gray-900 mt-1 font-semibold">{price > 0 ? `$${price.toLocaleString()}` : 'Analyzing...'}</p>
+                          <p className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Estimated Value</p>
+                          <p className="text-lg font-black" style={{color: '#FF5959'}}>{price > 0 ? `$${price.toLocaleString()}` : 'Analyzing...'}</p>
                         </div>
+                        <div>
+                          <p className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Date Added</p>
+                          <p className="text-sm font-medium" style={{color: '#000000'}}>{new Date(property.created_at).toLocaleDateString()}</p>
+                        </div>
+                        {marketData.investment_analysis?.investment_score > 0 && (
+                          <div>
+                            <p className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Investment Score</p>
+                            <p className="text-lg font-black" style={{color: '#000000'}}>{marketData.investment_analysis.investment_score}/100</p>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -232,6 +237,7 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
       <div className="px-4 py-2 text-center" style={{background: '#F6F1EB', borderTop: '1px solid #E5E5E5'}}>
         <p className="text-xs" style={{color: '#999999'}}>Click <Maximize2 className="w-3 h-3 inline" style={{color: '#FF5959'}} /> to expand</p>
       </div>
+      
     </div>
   )
 }
@@ -251,34 +257,13 @@ const PropertyCard = ({ property }) => {
   return (
     <div
       onClick={() => navigate(`/properties/${property.id}`)}
-      className="bg-white rounded-lg overflow-hidden transition-all duration-200 cursor-pointer"
-      style={{border: '2px solid #E5E5E5'}}
-      onMouseEnter={(e) => {e.currentTarget.style.borderColor = '#FF5959'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,89,89,0.2)'}}
-      onMouseLeave={(e) => {e.currentTarget.style.borderColor = '#E5E5E5'; e.currentTarget.style.boxShadow = 'none'}}
+      className="bg-white overflow-hidden transition-all duration-300 cursor-pointer group/card relative group-hover/grid:opacity-40 hover:!opacity-100"
+      style={{borderRadius: '12px', border: '2px solid #000000'}}
+      onMouseEnter={(e) => {e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; e.currentTarget.style.zIndex = '10'}}
+      onMouseLeave={(e) => {e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.zIndex = '1'}}
     >
-      {/* Status Tags - Top */}
-      <div className="p-4 pb-2">
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex gap-2 flex-wrap">
-            {bedrooms > 0 && (
-              <span className="px-2 py-1 text-xs font-bold flex items-center gap-1" style={{border: '1px solid #E5E5E5', color: '#000000', borderRadius: '4px', background: '#F6F1EB'}}>
-                <Bed className="w-3 h-3" style={{color: '#FF5959'}} />
-                {bedrooms} Room{bedrooms !== 1 ? 's' : ''}
-              </span>
-            )}
-            {bathrooms > 0 && (
-              <span className="px-2 py-1 text-xs font-bold flex items-center gap-1" style={{border: '1px solid #E5E5E5', color: '#000000', borderRadius: '4px', background: '#F6F1EB'}}>
-                <Bath className="w-3 h-3" style={{color: '#FF5959'}} />
-                {bathrooms} Bath{bathrooms !== 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-          <StatusBadge status={property.status} />
-        </div>
-      </div>
-
-      {/* Floor Plan Image */}
-      <div className="relative h-44 overflow-hidden mx-4 mb-4 rounded-lg flex items-center justify-center" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+      {/* Floor Plan Image - Full Width */}
+      <div className="relative h-48 overflow-hidden flex items-center justify-center p-3" style={{background: '#F6F1EB'}}>
         {property.image_url ? (
           <img
             src={property.image_url}
@@ -290,67 +275,59 @@ const PropertyCard = ({ property }) => {
           />
         ) : (
           <div className="text-center">
-            <Home className="w-12 h-12 mx-auto mb-2" style={{color: '#CCCCCC'}} />
-            <p className="text-xs" style={{color: '#999999'}}>Floor plan pending</p>
+            <Home className="w-16 h-16 mx-auto mb-2" style={{color: '#CCCCCC'}} />
+            <p className="text-sm font-medium" style={{color: '#999999'}}>Floor plan pending</p>
           </div>
         )}
       </div>
 
-      <div className="px-4 pb-4">
+      <div className="p-5">
         {/* Property Address */}
-        <div className="mb-2">
-          <p className="text-xs font-bold uppercase mb-1" style={{color: '#666666', letterSpacing: '1px'}}>Property</p>
-          <h3 className="text-base font-bold line-clamp-2 leading-tight" style={{color: '#000000'}}>
-            {address}
-          </h3>
-        </div>
+        <h3 className="text-lg font-black line-clamp-2 leading-tight mb-3" style={{color: '#000000'}}>
+          {address}
+        </h3>
 
-        {/* Property Details */}
-        <div className="space-y-2 mb-3">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">Size:</span>
-            <span className="font-medium text-gray-900">
-              {sqft > 0 ? `${sqft.toLocaleString()} sq ft` : 'Analyzing...'}
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">Layout:</span>
-            <span className="font-medium text-gray-900 truncate ml-2">
-              {extractedData.layout_type || 'Analyzing...'}
-            </span>
-          </div>
-          {investmentScore > 0 && (
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Investment Score:</span>
-              <span className={`font-medium ${
-                investmentScore >= 70 ? 'text-green-600' : 
-                investmentScore >= 50 ? 'text-yellow-600' : 'text-red-600'
-              }`}>
-                {investmentScore}/100
-              </span>
+        {/* Quick Stats */}
+        <div className="flex items-center gap-3 mb-4">
+          {bedrooms > 0 && (
+            <div className="flex items-center gap-1">
+              <Bed className="w-4 h-4" style={{color: '#FF5959'}} />
+              <span className="text-sm font-bold" style={{color: '#000000'}}>{bedrooms}</span>
+            </div>
+          )}
+          {bathrooms > 0 && (
+            <div className="flex items-center gap-1">
+              <Bath className="w-4 h-4" style={{color: '#FF5959'}} />
+              <span className="text-sm font-bold" style={{color: '#000000'}}>{bathrooms}</span>
+            </div>
+          )}
+          {sqft > 0 && (
+            <div className="flex items-center gap-1">
+              <Square className="w-4 h-4" style={{color: '#FF5959'}} />
+              <span className="text-sm font-bold" style={{color: '#000000'}}>{sqft.toLocaleString()}</span>
             </div>
           )}
         </div>
 
-        {/* Price Section */}
-        <div className="border-t border-gray-100 pt-3">
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-lg font-bold text-gray-900">
-              {price > 0 ? `$${price.toLocaleString()}` : 'Analyzing price...'}
-            </span>
-            {pricePerSqft > 0 && (
-              <span className="text-sm text-gray-600">
-                ${pricePerSqft}/sq ft
-              </span>
+        {/* Price */}
+        <div className="pt-3" style={{borderTop: '2px solid #F6F1EB'}}>
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-2xl font-black" style={{color: '#FF5959'}}>
+                {price > 0 ? `$${price.toLocaleString()}` : 'Analyzing...'}
+              </p>
+              {pricePerSqft > 0 && (
+                <p className="text-xs font-medium mt-1" style={{color: '#666666'}}>
+                  ${pricePerSqft}/sq ft
+                </p>
+              )}
+            </div>
+            {investmentScore > 0 && (
+              <div className="text-center px-3 py-2" style={{background: '#F6F1EB', borderRadius: '6px'}}>
+                <p className="text-xs font-bold uppercase" style={{color: '#666666', letterSpacing: '1px'}}>Score</p>
+                <p className="text-lg font-black" style={{color: '#000000'}}>{investmentScore}</p>
+              </div>
             )}
-          </div>
-          
-          {/* Analysis Status */}
-          <div className="flex justify-between items-center text-xs text-gray-500">
-            <span>Added {new Date(property.created_at).toLocaleDateString()}</span>
-            <span className="capitalize">
-              {property.status === 'complete' ? 'Analysis Complete' : 'Processing...'}
-            </span>
           </div>
         </div>
       </div>
@@ -663,7 +640,7 @@ const Dashboard = () => {
         {/* Properties Grid View */}
         {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
               {sortedProperties.slice(0, listItemsToShow).map((property) => (
                 <PropertyCard key={property.id} property={property} />
               ))}
