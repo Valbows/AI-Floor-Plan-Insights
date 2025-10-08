@@ -27,3 +27,35 @@
     @apply bg-white rounded-lg shadow-md p-6;
   }
 }
+
+/* Custom Scrollbar Styles - Charney Design System (Toned Down) */
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F6F1EB; /* Charney Cream */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CCCCCC; /* Light gray instead of red */
+  border-radius: 4px;
+  border: 1px solid #F6F1EB; /* Cream border for spacing */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF5959; /* Charney Red only on hover */
+}
+
+::-webkit-scrollbar-corner {
+  background: #F6F1EB; /* Charney Cream */
+}
+
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #CCCCCC #F6F1EB; /* light gray thumb, cream track */
+}

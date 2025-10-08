@@ -7,7 +7,6 @@ import {
   Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2
 } from 'lucide-react'
 import axios from 'axios'
-import Chatbot from '../components/Chatbot'
 import Analytics from '../components/Analytics'
 
 const PropertyDetail = () => {
@@ -655,10 +654,11 @@ const PropertyDetail = () => {
             </div>
           </div>
 
-          {/* RIGHT COLUMN - Tabbed Content (Market & Marketing) - Sticky */}
-          <div className="lg:sticky lg:top-4 lg:self-start space-y-6" style={{maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto'}}>
-            {/* Tab Navigation */}
-            <div className="flex space-x-2 p-1" style={{background: '#F6F1EB', borderRadius: '8px'}}>
+          {/* RIGHT COLUMN - Tabbed Content (Market & Marketing) */}
+          <div className="space-y-6">
+            {/* Tab Navigation - Sticky */}
+            <div className="sticky top-0 z-40 pb-4" style={{background: '#F6F1EB'}}>
+              <div className="flex space-x-2 p-1" style={{background: '#F6F1EB', borderRadius: '8px'}}>
               <button
                 onClick={() => setActiveTab('market')}
                 className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
@@ -731,8 +731,11 @@ const PropertyDetail = () => {
               >
                 Analytics
               </button>
+              </div>
             </div>
 
+            {/* Tab Content */}
+            <div className="space-y-6">
             {activeTab === 'market' && (
               <div className="space-y-6">
                 {/* Market Insights (Agent #2) */}
@@ -1204,6 +1207,7 @@ const PropertyDetail = () => {
             {activeTab === 'analytics' && (
               <Analytics propertyId={id} />
             )}
+            </div>
           </div>
         </div>
       </main>
@@ -1428,9 +1432,6 @@ const PropertyDetail = () => {
           </div>
         </div>
       )}
-
-      {/* Chatbot */}
-      <Chatbot />
     </div>
   )
 }

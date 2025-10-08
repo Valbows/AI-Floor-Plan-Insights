@@ -18,6 +18,8 @@ import {
   ZoomOut,
   X,
   Maximize2,
+  MessageCircle,
+  Send,
   Building2
 } from 'lucide-react'
 
@@ -29,6 +31,18 @@ const PublicReport = () => {
   const [tokenInfo, setTokenInfo] = useState(null)
   const [imageZoomed, setImageZoomed] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
+  
+  // Chatbot states
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [messages, setMessages] = useState([
+    {
+      type: 'bot',
+      text: 'Hi! I\'m here to help answer questions about this property. What would you like to know?',
+      timestamp: new Date()
+    }
+  ])
+  const [inputValue, setInputValue] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(true)
 
   useEffect(() => {
     loadPropertyReport()
@@ -64,6 +78,71 @@ const PublicReport = () => {
       // Silently fail - don't block page load
       console.warn('Failed to log view:', err)
     }
+  }
+
+  // Buyer-focused chatbot questions and responses
+  const buyerQuestions = [
+    "What's the neighborhood like?",
+    "Are there any issues with this property?",
+    "What's included in the sale?",
+    "How does this compare to similar homes?",
+    "What are the monthly costs?",
+    "Is this a good investment?"
+  ]
+
+  const handleSendMessage = (text) => {
+    if (!text.trim()) return
+
+    const userMessage = {
+      type: 'user',
+      text: text,
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, userMessage])
+    setInputValue('')
+    setShowSuggestions(false)
+
+    setTimeout(() => {
+      const botResponse = {
+        type: 'bot',
+        text: getBuyerBotResponse(text),
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, botResponse])
+      
+      setTimeout(() => {
+        setShowSuggestions(true)
+      }, 100)
+    }, 500)
+  }
+
+  const getBuyerBotResponse = (question) => {
+    const lowerQuestion = question.toLowerCase()
+    const extractedData = property?.extracted_data || {}
+    const marketData = extractedData.market_insights || {}
+    
+    if (lowerQuestion.includes('neighborhood') || lowerQuestion.includes('area') || lowerQuestion.includes('location')) {
+      return `This property is located in ${extractedData.address || 'the area'}. Based on our market analysis, this neighborhood has ${marketData.market_trends ? 'shown positive growth trends' : 'stable market conditions'}. I'd recommend visiting the area at different times to get a feel for the community.`
+    } else if (lowerQuestion.includes('issue') || lowerQuestion.includes('problem') || lowerQuestion.includes('concern')) {
+      return 'Based on the floor plan analysis, the property layout appears well-designed. However, I recommend getting a professional inspection to check for any structural, electrical, or plumbing issues that aren\'t visible in floor plans.'
+    } else if (lowerQuestion.includes('included') || lowerQuestion.includes('sale') || lowerQuestion.includes('comes with')) {
+      return 'The floor plan shows the basic structure and room layout. For specific inclusions like appliances, fixtures, or furnishings, you\'ll want to check the listing details or ask the seller\'s agent directly.'
+    } else if (lowerQuestion.includes('compare') || lowerQuestion.includes('similar') || lowerQuestion.includes('other homes')) {
+      const price = marketData.price_estimate?.estimated_value
+      return `${price ? `At an estimated $${price.toLocaleString()}, this property` : 'This property'} offers ${extractedData.bedrooms || 'multiple'} bedrooms and ${extractedData.bathrooms || 'multiple'} bathrooms${extractedData.square_footage ? ` in ${extractedData.square_footage.toLocaleString()} sq ft` : ''}. The layout appears ${extractedData.layout_type ? extractedData.layout_type.toLowerCase() : 'well-designed'}, which is great for ${extractedData.bedrooms > 2 ? 'families' : 'individuals or couples'}.`
+    } else if (lowerQuestion.includes('cost') || lowerQuestion.includes('monthly') || lowerQuestion.includes('expense')) {
+      const price = marketData.price_estimate?.estimated_value
+      return `${price ? `With an estimated value of $${price.toLocaleString()}, your` : 'Your'} monthly costs will include mortgage payments, property taxes, insurance, and utilities. I'd recommend getting pre-approved for a mortgage and factoring in about 1-2% of the home's value annually for maintenance.`
+    } else if (lowerQuestion.includes('investment') || lowerQuestion.includes('value') || lowerQuestion.includes('appreciate')) {
+      const score = marketData.investment_analysis?.investment_score
+      return `${score ? `This property has an investment score of ${score}/100. ` : ''}Real estate can be a good long-term investment, but consider factors like location growth, local job market, and your personal financial situation. This property's ${extractedData.square_footage ? `${extractedData.square_footage.toLocaleString()} sq ft` : 'size'} and layout could appeal to future buyers.`
+    } else {
+      return 'I\'m here to help with questions about this property! You can ask me about the neighborhood, potential issues to look for, what\'s included in the sale, how it compares to similar homes, monthly costs, or investment potential. What would you like to know?'
+    }
+  }
+
+  const handleQuestionClick = (question) => {
+    handleSendMessage(question)
   }
 
   if (loading) {
@@ -409,6 +488,94 @@ const PublicReport = () => {
           </p>
         </div>
       </main>
+
+      {/* Buyer-Focused Chatbot */}
+      <>
+        {/* Chat Button */}
+        {!isChatOpen && (
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="fixed bottom-6 right-6 text-white rounded-full p-4 shadow-lg transition-all duration-200 hover:scale-110 z-50"
+            style={{background: '#FF5959'}}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#E54545'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#FF5959'}
+            aria-label="Ask questions about this property"
+          >
+            <MessageCircle className="w-6 h-6" />
+          </button>
+        )}
+
+        {/* Chat Window */}
+        {isChatOpen && (
+          <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white flex flex-col z-50" style={{borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', border: '2px solid #000000'}}>
+            {/* Header */}
+            <div className="bg-black text-white px-4 py-3 flex items-center justify-between" style={{borderTopLeftRadius: '10px', borderTopRightRadius: '10px', borderBottom: '4px solid #FF5959'}}>
+              <div className="flex items-center space-x-2">
+                <MessageCircle className="w-5 h-5" />
+                <span className="font-bold text-sm uppercase" style={{letterSpacing: '1px'}}>Property Assistant</span>
+              </div>
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="hover:bg-gray-800 p-1 rounded transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((message, index) => (
+                <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] p-3 rounded-lg ${message.type === 'user' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
+                    <p className="text-sm">{message.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Suggested Questions */}
+            {showSuggestions && (
+              <div className="px-4 py-2 border-t border-gray-200">
+                <p className="text-xs font-semibold text-gray-500 mb-2 uppercase" style={{letterSpacing: '1px'}}>Quick Questions:</p>
+                <div className="space-y-1">
+                  {buyerQuestions.slice(0, 3).map((question, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuestionClick(question)}
+                      className="w-full text-left text-xs p-2 bg-gray-50 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
+                  placeholder="Ask about this property..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                />
+                <button
+                  onClick={() => handleSendMessage(inputValue)}
+                  className="px-4 py-2 text-white rounded-lg transition-colors"
+                  style={{background: '#FF5959'}}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#E54545'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#FF5959'}
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     </div>
   )
 }

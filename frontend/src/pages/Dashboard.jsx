@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, Square } from 'lucide-react'
 import axios from 'axios'
-import Chatbot from '../components/Chatbot'
 
 const StatusBadge = ({ status }) => {
   const statusConfig = {
@@ -385,6 +384,51 @@ const Dashboard = () => {
     }
   }
 
+  const deleteAnalyzingProperties = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('Authentication required. Please log in.')
+        return
+      }
+
+      // Find properties that are still analyzing (last 5)
+      const analyzingStatuses = ['processing', 'parsing_complete', 'enrichment_complete']
+      const analyzingProperties = properties
+        .filter(property => analyzingStatuses.includes(property.status))
+        .slice(-5) // Get last 5
+
+      if (analyzingProperties.length === 0) {
+        alert('No analyzing properties found to delete.')
+        return
+      }
+
+      const confirmDelete = window.confirm(
+        `Are you sure you want to delete ${analyzingProperties.length} properties that are still analyzing? This action cannot be undone.`
+      )
+
+      if (!confirmDelete) return
+
+      // Delete each property
+      const deletePromises = analyzingProperties.map(property =>
+        axios.delete(`/api/properties/${property.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      )
+
+      await Promise.all(deletePromises)
+      
+      alert(`Successfully deleted ${analyzingProperties.length} analyzing properties.`)
+      
+      // Refresh the properties list
+      fetchProperties()
+      
+    } catch (error) {
+      console.error('Error deleting properties:', error)
+      alert('Failed to delete some properties. Please try again.')
+    }
+  }
+
   // Filter and search properties
   const filteredProperties = properties.filter(property => {
     const extractedData = property.extracted_data || {}
@@ -509,34 +553,21 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats */}
-          {filteredProperties.length > 0 && (
-            <div className="flex items-center justify-center space-x-8 text-sm text-gray-600 mb-8">
-              <span>{filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'}</span>
-              {filteredProperties.filter(p => p.status === 'complete').length > 0 && (
-                <>
-                  <span className="text-gray-400">•</span>
-                  <span>Portfolio value: ${filteredProperties
-                    .filter(p => p.status === 'complete')
-                    .reduce((sum, p) => sum + (p.market_insights?.price_estimate?.estimated_value || 0), 0)
-                    .toLocaleString()}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
 
           {/* Add Property Button */}
-          <Link 
-            to="/properties/new"
-            className="inline-flex items-center space-x-2 text-white px-8 py-4 font-bold uppercase tracking-wide transition-all"
-            style={{background: '#FF5959', borderRadius: '4px'}}
-            onMouseEnter={(e) => {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,89,89,0.3)'}}
-            onMouseLeave={(e) => {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'}}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Property</span>
-          </Link>
+          <div className="flex justify-center">
+            <Link 
+              to="/properties/new"
+              className="inline-flex items-center space-x-2 text-white px-8 py-4 font-bold uppercase tracking-wide transition-all"
+              style={{background: '#000000', borderRadius: '4px'}}
+              onMouseEnter={(e) => {e.currentTarget.style.background = '#333333'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)'}}
+              onMouseLeave={(e) => {e.currentTarget.style.background = '#000000'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'}}
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Property</span>
+            </Link>
+          </div>
+
         </div>
 
         {/* View Toggle */}
@@ -710,9 +741,6 @@ const Dashboard = () => {
         )}
 
       </main>
-      
-      {/* Chatbot */}
-      <Chatbot />
       
       {/* Footer */}
       <footer className="mt-20 py-8 bg-black w-full">
