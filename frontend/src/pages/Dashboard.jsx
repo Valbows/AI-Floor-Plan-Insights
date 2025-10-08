@@ -97,8 +97,8 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
       <div className="overflow-x-auto">
         <table className="w-full" style={{tableLayout: 'fixed'}}>
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider" style={{width: '80px'}}>Floor Plan</th>
+          <tr className="border-b" style={{borderColor: '#E5E5E5', background: '#F6F1EB'}}>
+            <th className="text-left py-3 px-4 text-xs font-bold uppercase" style={{width: '80px', color: '#666666', letterSpacing: '1px'}}>Floor Plan</th>
             <SortableHeader column="address" label="Address" align="left" style={{width: '200px', maxWidth: '200px'}} />
             <SortableHeader column="bedrooms" label="Beds" align="center" style={{width: '60px', maxWidth: '60px'}} />
             <SortableHeader column="bathrooms" label="Baths" align="center" style={{width: '60px', maxWidth: '60px'}} />
@@ -143,10 +143,12 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
               <React.Fragment key={property.id}>
                 <tr 
                   onClick={() => navigate(`/properties/${property.id}`)}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="cursor-pointer transition-colors"
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
                   <td className="py-4 px-4" style={{width: '80px', minWidth: '80px'}}>
-                    <div className="w-12 h-12 bg-gray-50 rounded border border-gray-200 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded flex items-center justify-center flex-shrink-0" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
                       {property.image_url ? (
                         <img
                           src={property.image_url}
@@ -154,27 +156,27 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
                           className="w-full h-full object-contain p-1"
                         />
                       ) : (
-                        <Home className="w-5 h-5 text-gray-300" />
+                        <Home className="w-5 h-5" style={{color: '#CCCCCC'}} />
                       )}
                     </div>
                   </td>
                   <td className="py-4 px-4" style={{width: '200px', minWidth: '200px'}}>
-                    <p className="text-sm font-medium text-gray-900 leading-tight">{address}</p>
+                    <p className="text-sm font-semibold leading-tight" style={{color: '#000000'}}>{address}</p>
                   </td>
                   <td className="py-4 px-4 text-center whitespace-nowrap" style={{width: '60px', minWidth: '60px'}}>
-                    <span className="text-sm text-gray-900">{bedrooms || '-'}</span>
+                    <span className="text-sm font-medium" style={{color: '#000000'}}>{bedrooms || '-'}</span>
                   </td>
                   <td className="py-4 px-4 text-center whitespace-nowrap" style={{width: '60px', minWidth: '60px'}}>
-                    <span className="text-sm text-gray-900">{bathrooms || '-'}</span>
+                    <span className="text-sm font-medium" style={{color: '#000000'}}>{bathrooms || '-'}</span>
                   </td>
                   <td className="py-4 px-4" style={{width: '200px', maxWidth: '200px'}}>
                     <span className="text-sm text-gray-700 line-clamp-2">{extractedData.layout_type || '-'}</span>
                   </td>
                   <td className="py-4 px-4 text-right whitespace-nowrap" style={{width: '100px', minWidth: '100px'}}>
-                    <span className="text-sm text-gray-900">{sqft > 0 ? `${sqft.toLocaleString()} sq ft` : '-'}</span>
+                    <span className="text-sm font-medium" style={{color: '#000000'}}>{sqft > 0 ? `${sqft.toLocaleString()} sq ft` : '-'}</span>
                   </td>
                   <td className="py-4 px-4 text-right whitespace-nowrap" style={{width: '130px', minWidth: '130px'}}>
-                    <span className="text-sm font-semibold text-gray-900">{price > 0 ? `$${price.toLocaleString()}` : '-'}</span>
+                    <span className="text-sm font-bold" style={{color: '#FF5959'}}>{price > 0 ? `$${price.toLocaleString()}` : '-'}</span>
                   </td>
                   <td className="py-4 px-4 whitespace-nowrap" style={{width: '90px', minWidth: '90px'}}>
                     <span className="text-xs text-gray-500">{new Date(property.created_at).toLocaleDateString()}</span>
@@ -187,15 +189,18 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
                   <td className="py-4 px-4 text-center" style={{width: '80px', minWidth: '80px'}}>
                     <button
                       onClick={(e) => toggleExpand(property.id, e)}
-                      className="p-1 hover:bg-gray-200 rounded transition-colors"
+                      className="p-1 rounded transition-all"
+                      style={{color: '#FF5959'}}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       title={isExpanded ? 'Collapse' : 'Expand details'}
                     >
-                      {isExpanded ? <Minimize2 className="w-4 h-4 text-gray-600" /> : <Maximize2 className="w-4 h-4 text-gray-600" />}
+                      {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </button>
                   </td>
                 </tr>
                 {isExpanded && (
-                  <tr className="bg-gray-50">
+                  <tr style={{background: '#F6F1EB'}}>
                     <td colSpan="10" className="py-4 px-6">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
@@ -224,8 +229,8 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
         </tbody>
         </table>
       </div>
-      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
-        Click <Maximize2 className="w-3 h-3 inline" /> to expand row details • Scroll horizontally if needed
+      <div className="px-4 py-2 text-center" style={{background: '#F6F1EB', borderTop: '1px solid #E5E5E5'}}>
+        <p className="text-xs" style={{color: '#999999'}}>Click <Maximize2 className="w-3 h-3 inline" style={{color: '#FF5959'}} /> to expand</p>
       </div>
     </div>
   )
@@ -246,21 +251,24 @@ const PropertyCard = ({ property }) => {
   return (
     <div
       onClick={() => navigate(`/properties/${property.id}`)}
-      className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border border-gray-200"
+      className="bg-white rounded-lg overflow-hidden transition-all duration-200 cursor-pointer"
+      style={{border: '2px solid #E5E5E5'}}
+      onMouseEnter={(e) => {e.currentTarget.style.borderColor = '#FF5959'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,89,89,0.2)'}}
+      onMouseLeave={(e) => {e.currentTarget.style.borderColor = '#E5E5E5'; e.currentTarget.style.boxShadow = 'none'}}
     >
       {/* Status Tags - Top */}
       <div className="p-4 pb-2">
         <div className="flex justify-between items-start mb-3">
           <div className="flex gap-2 flex-wrap">
             {bedrooms > 0 && (
-              <span className="px-2 py-1 border border-gray-300 text-gray-700 text-xs rounded-full font-medium flex items-center gap-1">
-                <Bed className="w-3 h-3 text-gray-700" />
+              <span className="px-2 py-1 text-xs font-bold flex items-center gap-1" style={{border: '1px solid #E5E5E5', color: '#000000', borderRadius: '4px', background: '#F6F1EB'}}>
+                <Bed className="w-3 h-3" style={{color: '#FF5959'}} />
                 {bedrooms} Room{bedrooms !== 1 ? 's' : ''}
               </span>
             )}
             {bathrooms > 0 && (
-              <span className="px-2 py-1 border border-gray-300 text-gray-700 text-xs rounded-full font-medium flex items-center gap-1">
-                <Bath className="w-3 h-3 text-gray-700" />
+              <span className="px-2 py-1 text-xs font-bold flex items-center gap-1" style={{border: '1px solid #E5E5E5', color: '#000000', borderRadius: '4px', background: '#F6F1EB'}}>
+                <Bath className="w-3 h-3" style={{color: '#FF5959'}} />
                 {bathrooms} Bath{bathrooms !== 1 ? 's' : ''}
               </span>
             )}
@@ -270,7 +278,7 @@ const PropertyCard = ({ property }) => {
       </div>
 
       {/* Floor Plan Image */}
-      <div className="relative h-44 bg-gray-50 overflow-hidden mx-4 mb-4 rounded-lg flex items-center justify-center">
+      <div className="relative h-44 overflow-hidden mx-4 mb-4 rounded-lg flex items-center justify-center" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
         {property.image_url ? (
           <img
             src={property.image_url}
@@ -282,8 +290,8 @@ const PropertyCard = ({ property }) => {
           />
         ) : (
           <div className="text-center">
-            <Home className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-            <p className="text-xs text-gray-400">Floor plan pending</p>
+            <Home className="w-12 h-12 mx-auto mb-2" style={{color: '#CCCCCC'}} />
+            <p className="text-xs" style={{color: '#999999'}}>Floor plan pending</p>
           </div>
         )}
       </div>
@@ -291,8 +299,8 @@ const PropertyCard = ({ property }) => {
       <div className="px-4 pb-4">
         {/* Property Address */}
         <div className="mb-2">
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Property</p>
-          <h3 className="text-base font-semibold text-gray-900 line-clamp-2 leading-tight">
+          <p className="text-xs font-bold uppercase mb-1" style={{color: '#666666', letterSpacing: '1px'}}>Property</p>
+          <h3 className="text-base font-bold line-clamp-2 leading-tight" style={{color: '#000000'}}>
             {address}
           </h3>
         </div>
@@ -730,96 +738,14 @@ const Dashboard = () => {
       <Chatbot />
       
       {/* Footer */}
-      <footer className="mt-20 py-16 bg-black w-full">
+      <footer className="mt-20 py-8 bg-black w-full">
         <div className="max-w-[1400px] mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-            {/* Company Info */}
-            <div>
-              <div className="flex items-center space-x-2 mb-6">
-                <Home className="w-8 h-8 text-white" />
-                <span className="text-2xl font-bold text-white">FP AI</span>
-              </div>
-              <div className="text-gray-400 text-sm space-y-2 mb-6">
-                <p>AI-Powered Real Estate Analytics</p>
-                <p>San Francisco, CA 94105</p>
-                <p>United States</p>
-              </div>
-              
-              {/* Social Media */}
-              <div className="flex space-x-4">
-                <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer">
-                  <span className="text-white text-xs font-bold">in</span>
-                </div>
-                <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer">
-                  <span className="text-white text-xs font-bold">tw</span>
-                </div>
-                <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer">
-                  <span className="text-white text-xs font-bold">yt</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Services */}
-            <div>
-              <div className="space-y-3">
-                <h4 className="text-red-500 font-bold text-lg uppercase tracking-wide">FLOOR PLAN</h4>
-                <h4 className="text-red-500 font-bold text-lg uppercase tracking-wide">ANALYSIS</h4>
-                <h4 className="text-red-500 font-bold text-lg uppercase tracking-wide">MARKET INSIGHTS</h4>
-                <h4 className="text-white font-bold text-lg uppercase tracking-wide">LISTING GENERATION</h4>
-                <h4 className="text-white font-bold text-lg uppercase tracking-wide">AGENT DASHBOARD</h4>
-                <h4 className="text-white font-bold text-lg uppercase tracking-wide">API ACCESS</h4>
-                <h4 className="text-white font-bold text-lg uppercase tracking-wide">CONTACT US</h4>
-              </div>
-            </div>
-
-            {/* Legal & Compliance */}
-            <div>
-              <div className="text-gray-400 text-sm space-y-3">
-                <p>Real Estate Data Privacy Notice & Terms</p>
-                <p>MLS Data Usage Rights & Reasonable Accommodations</p>
-                <p>Standardized Operating Procedures</p>
-                <p>AI Model Accuracy Disclaimer</p>
-              </div>
-              
-              {/* CTA Button */}
-              <div className="mt-8">
-                <Link 
-                  to="/properties/new"
-                  className="inline-block bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full transition-colors"
-                >
-                  Try Demo
-                </Link>
-              </div>
-            </div>
-
-            {/* Newsletter */}
-            <div>
-              <h4 className="text-white font-bold text-lg mb-4 uppercase tracking-wide">STAY IN THE LOOP</h4>
-              <div className="flex mb-4">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 bg-transparent border-b border-gray-600 text-white placeholder-gray-400 py-2 focus:outline-none focus:border-white transition-colors"
-                />
-                <button className="ml-4 w-10 h-10 bg-gray-800 rounded flex items-center justify-center hover:bg-gray-700 transition-colors">
-                  <span className="text-white">→</span>
-                </button>
-              </div>
-              <p className="text-gray-400 text-xs">
-                Get updates on new AI features, market data integrations, and real estate technology insights.
-              </p>
-            </div>
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
-            <p>2025 FP AI Technologies®. All Rights Reserved.</p>
+          <div className="flex flex-col md:flex-row justify-between items-center text-sm" style={{color: '#999999'}}>
+            <p>© 2025 FP AI Technologies. All Rights Reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-white transition-colors">PRIVACY POLICY</a>
-              <a href="#" className="hover:text-white transition-colors">TERMS OF SERVICE</a>
-              <div className="border border-gray-600 px-3 py-1 text-xs">
-                Crafted by FP AI Technologies
-              </div>
+              <a href="#" className="transition-colors" style={{color: '#999999'}} onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'} onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}>Privacy</a>
+              <a href="#" className="transition-colors" style={{color: '#999999'}} onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'} onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}>Terms</a>
+              <a href="#" className="transition-colors" style={{color: '#999999'}} onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'} onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}>Contact</a>
             </div>
           </div>
         </div>
