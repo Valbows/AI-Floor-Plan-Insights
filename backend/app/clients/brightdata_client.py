@@ -53,9 +53,9 @@ class BrightDataClient:
         
         # Bright Data WebSocket endpoint
         # Format: wss://USERNAME:PASSWORD@brd.superproxy.io:9222
-        # For API key authentication, use the key as both username and password
-        self.username = username or f"brd-customer-{self.api_key[:10]}"  # Customer zone format
-        self.password = password or self.api_key
+        # Username should be from your Browser API zone (format: brd-customer-xxx-zone-xxx)
+        self.username = username or os.getenv('BRIGHTDATA_USERNAME') or f"brd-customer-{self.api_key[:10]}"
+        self.password = password or os.getenv('BRIGHTDATA_PASSWORD') or self.api_key
         
         self.ws_endpoint = f"wss://{self.username}:{self.password}@brd.superproxy.io:9222"
         
