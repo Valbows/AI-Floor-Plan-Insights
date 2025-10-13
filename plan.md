@@ -761,9 +761,13 @@
 ### Immediate Actions (Hours 0-24)
 - [x] Update plan.md with new requirements
 - [x] Create and switch to New-Val-Branch
-- [ ] Configure ATTOM API integration (replace CoreLogic)
+- [x] Configure ATTOM API integration (replace CoreLogic)
+  - [x] Create AttomAPIClient class with full API support
+  - [x] Update .env with ATTOM_API_KEY
+  - [x] Create test script for ATTOM API
+  - [x] Verify API connectivity (client operational)
 - [ ] Set up Bright Data Scraping Browser
-- [ ] Test ATTOM API endpoints
+- [ ] Test ATTOM API endpoints (with real property data)
 - [ ] Test Bright Data scrapers (basic test)
 
 ### Phase 1: Core Infrastructure (Hours 24-48)

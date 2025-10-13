@@ -1,0 +1,438 @@
+
+Running 39 tests using 1 worker
+
+✅ Testing dashboard authentication flow
+   ✅ Redirected to dashboard
+   ✅ Dashboard loaded without errors
+   ✅ Properties loaded successfully
+   ✅ Property count displayed
+   ℹ️  Add button may have different text
+  ✓   1 [chromium] › tests/e2e/test_dashboard_auth.spec.js:14:3 › Dashboard Authentication Flow › should successfully load dashboard after login (4.6s)
+✅ Testing Authorization header in API requests
+   ✅ Authorization header found: Bearer eyJhbGciOiJIU...
+   ✅ Authorization header found: Bearer eyJhbGciOiJIU...
+  ✓   2 [chromium] › tests/e2e/test_dashboard_auth.spec.js:70:3 › Dashboard Authentication Flow › should include Authorization header in API requests (3.9s)
+✅ Testing 401 error handling
+   ✅ Redirected to login page
+  ✓   3 [chromium] › tests/e2e/test_dashboard_auth.spec.js:102:3 › Dashboard Authentication Flow › should handle 401 error gracefully (3.0s)
+✅ Testing behavior without token
+   ✅ Redirected to login (protected route working)
+  ✓   4 [chromium] › tests/e2e/test_dashboard_auth.spec.js:132:3 › Dashboard Authentication Flow › should not make API request without token (2.0s)
+✅ Testing "Try Again" button functionality
+   ✅ No error state - properties loaded on first try
+  ✓   5 [chromium] › tests/e2e/test_dashboard_auth.spec.js:162:3 › Dashboard Authentication Flow › should retry loading properties when clicking "Try Again" (1.9s)
+✅ Testing authentication persistence
+   ✅ Initial login successful
+   ✅ Authentication persisted after refresh
+   ✅ Properties still load after refresh
+  ✓   6 [chromium] › tests/e2e/test_dashboard_auth.spec.js:198:3 › Dashboard Authentication Flow › should persist authentication across page refreshes (4.9s)
+✅ Authenticated successfully
+✅ Testing price display in Card View
+   Found 24 property cards
+   ✅ Card 1: Price displayed - $1,521,000
+   ✅ Card 2: Price displayed - $1,521,000
+   ✅ Card 3: Price displayed - $1,521,000
+   ✅ Card 4: Price displayed - $1,521,000
+   ✅ Card 5: Price displayed - $1,521,000
+   Summary: 5 prices displayed, 0 analyzing
+✅ Card view price display verified
+  ✓   7 [chromium] › tests/e2e/test_dashboard_price_display.spec.js:47:3 › Dashboard Price Display › should display prices in card view for completed properties (2.4s)
+  -   8 [chromium] › tests/e2e/test_dashboard_price_display.spec.js:86:8 › Dashboard Price Display › should display prices in table view for completed properties
+✅ Testing that completed properties show prices (not "Analyzing price...")
+⚠️  No "Ready" properties found in current view
+  ✓   9 [chromium] › tests/e2e/test_dashboard_price_display.spec.js:92:3 › Dashboard Price Display › should NOT show "Analyzing price..." for properties with complete market insights (1.4s)
+✅ Testing price per square foot display
+⚠️  Price per square foot not found (may require properties with both price and sqft)
+  ✓  10 [chromium] › tests/e2e/test_dashboard_price_display.spec.js:130:3 › Dashboard Price Display › should display price per square foot when available (1.4s)
+  -  11 [chromium] › tests/e2e/test_dashboard_price_display.spec.js:157:8 › Dashboard Price Display › should show prices correctly after switching between card and table views
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Generated shareable token: f60dd53e-3a06-489a-8f04-327788cbaaaf
+✅ Testing comparable properties display
+   ℹ️  Comparable Properties section not available (no comps data)
+  ✓  12 [chromium] › tests/e2e/test_interactive_features.spec.js:71:3 › Interactive Features - Phase 4.3 › should display comparable properties section (1.2s)
+✅ Testing floor plan zoom functionality
+   ℹ️  Floor plan not available for this property
+  ✓  13 [chromium] › tests/e2e/test_interactive_features.spec.js:126:3 › Interactive Features - Phase 4.3 › should open floor plan in zoom modal (1.1s)
+✅ Testing floor plan image click to zoom
+   ℹ️  Floor plan not available for this property
+  ✓  14 [chromium] › tests/e2e/test_interactive_features.spec.js:191:3 › Interactive Features - Phase 4.3 › should open zoom modal by clicking floor plan image (1.1s)
+✅ Testing property features checklist
+   ℹ️  Key Features section not available for this property
+  ✓  15 [chromium] › tests/e2e/test_interactive_features.spec.js:237:3 › Interactive Features - Phase 4.3 › should display property features checklist (1.1s)
+✅ Testing comps handling with missing data
+   ℹ️  No comparable properties to test
+  ✓  16 [chromium] › tests/e2e/test_interactive_features.spec.js:284:3 › Interactive Features - Phase 4.3 › should handle comparable properties with missing data gracefully (1.1s)
+✅ Testing mobile responsive design for interactive features
+  ✓  17 [chromium] › tests/e2e/test_interactive_features.spec.js:325:3 › Interactive Features - Phase 4.3 › should be mobile responsive for interactive features (1.2s)
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Generated shareable token: 2de13f01-7de6-4d46-aa28-9c4f1b5cab30
+✅ Testing Location section display
+   ✅ Location section found
+   ✅ Map icon displayed
+  ✓  18 [chromium] › tests/e2e/test_maps.spec.js:68:3 › Google Maps Integration - Phase 4.4 › should display Location section on public report (1.4s)
+✅ Testing map loading state
+   ✅ Loading state displayed
+  ✓  19 [chromium] › tests/e2e/test_maps.spec.js:98:3 › Google Maps Integration - Phase 4.4 › should show loading state while initializing map (3.8s)
+✅ Testing map container/error display
+   ℹ️  Map container not found (property may not have address)
+  ✓  20 [chromium] › tests/e2e/test_maps.spec.js:125:3 › Google Maps Integration - Phase 4.4 › should display map container or error message (4.2s)
+✅ Testing map legend
+   ✅ Location section visible
+  ✓  21 [chromium] › tests/e2e/test_maps.spec.js:173:3 › Google Maps Integration - Phase 4.4 › should display map legend with marker colors (1.2s)
+✅ Testing missing address handling
+   ✅ Location section displayed (address exists)
+  ✘  22 [chromium] › tests/e2e/test_maps.spec.js:217:3 › Google Maps Integration - Phase 4.4 › should handle missing address gracefully (30.0s)
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Generated shareable token: 1dc02ed6-ea79-4ce8-a46e-535b9483c833
+✅ Testing mobile responsive design
+   ✅ Location section visible on mobile
+   ✅ Map container fits mobile width
+   ✅ Legend visible on mobile
+  ✓  23 [chromium] › tests/e2e/test_maps.spec.js:246:3 › Google Maps Integration - Phase 4.4 › should be mobile responsive (1.2s)
+✅ Authenticated successfully
+✅ Found property with market insights: 389 S End Ave, New York, NY 10280
+   ID: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+   Price: $0
+✅ Price displayed: $0
+✅ All market insights sections displayed correctly
+  ✓  24 [chromium] › tests/e2e/test_market_insights_display.spec.js:55:3 › Market Insights Display › should display market insights in frontend (2.6s)
+  ✘  25 [chromium] › tests/e2e/test_market_insights_display.spec.js:105:3 › Market Insights Display › should display marketing content tab (30.7s)
+✅ Authenticated successfully
+✅ Found property with market insights: 389 S End Ave, New York, NY 10280
+   ID: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+   Price: $0
+✅ No loading message displayed for completed property
+  ✓  26 [chromium] › tests/e2e/test_market_insights_display.spec.js:139:3 › Market Insights Display › should NOT display "Market insights are being analyzed..." for completed property (2.4s)
+Found incomplete property: bee4a8ea-a7da-4f09-a62b-ad945c666ada
+✅ Loading message displayed for incomplete property
+  ✓  27 [chromium] › tests/e2e/test_market_insights_display.spec.js:166:3 › Property without Market Insights › should show appropriate message for property without market insights (3.0s)
+  -  28 [chromium] › tests/e2e/test_public_report.spec.js:57:8 › Public Report Feature › should generate shareable link from PropertyDetail page
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Testing public report page display
+   Generated token: d06c0cf9-d618-437f-9e30-5e9aa9755bef
+   ✅ Header displayed
+   ✅ Address displayed
+  ✘  29 [chromium] › tests/e2e/test_public_report.spec.js:104:3 › Public Report Feature › should display public report page for valid token (6.5s)
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Testing automatic view logging
+   ✅ View logging request sent: 201
+   ✅ View logging request sent: 201
+   ✅ View logged automatically
+  ✓  30 [chromium] › tests/e2e/test_public_report.spec.js:172:3 › Public Report Feature › should log property view automatically (3.5s)
+✅ Testing invalid token error handling
+   ✅ Error heading displayed
+   ℹ️  Error message present but may vary
+   ✅ Helpful contact message displayed
+  ✓  31 [chromium] › tests/e2e/test_public_report.spec.js:209:3 › Public Report Feature › should show error for invalid token (1.0s)
+✅ Testing investment score display
+   ✅ Investment score displayed: 55/100
+  ✓  32 [chromium] › tests/e2e/test_public_report.spec.js:238:3 › Public Report Feature › should display investment score if available (1.3s)
+✅ Testing mobile responsive design
+   ✅ Page loads on mobile viewport
+  ✘  33 [chromium] › tests/e2e/test_public_report.spec.js:271:3 › Public Report Feature › should be mobile responsive (6.4s)
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Testing data sanitization
+   ✅ Agent information properly sanitized
+   ✅ Only public data exposed
+  ✓  34 [chromium] › tests/e2e/test_public_report.spec.js:310:3 › Public Report Feature › should verify data sanitization (no agent info) (564ms)
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Testing Share button functionality
+  ✘  35 [chromium] › tests/e2e/test_share_button.spec.js:49:3 › Share Button Functionality › should generate shareable link from Share button (13.8s)
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Testing retrieval of existing shareable link
+   ✅ Pre-generated link: http://localhost:5173/report/fc349bdc-bcb0-434f-9c61-f4008d6fe3d7
+  ✘  36 [chromium] › tests/e2e/test_share_button.spec.js:131:3 › Share Button Functionality › should handle existing shareable link (30.6s)
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Testing loading state
+  ✘  37 [chromium] › tests/e2e/test_share_button.spec.js:181:3 › Share Button Functionality › should show loading state while generating (30.7s)
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Testing error handling
+  ✘  38 [chromium] › tests/e2e/test_share_button.spec.js:215:3 › Share Button Functionality › should handle network errors gracefully (30.6s)
+✅ Authenticated successfully
+✅ Found test property: a0873e1f-9549-4c3f-9638-ff9cef32cb33
+✅ Testing that generated link is accessible
+   Generated link: http://localhost:5173/report/4a0ab1fa-bf77-4961-b33d-b8603331fc9a
+  ✘  39 [chromium] › tests/e2e/test_share_button.spec.js:259:3 › Share Button Functionality › should validate shareable link is accessible (1.7s)
+
+
+  1) [chromium] › tests/e2e/test_maps.spec.js:217:3 › Google Maps Integration - Phase 4.4 › should handle missing address gracefully 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test_maps-Google-Maps-Inte-c8675--missing-address-gracefully-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/test_maps-Google-Maps-Inte-c8675--missing-address-gracefully-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test_maps-Google-Maps-Inte-c8675--missing-address-gracefully-chromium/error-context.md
+
+  2) [chromium] › tests/e2e/test_market_insights_display.spec.js:105:3 › Market Insights Display › should display marketing content tab 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.textContent: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.text-xl.font-bold.text-blue-900')[22m
+
+
+      130 |
+      131 |     // Check for actual listing headline text (not empty)
+    > 132 |     const headlineText = await page.locator('.text-xl.font-bold.text-blue-900').textContent();
+          |                                                                                 ^
+      133 |     expect(headlineText).toBeTruthy();
+      134 |     console.log(`   Headline: ${headlineText.substring(0, 50)}...`);
+      135 |
+        at /Users/valrene/CascadeProjects/ai-floor-plan-insights/tests/e2e/test_market_insights_display.spec.js:132:81
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test_market_insights_displ-1a61a-splay-marketing-content-tab-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/test_market_insights_displ-1a61a-splay-marketing-content-tab-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test_market_insights_displ-1a61a-splay-marketing-content-tab-chromium/error-context.md
+
+  3) [chromium] › tests/e2e/test_public_report.spec.js:104:3 › Public Report Feature › should display public report page for valid token 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/\\$[0-9,]+/').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/\\$[0-9,]+/').first()[22m
+
+
+      139 |     // Verify price is shown
+      140 |     const priceElement = page.locator('text=/\\$[0-9,]+/').first();
+    > 141 |     await expect(priceElement).toBeVisible({ timeout: 5000 });
+          |                                ^
+      142 |     const priceText = await priceElement.textContent();
+      143 |     console.log(`   ✅ Price displayed: ${priceText}`);
+      144 |
+        at /Users/valrene/CascadeProjects/ai-floor-plan-insights/tests/e2e/test_public_report.spec.js:141:32
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test_public_report-Public--f8056-report-page-for-valid-token-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/test_public_report-Public--f8056-report-page-for-valid-token-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test_public_report-Public--f8056-report-page-for-valid-token-chromium/error-context.md
+
+  4) [chromium] › tests/e2e/test_public_report.spec.js:271:3 › Public Report Feature › should be mobile responsive 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/\\$[0-9,]+/').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/\\$[0-9,]+/').first()[22m
+
+
+      296 |
+      297 |     // Verify key elements are visible (price)
+    > 298 |     await expect(page.locator('text=/\\$[0-9,]+/').first()).toBeVisible();
+          |                                                             ^
+      299 |     console.log('   ✅ Content visible on mobile');
+      300 |
+      301 |     // Verify layout is mobile-friendly (check that elements stack vertically)
+        at /Users/valrene/CascadeProjects/ai-floor-plan-insights/tests/e2e/test_public_report.spec.js:298:61
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test_public_report-Public--d99cb-should-be-mobile-responsive-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/test_public_report-Public--d99cb-should-be-mobile-responsive-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test_public_report-Public--d99cb-should-be-mobile-responsive-chromium/error-context.md
+
+  5) [chromium] › tests/e2e/test_share_button.spec.js:49:3 › Share Button Functionality › should generate shareable link from Share button 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('button').filter({ hasText: /share/i }).first()
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for locator('button').filter({ hasText: /share/i }).first()[22m
+
+
+      63 |     // Find and click Share button
+      64 |     const shareButton = page.locator('button').filter({ hasText: /share/i }).first();
+    > 65 |     await expect(shareButton).toBeVisible({ timeout: 10000 });
+         |                               ^
+      66 |     console.log('   ✅ Share button found');
+      67 |
+      68 |     await shareButton.click();
+        at /Users/valrene/CascadeProjects/ai-floor-plan-insights/tests/e2e/test_share_button.spec.js:65:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-e72fe-able-link-from-Share-button-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-e72fe-able-link-from-Share-button-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test_share_button-Share-Bu-e72fe-able-link-from-Share-button-chromium/error-context.md
+
+  6) [chromium] › tests/e2e/test_share_button.spec.js:131:3 › Share Button Functionality › should handle existing shareable link 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /share/i }).first()[22m
+
+
+      158 |     // Click Share button
+      159 |     const shareButton = page.locator('button').filter({ hasText: /share/i }).first();
+    > 160 |     await shareButton.click();
+          |                       ^
+      161 |     await page.waitForTimeout(2000);
+      162 |
+      163 |     // Verify the same link is shown
+        at /Users/valrene/CascadeProjects/ai-floor-plan-insights/tests/e2e/test_share_button.spec.js:160:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-7cfd9-dle-existing-shareable-link-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-7cfd9-dle-existing-shareable-link-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test_share_button-Share-Bu-7cfd9-dle-existing-shareable-link-chromium/error-context.md
+
+  7) [chromium] › tests/e2e/test_share_button.spec.js:181:3 › Share Button Functionality › should show loading state while generating 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /share/i }).first()[22m
+
+
+      192 |     // Click Share button
+      193 |     const shareButton = page.locator('button').filter({ hasText: /share/i }).first();
+    > 194 |     await shareButton.click();
+          |                       ^
+      195 |     await page.waitForTimeout(200);
+      196 |
+      197 |     // Verify loading indicator appears
+        at /Users/valrene/CascadeProjects/ai-floor-plan-insights/tests/e2e/test_share_button.spec.js:194:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-630af-ding-state-while-generating-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-630af-ding-state-while-generating-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test_share_button-Share-Bu-630af-ding-state-while-generating-chromium/error-context.md
+
+  8) [chromium] › tests/e2e/test_share_button.spec.js:215:3 › Share Button Functionality › should handle network errors gracefully 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /share/i }).first()[22m
+
+
+      231 |     // Click Share button
+      232 |     const shareButton = page.locator('button').filter({ hasText: /share/i }).first();
+    > 233 |     await shareButton.click();
+          |                       ^
+      234 |     await page.waitForTimeout(2000);
+      235 |
+      236 |     // Verify error message is shown
+        at /Users/valrene/CascadeProjects/ai-floor-plan-insights/tests/e2e/test_share_button.spec.js:233:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-1a40e-e-network-errors-gracefully-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-1a40e-e-network-errors-gracefully-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test_share_button-Share-Bu-1a40e-e-network-errors-gracefully-chromium/error-context.md
+
+  9) [chromium] › tests/e2e/test_share_button.spec.js:259:3 › Share Button Functionality › should validate shareable link is accessible 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/Property Report/i')
+    Expected: visible
+    Error: strict mode violation: locator('text=/Property Report/i') resolved to 2 elements:
+        1) <h1 class="text-xl font-black uppercase text-white">Property Report</h1> aka getByRole('heading', { name: 'Property Report' })
+        2) <p class="text-sm text-gray-600 mb-2">This property report was generated using AI-power…</p> aka getByText('This property report was')
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for locator('text=/Property Report/i')[22m
+
+
+      286 |     // Verify page loaded successfully
+      287 |     const reportHeading = page.locator('text=/Property Report/i');
+    > 288 |     await expect(reportHeading).toBeVisible({ timeout: 10000 });
+          |                                 ^
+      289 |     console.log('   ✅ Shareable link is accessible');
+      290 |
+      291 |     // Verify no authentication required
+        at /Users/valrene/CascadeProjects/ai-floor-plan-insights/tests/e2e/test_share_button.spec.js:288:33
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-33204-hareable-link-is-accessible-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/test_share_button-Share-Bu-33204-hareable-link-is-accessible-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/test_share_button-Share-Bu-33204-hareable-link-is-accessible-chromium/error-context.md
+
+  9 failed
+    [chromium] › tests/e2e/test_maps.spec.js:217:3 › Google Maps Integration - Phase 4.4 › should handle missing address gracefully 
+    [chromium] › tests/e2e/test_market_insights_display.spec.js:105:3 › Market Insights Display › should display marketing content tab 
+    [chromium] › tests/e2e/test_public_report.spec.js:104:3 › Public Report Feature › should display public report page for valid token 
+    [chromium] › tests/e2e/test_public_report.spec.js:271:3 › Public Report Feature › should be mobile responsive 
+    [chromium] › tests/e2e/test_share_button.spec.js:49:3 › Share Button Functionality › should generate shareable link from Share button 
+    [chromium] › tests/e2e/test_share_button.spec.js:131:3 › Share Button Functionality › should handle existing shareable link 
+    [chromium] › tests/e2e/test_share_button.spec.js:181:3 › Share Button Functionality › should show loading state while generating 
+    [chromium] › tests/e2e/test_share_button.spec.js:215:3 › Share Button Functionality › should handle network errors gracefully 
+    [chromium] › tests/e2e/test_share_button.spec.js:259:3 › Share Button Functionality › should validate shareable link is accessible 
+  3 skipped
+  27 passed (4.2m)
