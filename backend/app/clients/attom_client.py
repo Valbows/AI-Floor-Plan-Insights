@@ -28,7 +28,7 @@ class AttomAPIClient:
     - Comprehensive error handling with rate limiting
     """
     
-    BASE_URL = "https://api.gateway.attomdata.com"
+    BASE_URL = "https://api.gateway.attomdata.com/propertyapi/v1.0.0"
     
     def __init__(self, api_key: Optional[str] = None):
         """
@@ -154,7 +154,7 @@ class AttomAPIClient:
             params['postalcode'] = zip_code
         
         try:
-            result = self._make_request('property/address', params=params)
+            result = self._make_request('property/basicprofile', params=params)
         except Exception as e:
             # Try with full address string if structured search fails
             if city and state:
