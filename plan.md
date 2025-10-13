@@ -784,7 +784,12 @@
 - [x] Implement AttomAPIClient (replace CoreLogicClient)
 - [x] Create StreetEasyScraper, ZillowScraper, RedfinScraper
 - [x] Build MultiSourceScraper coordinator
-- [ ] Refactor Agent #2 to use new data sources
+- [x] Refactor Agent #2 to use new data sources
+  - [x] Replace CoreLogic with ATTOM API tools
+  - [x] Add Multi-Source Property Scraping tool
+  - [x] Update task descriptions and agent persona
+  - [x] Update data sources documentation
+  - [x] Maintain CrewAI architecture and Gemini 2.5 Flash
 - [ ] Update database schema for multi-source data
 - [ ] Write integration tests
 

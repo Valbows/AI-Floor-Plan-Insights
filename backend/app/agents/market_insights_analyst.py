@@ -1,7 +1,12 @@
 """
 Market Insights Analyst Agent
 AI Agent #2 - Analyzes property market data and generates investment insights
-Uses CrewAI with CoreLogic data + Gemini AI + Web Search
+Uses CrewAI with ATTOM API + Multi-Source Web Scraping + Gemini AI
+
+Data Sources:
+- ATTOM API (property data, AVM, sales history, area stats)
+- Bright Data Web Scraping (Zillow, Redfin, StreetEasy)
+- Tavily Web Search (market trends, neighborhood info)
 """
 
 import os
@@ -11,7 +16,11 @@ from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew
 from crewai_tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
-from app.clients.corelogic_client import CoreLogicClient
+from app.clients.attom_client import AttomAPIClient
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # ================================
@@ -61,86 +70,111 @@ class MarketInsights(BaseModel):
 # CrewAI Tools for Market Analysis
 # ================================
 
-@tool("CoreLogic Property Search")
-def search_property_data(address: str) -> str:
+@tool("ATTOM Property Search")
+def search_property_data(address: str, city: str = "", state: str = "") -> str:
     """
-    Search CoreLogic database for property information.
+    Search ATTOM database for property information.
     
     Args:
-        address: Full property address
+        address: Street address
+        city: City name (optional but recommended)
+        state: State abbreviation (optional but recommended)
     
     Returns:
-        str: Property details including CLIP ID, property type, year built, etc.
+        str: Property details including ATTOM ID, property type, year built, etc.
     """
     try:
-        client = CoreLogicClient()
-        property_data = client.search_property(address)
+        client = AttomAPIClient()
+        property_data = client.search_property(address, city=city, state=state)
         return json.dumps(property_data, indent=2)
     except Exception as e:
         return f"Error fetching property data: {str(e)}"
 
 
-@tool("CoreLogic Comparables")
-def get_comparable_properties(clip_id: str, radius_miles: float = 1.0) -> str:
+@tool("ATTOM Comparables")
+def get_comparable_properties(address: str, city: str, state: str, radius_miles: float = 0.5) -> str:
     """
-    Fetch comparable properties from CoreLogic.
+    Fetch comparable properties from ATTOM.
     
     Args:
-        clip_id: CoreLogic property ID
-        radius_miles: Search radius in miles
+        address: Street address
+        city: City name
+        state: State abbreviation
+        radius_miles: Search radius in miles (default 0.5)
     
     Returns:
         str: List of comparable properties with sale prices and details
     """
     try:
-        client = CoreLogicClient()
-        comps = client.get_comparables(clip_id, radius_miles=radius_miles, max_results=5)
+        client = AttomAPIClient()
+        comps = client.get_comparables(address, city, state, radius_miles=radius_miles, max_results=10)
         return json.dumps(comps, indent=2)
     except Exception as e:
         return f"Error fetching comparables: {str(e)}"
 
 
-@tool("CoreLogic AVM Estimate")
-def get_avm_estimate(clip_id: str) -> str:
+@tool("ATTOM AVM Estimate")
+def get_avm_estimate(address: str, city: str, state: str, zip_code: str = "") -> str:
     """
-    Get Automated Valuation Model (AVM) estimate from CoreLogic.
+    Get Automated Valuation Model (AVM) estimate from ATTOM.
     
     Args:
-        clip_id: CoreLogic property ID
+        address: Street address
+        city: City name
+        state: State abbreviation
+        zip_code: ZIP code (optional)
     
     Returns:
         str: AVM valuation with confidence score and value range
     """
     try:
-        client = CoreLogicClient()
-        avm = client.estimate_value(clip_id)
+        client = AttomAPIClient()
+        avm = client.get_avm(address, city, state, zip_code=zip_code)
         return json.dumps(avm, indent=2)
     except Exception as e:
         return f"AVM not available: {str(e)}"
 
 
-@tool("CoreLogic Rent Amount Model")
-def get_rental_estimate(clip_id: str) -> str:
+@tool("Multi-Source Property Scraping")
+def scrape_property_data(address: str, city: str, state: str) -> str:
     """
-    Get Rent Amount Model (RAM) from CoreLogic - estimated rental value and investment metrics.
+    Scrape property data from Zillow, Redfin, and StreetEasy using Bright Data.
     
     Provides:
-    - Estimated monthly rental value
-    - Rental value range (high/low with forecast standard deviation)
-    - CAP rate (Capitalization rate for investment analysis)
+    - Consensus pricing from multiple sources
+    - Price range (low, median, high, average)
+    - Data quality score
+    - Source-specific estimates (Zestimate, Redfin Estimate)
+    - Walk Score, Transit Score
+    - Building amenities
     
     Args:
-        clip_id: CoreLogic property ID
+        address: Street address
+        city: City name
+        state: State abbreviation
     
     Returns:
-        str: Rental estimates with CAP rate and investment metrics
+        str: Aggregated property data from web scraping
     """
     try:
-        client = CoreLogicClient()
-        ram = client.get_rent_amount_model(clip_id)
-        return json.dumps(ram, indent=2)
+        # Import here to avoid circular imports
+        from app.scrapers.multi_source_scraper import MultiSourceScraper
+        
+        # Run async scraper in sync context
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        async def run_scraper():
+            async with MultiSourceScraper() as scraper:
+                return await scraper.scrape_property(address, city, state)
+        
+        result = loop.run_until_complete(run_scraper())
+        loop.close()
+        
+        return json.dumps(result, indent=2)
     except Exception as e:
-        return f"Rental estimate not available: {str(e)}"
+        logger.warning(f"Web scraping failed: {str(e)}")
+        return f"Web scraping unavailable: {str(e)}"
 
 
 @tool("Tavily Web Search")
@@ -184,15 +218,17 @@ class MarketInsightsAnalyst:
     AI Agent specialized in real estate market analysis using CrewAI
     
     Capabilities:
-    - Property valuation using comps and AVM data
+    - Property valuation using multiple data sources
+    - Multi-source price consensus (Zillow, Redfin, StreetEasy)
     - Market trend analysis with web search
     - Investment potential assessment
     - Rental income estimation
     - Risk and opportunity identification
     
     Data Sources:
-    - CoreLogic Property API (comps, AVM, property details)
-    - Web search for local market trends
+    - ATTOM API (property data, AVM, comparables, sales history)
+    - Bright Data Web Scraping (Zillow, Redfin, StreetEasy)
+    - Tavily Web Search (market trends, neighborhood info)
     - Gemini AI for analysis and insights generation
     
     Usage:
@@ -205,7 +241,7 @@ class MarketInsightsAnalyst:
     
     def __init__(self):
         """Initialize Market Insights Analyst with CrewAI"""
-        self.corelogic = CoreLogicClient()
+        self.attom = AttomAPIClient()
         
         # Initialize Gemini 2.5 Flash LLM for CrewAI
         # CrewAI uses LiteLLM routing internally
@@ -223,14 +259,15 @@ class MarketInsightsAnalyst:
         self.expertise = """You are a senior real estate market analyst with 20 years of experience 
         in residential property valuation, market trend analysis, and investment assessment. 
         You specialize in analyzing comparable sales, market conditions, and investment potential 
-        to provide data-driven insights for real estate professionals."""
+        to provide data-driven insights for real estate professionals. You have access to ATTOM 
+        property data, multi-source web scraping (Zillow, Redfin, StreetEasy), and web research tools."""
         
-        # Build tools list (CoreLogic tools + optional Tavily)
+        # Build tools list (ATTOM + Web Scraping + optional Tavily)
         tools = [
             search_property_data,
             get_comparable_properties,
             get_avm_estimate,
-            get_rental_estimate  # NEW: Rent Amount Model for investment analysis
+            scrape_property_data  # NEW: Multi-source web scraping
         ]
         
         # Add Tavily web search tool if API key is available
@@ -240,7 +277,7 @@ class MarketInsightsAnalyst:
         # Create CrewAI agent
         self.agent = Agent(
             role=self.role,
-            goal="Analyze property market data and provide comprehensive investment insights",
+            goal="Analyze property market data from multiple sources and provide comprehensive investment insights",
             backstory=self.expertise,
             tools=tools,
             llm=self.llm,
@@ -290,12 +327,12 @@ PROPERTY DETAILS (from floor plan analysis):
 - Features: {', '.join(property_data.get('features', []))}
 
 TASKS:
-1. Use the CoreLogic Property Search tool to find property details
-2. Use the CoreLogic Comparables tool to find similar properties
-3. Use the CoreLogic AVM Estimate tool to get automated valuation
-4. Use the CoreLogic Rent Amount Model tool to get rental estimates and CAP rate
-5. If web search is available, research local market trends for the area
-6. Analyze all data and provide:
+1. Use the ATTOM Property Search tool to find official property data
+2. Use the Multi-Source Property Scraping tool to get current market prices from Zillow, Redfin, and StreetEasy
+3. Use the ATTOM AVM Estimate tool to get automated valuation
+4. Use the ATTOM Comparables tool to find similar properties
+5. If web search is available, research local market trends and neighborhood info
+6. Analyze all data from multiple sources and provide:
    - Price estimate with confidence level and reasoning
    - Market trend analysis (direction, appreciation, demand, inventory)
    - Investment analysis (score 1-100, rental potential, cap rate from RAM, risks, opportunities)
@@ -539,11 +576,12 @@ Comp #{i}:
     
     def _generate_fallback_insights(self, property_data: Dict, error_message: str) -> Dict[str, Any]:
         """
-        Generate basic insights when CoreLogic data is unavailable
+        Generate basic insights when external data sources are unavailable
         
         Used when:
-        - CoreLogic API is down
-        - Property not found in database
+        - ATTOM API is unavailable
+        - Web scraping fails
+        - Property not found in databases
         - API quota exceeded
         """
         bedrooms = property_data.get('bedrooms', 0)
@@ -559,7 +597,7 @@ Comp #{i}:
                 'confidence': 'low',
                 'value_range_low': int(estimated_value * 0.85),
                 'value_range_high': int(estimated_value * 1.15),
-                'reasoning': f'Estimate based on square footage only. CoreLogic data unavailable: {error_message}'
+                'reasoning': f'Estimate based on square footage only. External data sources unavailable: {error_message}'
             },
             'market_trend': {
                 'trend_direction': 'unknown',
@@ -579,5 +617,5 @@ Comp #{i}:
                 'opportunities': ['Potential value-add through renovations']
             },
             'comparable_properties': [],
-            'summary': f'Limited market analysis available. {bedrooms} bed, {bathrooms} bath property estimated at ${estimated_value:,}. Full analysis requires CoreLogic property data.'
+            'summary': f'Limited market analysis available. {bedrooms} bed, {bathrooms} bath property estimated at ${estimated_value:,}. Full analysis requires multi-source property data.'
         }
