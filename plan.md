@@ -1,25 +1,259 @@
 # AI Floor Plan and Market Insights - Development Plan
 
-**Project Status**: Phase 1 COMPLETE ✅ | Phase 2 COMPLETE ✅ | Phase 3 IN PROGRESS ⏳  
+**Project Status**: Phase 1 COMPLETE ✅ | Phase 2 COMPLETE ✅ | Phase 3 COMPLETE ✅ | Phase 4 IN PROGRESS ⏳  
 **Created**: 2025-10-04  
-**Last Updated**: 2025-10-06 21:00 EDT
+**Last Updated**: 2025-10-13 15:42 EDT  
+**Development Branch**: Val-Branch
 
 ---
 
 ## Project Overview
 
-**Purpose**: Intelligent real estate assistant that parses floor plans, enriches property data with market insights, and generates MLS-ready listings.
+**Purpose**: Intelligent real estate assistant that parses floor plans with advanced measurement estimation, enriches property data with comprehensive market insights through web scraping, performs statistical regression analysis on room dimensions and amenities, and generates MLS-ready listings with predictive pricing models.
 
 **Tech Stack**:
-- **LLM**: Google Gemini 2.5 Flash
+- **LLM**: Google Gemini 2.5 Flash (with Vision API for floor plan OCR)
 - **Agentic Search**: Tavily
 - **Database**: Supabase (PostgreSQL + Auth + Storage)
-- **Market Data**: CoreLogic Property API
+- **Market Data APIs**: 
+  - **ATTOM API** (Free Trial - Property data, AVM, comparables)
+  - **Bright Data Scraping Browser** (Zillow, Redfin, StreetEasy)
 - **AI Orchestration**: CrewAI
 - **Maps**: Google Maps API
 - **Backend**: Python Flask + Celery (async workers)
-- **Frontend**: React (mobile-first, temp scaffold)
+- **Frontend**: React (mobile-first, production-ready)
 - **Infrastructure**: Docker + Docker Compose
+- **Statistical Analysis**: scikit-learn (regression models), pandas, numpy
+
+**API Keys** (Configured in .env):
+- ATTOM_API_KEY=19139ecb49c2aa4f74e2e68868edf452
+- BRIGHTDATA_API_KEY=de3475621a753a33c5b8da6a2da5db338841d8684527f1ac30776b038f7cd2c1
+- GOOGLE_GEMINI_API_KEY=[existing]
+- TAVILY_API_KEY=[existing]
+- GOOGLE_MAPS_API_KEY=[existing]
+
+**Project Scope**:
+- **Volume**: 20-50 properties initially
+- **Timeline**: 120 hours total development time
+- **Priority**: Accurate floor plan analysis (Google Vision + OCR) → Accurate market insights (multi-source data)
+- **Built With**: Windsurf AI Coding Agent
+
+---
+
+## NEW REQUIREMENTS - Phase 6: Advanced Analytics & Multi-Source Data ⏳ NEW
+
+### 6.1 Statistical Regression Analysis
+**Goal**: Build predictive pricing models based on floor plan features
+
+#### Room Dimension Regression Models
+- [ ] Extract dimensions for ALL rooms from floor plans:
+  - [ ] Living room (width, length, area)
+  - [ ] Bedrooms (individual dimensions)
+  - [ ] Bathrooms (individual dimensions)
+  - [ ] Kitchen dimensions
+  - [ ] Dining room dimensions
+  - [ ] Washer/Dryer room
+  - [ ] Balcony/Patio dimensions
+  - [ ] Hallways and closets
+  - [ ] Any additional spaces
+- [ ] Implement linear regression model: `price_per_sqft = f(room_dimensions)`
+- [ ] Calculate coefficient for each room type (e.g., "Each 1ft of living room width adds $X/sqft")
+- [ ] Store regression coefficients in database
+- [ ] Create API endpoint: GET `/api/properties/<id>/price-impact`
+
+#### Building Amenities Regression
+- [ ] Extract building amenities from property data:
+  - [ ] Pool, Gym, Doorman, Parking, etc.
+  - [ ] Create binary features (has_amenity: 0 or 1)
+- [ ] Implement amenity impact model: `price_adjustment = f(amenities)`
+- [ ] Calculate dollar value for each amenity
+- [ ] Store amenity coefficients
+
+#### Location Factor Analysis
+- [ ] Geocode property location
+- [ ] Calculate distance to key locations:
+  - [ ] Transit stations (subway, bus)
+  - [ ] Schools (quality scores)
+  - [ ] Shopping centers
+  - [ ] Parks and recreation
+- [ ] Implement location regression: `location_premium = f(distances, scores)`
+- [ ] Calculate impact of proximity to each factor
+
+#### Predictive Pricing Model
+- [ ] Combine all regression models into unified predictor
+- [ ] Model formula: `predicted_price = base_price + room_effects + amenity_effects + location_effects`
+- [ ] Compare layouts: "3BR/2BA vs 3BR/1.5BA" with price differential
+- [ ] Implement side-by-side comparison view (NO heatmap)
+- [ ] Display output format: "Each 1ft of living room width adds $X/sqft"
+- [ ] Create visualization: Property A vs Property B comparison
+- [ ] Store model training data and coefficients
+- [ ] Create API endpoint: POST `/api/analytics/predict-price`
+- [ ] Write regression model tests
+
+### 6.2 Enhanced Floor Plan Analysis with Measurement Estimation
+**Goal**: Improve floor plan parsing accuracy with dimension estimation
+
+- [ ] Implement standard measurement references:
+  - [ ] Standard door width: 30-36 inches (2.5-3 feet)
+  - [ ] Standard window width: 24-48 inches (2-4 feet)
+  - [ ] Standard ceiling height: 8-9 feet
+- [ ] Create measurement estimation algorithm:
+  - [ ] Detect doors and windows in floor plan using Google Vision
+  - [ ] Calculate pixel-to-feet ratio using door/window sizes
+  - [ ] Estimate room dimensions based on ratio
+  - [ ] Cross-validate with provided dimensions (if available)
+- [ ] Implement Floor Plan Quality Score (0-100):
+  - [ ] +40 points: Dimensions explicitly labeled
+  - [ ] +30 points: Clear doors/windows for estimation
+  - [ ] +20 points: High image resolution
+  - [ ] +10 points: Professional floor plan format
+  - [ ] Penalty: -10 for each missing element
+- [ ] Store quality score in database
+- [ ] Display quality score in UI with explanation
+- [ ] Add confidence intervals for estimated dimensions
+- [ ] Create API endpoint: POST `/api/floor-plans/analyze-with-estimation`
+- [ ] Write measurement estimation tests
+
+### 6.3 Multi-Source Web Scraping (Bright Data)
+**Goal**: Scrape Zillow, Redfin, and StreetEasy for comprehensive market data
+
+#### Bright Data Scraping Browser Integration
+- [ ] Install Bright Data Python SDK: `pip install brightdata`
+- [ ] Configure Bright Data client with API key
+- [ ] Create scraping browser session manager
+- [ ] Implement rate limiting and retry logic
+- [ ] Add user-agent rotation and CAPTCHA handling
+
+#### StreetEasy Scraper
+- [ ] Create `StreetEasyScraper` class
+- [ ] Implement property search by address
+- [ ] Extract listing data:
+  - [ ] Current listing price
+  - [ ] Price history
+  - [ ] Building amenities
+  - [ ] Neighborhood data
+  - [ ] Similar listings
+- [ ] Handle pagination and dynamic content
+- [ ] Implement error handling and fallbacks
+- [ ] Write scraper tests with fixtures
+
+#### Zillow Scraper
+- [ ] Create `ZillowScraper` class
+- [ ] Implement property search by address
+- [ ] Extract Zestimate and price range
+- [ ] Extract comparable properties (Zestimate comps)
+- [ ] Extract rent estimate
+- [ ] Extract market trends
+- [ ] Handle anti-scraping measures
+- [ ] Write scraper tests
+
+#### Redfin Scraper
+- [ ] Create `RedfinScraper` class
+- [ ] Implement property search by address
+- [ ] Extract Redfin Estimate
+- [ ] Extract listing details and history
+- [ ] Extract walk score, transit score
+- [ ] Extract school ratings
+- [ ] Handle dynamic loading
+- [ ] Write scraper tests
+
+#### Scraper Orchestration
+- [ ] Create `MultiSourceScraper` coordinator
+- [ ] Run all scrapers in parallel (async)
+- [ ] Aggregate data from all sources
+- [ ] Implement data normalization:
+  - [ ] Standardize price formats
+  - [ ] Normalize amenity names
+  - [ ] Unify date formats
+- [ ] Create consensus pricing from multiple sources
+- [ ] Store raw scraping results in database
+- [ ] Create Celery task: `scrape_market_data_task`
+- [ ] Integrate with Agent #2 (Market Insights Analyst)
+- [ ] Write orchestration tests
+
+### 6.4 ATTOM API Integration (Replacing CoreLogic)
+**Goal**: Use ATTOM API free trial for property data and AVM
+
+- [ ] **CRITICAL**: Replace all CoreLogic references with ATTOM
+- [ ] Create `AttomAPIClient` Python class
+- [ ] Implement authentication (API key header)
+- [ ] Implement Property API endpoints:
+  - [ ] Property search by address: `/property/address`
+  - [ ] Property detail: `/property/detail`
+  - [ ] Property AVM (Automated Valuation Model): `/property/avm`
+  - [ ] Property sale history: `/property/saleshistory`
+  - [ ] Property assessment: `/property/assessment`
+- [ ] Implement Area API endpoints:
+  - [ ] Neighborhood statistics
+  - [ ] School district data
+  - [ ] Crime statistics
+- [ ] Implement POI (Points of Interest) API:
+  - [ ] Nearby schools, hospitals, transit
+- [ ] Add comprehensive error handling
+- [ ] Implement rate limit handling (free trial limits)
+- [ ] Cache API responses to minimize calls
+- [ ] Refactor Agent #2 to use AttomAPIClient
+- [ ] Remove all CoreLogicClient references
+- [ ] Update tests to use ATTOM API mocks
+- [ ] Document ATTOM API rate limits and quotas
+- [ ] Write ATTOM client unit tests (30+ tests)
+
+### 6.5 Backend API Endpoints for Analytics
+- [ ] POST `/api/analytics/train-model` (admin only)
+  - [ ] Train regression models on existing property data
+  - [ ] Return model accuracy metrics (R², RMSE)
+- [ ] GET `/api/analytics/model-stats`
+  - [ ] Return current model coefficients
+  - [ ] Return training data summary
+- [ ] POST `/api/analytics/predict-price`
+  - [ ] Input: floor_plan_data, amenities, location
+  - [ ] Output: predicted_price, confidence_interval, feature_impacts
+- [ ] GET `/api/properties/<id>/price-impact`
+  - [ ] Return room dimension impacts
+  - [ ] Return amenity impacts
+  - [ ] Return location factor impacts
+- [ ] POST `/api/properties/<id>/compare`
+  - [ ] Input: property_id_2
+  - [ ] Output: side-by-side comparison with price differentials
+- [ ] Write endpoint integration tests
+
+### 6.6 Frontend - Analytics Dashboard
+- [ ] Create Analytics page component
+- [ ] Display regression model results:
+  - [ ] Table: "Each 1ft of living room width adds $X/sqft"
+  - [ ] Table: Room dimension impacts (all rooms)
+  - [ ] Table: Amenity value breakdown
+  - [ ] Table: Location factor impacts
+- [ ] Create side-by-side property comparison view:
+  - [ ] Property A vs Property B layout
+  - [ ] Highlight dimension differences
+  - [ ] Show price impact of each difference
+  - [ ] Display predicted price range for each
+- [ ] Display Floor Plan Quality Score:
+  - [ ] Score badge (0-100)
+  - [ ] Quality breakdown explanation
+  - [ ] Confidence level indicator
+- [ ] Display measurement estimation details:
+  - [ ] Detected doors/windows count
+  - [ ] Pixel-to-feet ratio
+  - [ ] Estimated vs provided dimensions comparison
+- [ ] Add predictive pricing calculator:
+  - [ ] Input sliders: room dimensions
+  - [ ] Checkbox: amenities
+  - [ ] Map: location selection
+  - [ ] Output: predicted price with confidence interval
+- [ ] Write component tests
+
+### 6.7 Data Sources Configuration
+- [ ] Update `.env` with all new API keys
+- [ ] Create data source priority configuration:
+  - [ ] Primary: ATTOM API (property data)
+  - [ ] Secondary: Bright Data scrapers (market comps)
+  - [ ] Tertiary: Existing Tavily search (fallback)
+- [ ] Implement data source fallback logic
+- [ ] Add data freshness tracking (last updated timestamps)
+- [ ] Create data quality metrics dashboard
+- [ ] Document data source coverage by region
 
 ---
 
@@ -520,4 +754,68 @@
 
 ---
 
-**Next Immediate Action**: Complete Phase 0.1 (Project Structure & Configuration)
+---
+
+## Priority Roadmap (120-Hour Timeline)
+
+### Immediate Actions (Hours 0-24)
+1. ✅ Update plan.md with new requirements
+2. ⏳ Create and switch to Val-Branch
+3. ⏳ Configure ATTOM API integration (replace CoreLogic)
+4. ⏳ Set up Bright Data Scraping Browser
+5. ⏳ Test ATTOM API endpoints
+6. ⏳ Test Bright Data scrapers (basic test)
+
+### Phase 1: Core Infrastructure (Hours 24-48)
+1. Implement AttomAPIClient (replace CoreLogicClient)
+2. Create StreetEasyScraper, ZillowScraper, RedfinScraper
+3. Build MultiSourceScraper coordinator
+4. Refactor Agent #2 to use new data sources
+5. Update database schema for multi-source data
+6. Write integration tests
+
+### Phase 2: Enhanced Floor Plan Analysis (Hours 48-72)
+1. Implement measurement estimation algorithm
+2. Add door/window detection (Google Vision)
+3. Calculate Floor Plan Quality Score
+4. Update Agent #1 with new features
+5. Create API endpoint for enhanced analysis
+6. Test with 10-20 sample floor plans
+
+### Phase 3: Statistical Regression Models (Hours 72-96)
+1. Extract room dimensions from all properties
+2. Build room dimension regression model
+3. Build amenity impact model
+4. Build location factor model
+5. Create unified predictive pricing model
+6. Implement "Each 1ft adds $X/sqft" calculation
+7. Create comparison algorithm (3BR/2BA vs 3BR/1.5BA)
+8. Write model tests and validation
+
+### Phase 4: Backend API & Integration (Hours 96-108)
+1. Create analytics endpoints
+2. Implement price prediction endpoint
+3. Create property comparison endpoint
+4. Update async workflow with new agents
+5. Add comprehensive error handling
+6. Write API integration tests
+
+### Phase 5: Frontend Analytics Dashboard (Hours 108-120)
+1. Create Analytics page component
+2. Build side-by-side comparison view (NO heatmap)
+3. Display regression results table
+4. Show Floor Plan Quality Score
+5. Add predictive pricing calculator
+6. Test responsive design
+7. Write component tests
+
+### Testing & Validation (Ongoing)
+- Test with 20-50 properties (target volume)
+- Validate regression model accuracy
+- Verify scraper reliability across all sources
+- Ensure Floor Plan Quality Score accuracy
+- Performance testing (target: <5s per property)
+
+---
+
+**Next Immediate Action**: Create Val-Branch and configure ATTOM API + Bright Data integration
