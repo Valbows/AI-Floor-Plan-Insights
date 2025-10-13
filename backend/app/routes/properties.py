@@ -703,3 +703,206 @@ def get_shareable_link(property_id):
             'error': 'Failed to fetch shareable link',
             'message': str(e)
         }), 500
+
+
+# ================================
+# PHASE 2: ENHANCED FLOOR PLAN ANALYSIS
+# ================================
+
+@properties_bp.route('/<property_id>/analyze-enhanced', methods=['POST'])
+@jwt_required()
+def analyze_floor_plan_enhanced(property_id):
+    """
+    Enhanced floor plan analysis with detailed measurements (Phase 2)
+    
+    Combines:
+    - Basic property data extraction (Agent #1)
+    - Room-by-room measurement estimation (AI service)
+    - Cross-validation and confidence scoring
+    
+    Headers:
+        Authorization: Bearer <jwt_token>
+    
+    Query Parameters:
+        detailed: Include detailed measurements (default: true)
+        store: Store results in database (default: true)
+    
+    Returns:
+        {
+            "property_id": "uuid",
+            "basic_analysis": {
+                "bedrooms": 2,
+                "bathrooms": 1.0,
+                "square_footage": 934,
+                "rooms": [...],
+                "features": [...]
+            },
+            "detailed_measurements": {
+                "total_square_feet": 934,
+                "total_square_feet_confidence": 0.85,
+                "quality_score": 83,
+                "rooms": [
+                    {
+                        "type": "bedroom",
+                        "name": "Master Bedroom",
+                        "length_ft": 12.0,
+                        "width_ft": 14.0,
+                        "sqft": 168,
+                        "features": ["closet", "window"],
+                        "confidence": 0.90
+                    }
+                ]
+            },
+            "validation": {
+                "confidence": "High",
+                "confidence_score": 0.95,
+                "agreement": "Good"
+            }
+        }
+    """
+    try:
+        from app.agents.floor_plan_analyst_enhanced import EnhancedFloorPlanAnalyst
+        import tempfile
+        
+        user_id = get_jwt_identity()
+        
+        # Get query parameters
+        include_detailed = request.args.get('detailed', 'true').lower() == 'true'
+        store_results = request.args.get('store', 'true').lower() == 'true'
+        
+        # Verify property ownership and get floor plan
+        db = get_db()
+        result = db.table('properties').select('*').eq('id', property_id).eq('agent_id', user_id).execute()
+        
+        if not result.data:
+            return jsonify({
+                'error': 'Property not found',
+                'message': 'Property does not exist or you do not have access'
+            }), 404
+        
+        property_data = result.data[0]
+        floor_plan_url = property_data.get('image_url')
+        
+        if not floor_plan_url:
+            return jsonify({
+                'error': 'No floor plan',
+                'message': 'This property does not have a floor plan image'
+            }), 400
+        
+        # Download floor plan to temporary file
+        import requests
+        response = requests.get(floor_plan_url)
+        
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+            tmp.write(response.content)
+            tmp_path = tmp.name
+        
+        try:
+            # Run enhanced analysis
+            analyst = EnhancedFloorPlanAnalyst()
+            
+            if include_detailed:
+                analysis_result = analyst.analyze_with_validation(image_path=tmp_path)
+            else:
+                analysis_result = analyst.analyze_floor_plan(
+                    image_path=tmp_path,
+                    include_measurements=False
+                )
+            
+            # Store results in database if requested
+            if store_results:
+                admin_db = get_admin_db()
+                
+                # Update properties.extracted_data
+                admin_db.table('properties').update({
+                    'extracted_data': analysis_result['basic_analysis'],
+                    'status': 'parsing_complete'
+                }).eq('id', property_id).execute()
+                
+                # Store detailed measurements if available
+                if analysis_result.get('detailed_measurements'):
+                    measurements_data = analysis_result['detailed_measurements']
+                    measurements_data['property_id'] = property_id
+                    
+                    # Upsert (insert or update)
+                    admin_db.table('floor_plan_measurements').upsert(
+                        measurements_data,
+                        on_conflict='property_id'
+                    ).execute()
+            
+            # Return results
+            return jsonify({
+                'property_id': property_id,
+                'basic_analysis': analysis_result['basic_analysis'],
+                'detailed_measurements': analysis_result.get('detailed_measurements'),
+                'validation': analysis_result.get('validation'),
+                'stages_completed': analysis_result.get('stages_completed', 1),
+                'stored_in_database': store_results
+            }), 200
+        
+        finally:
+            # Clean up temporary file
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+    
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'error': 'Analysis failed',
+            'message': str(e),
+            'traceback': traceback.format_exc() if os.getenv('DEBUG') else None
+        }), 500
+
+
+@properties_bp.route('/<property_id>/measurements', methods=['GET'])
+@jwt_required()
+def get_floor_plan_measurements(property_id):
+    """
+    Get stored floor plan measurements for a property
+    
+    Headers:
+        Authorization: Bearer <jwt_token>
+    
+    Returns:
+        {
+            "property_id": "uuid",
+            "total_square_feet": 934,
+            "confidence": 0.85,
+            "quality_score": 83,
+            "rooms": [...],
+            "detected_features": [...],
+            "measurement_method": "hybrid",
+            "created_at": "2025-10-13T..."
+        }
+    """
+    try:
+        user_id = get_jwt_identity()
+        
+        # Verify property ownership
+        db = get_db()
+        property_result = db.table('properties').select('id').eq('id', property_id).eq('agent_id', user_id).execute()
+        
+        if not property_result.data:
+            return jsonify({
+                'error': 'Property not found',
+                'message': 'Property does not exist or you do not have access'
+            }), 404
+        
+        # Get measurements
+        measurements_result = db.table('floor_plan_measurements').select('*').eq('property_id', property_id).execute()
+        
+        if not measurements_result.data:
+            return jsonify({
+                'error': 'No measurements found',
+                'message': 'No measurements have been generated for this property yet. Run enhanced analysis first.'
+            }), 404
+        
+        measurements = measurements_result.data[0]
+        
+        return jsonify(measurements), 200
+    
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to fetch measurements',
+            'message': str(e)
+        }), 500
