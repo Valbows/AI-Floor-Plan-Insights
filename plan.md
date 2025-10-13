@@ -759,62 +759,62 @@
 ## Priority Roadmap (120-Hour Timeline)
 
 ### Immediate Actions (Hours 0-24)
-1. ✅ Update plan.md with new requirements
-2. ⏳ Create and switch to Val-Branch
-3. ⏳ Configure ATTOM API integration (replace CoreLogic)
-4. ⏳ Set up Bright Data Scraping Browser
-5. ⏳ Test ATTOM API endpoints
-6. ⏳ Test Bright Data scrapers (basic test)
+- [x] Update plan.md with new requirements
+- [x] Create and switch to New-Val-Branch
+- [ ] Configure ATTOM API integration (replace CoreLogic)
+- [ ] Set up Bright Data Scraping Browser
+- [ ] Test ATTOM API endpoints
+- [ ] Test Bright Data scrapers (basic test)
 
 ### Phase 1: Core Infrastructure (Hours 24-48)
-1. Implement AttomAPIClient (replace CoreLogicClient)
-2. Create StreetEasyScraper, ZillowScraper, RedfinScraper
-3. Build MultiSourceScraper coordinator
-4. Refactor Agent #2 to use new data sources
-5. Update database schema for multi-source data
-6. Write integration tests
+- [ ] Implement AttomAPIClient (replace CoreLogicClient)
+- [ ] Create StreetEasyScraper, ZillowScraper, RedfinScraper
+- [ ] Build MultiSourceScraper coordinator
+- [ ] Refactor Agent #2 to use new data sources
+- [ ] Update database schema for multi-source data
+- [ ] Write integration tests
 
 ### Phase 2: Enhanced Floor Plan Analysis (Hours 48-72)
-1. Implement measurement estimation algorithm
-2. Add door/window detection (Google Vision)
-3. Calculate Floor Plan Quality Score
-4. Update Agent #1 with new features
-5. Create API endpoint for enhanced analysis
-6. Test with 10-20 sample floor plans
+- [ ] Implement measurement estimation algorithm
+- [ ] Add door/window detection (Google Vision)
+- [ ] Calculate Floor Plan Quality Score
+- [ ] Update Agent #1 with new features
+- [ ] Create API endpoint for enhanced analysis
+- [ ] Test with 10-20 sample floor plans
 
 ### Phase 3: Statistical Regression Models (Hours 72-96)
-1. Extract room dimensions from all properties
-2. Build room dimension regression model
-3. Build amenity impact model
-4. Build location factor model
-5. Create unified predictive pricing model
-6. Implement "Each 1ft adds $X/sqft" calculation
-7. Create comparison algorithm (3BR/2BA vs 3BR/1.5BA)
-8. Write model tests and validation
+- [ ] Extract room dimensions from all properties
+- [ ] Build room dimension regression model
+- [ ] Build amenity impact model
+- [ ] Build location factor model
+- [ ] Create unified predictive pricing model
+- [ ] Implement "Each 1ft adds $X/sqft" calculation
+- [ ] Create comparison algorithm (3BR/2BA vs 3BR/1.5BA)
+- [ ] Write model tests and validation
 
 ### Phase 4: Backend API & Integration (Hours 96-108)
-1. Create analytics endpoints
-2. Implement price prediction endpoint
-3. Create property comparison endpoint
-4. Update async workflow with new agents
-5. Add comprehensive error handling
-6. Write API integration tests
+- [ ] Create analytics endpoints
+- [ ] Implement price prediction endpoint
+- [ ] Create property comparison endpoint
+- [ ] Update async workflow with new agents
+- [ ] Add comprehensive error handling
+- [ ] Write API integration tests
 
 ### Phase 5: Frontend Analytics Dashboard (Hours 108-120)
-1. Create Analytics page component
-2. Build side-by-side comparison view (NO heatmap)
-3. Display regression results table
-4. Show Floor Plan Quality Score
-5. Add predictive pricing calculator
-6. Test responsive design
-7. Write component tests
+- [ ] Create Analytics page component
+- [ ] Build side-by-side comparison view (NO heatmap)
+- [ ] Display regression results table
+- [ ] Show Floor Plan Quality Score
+- [ ] Add predictive pricing calculator
+- [ ] Test responsive design
+- [ ] Write component tests
 
 ### Testing & Validation (Ongoing)
-- Test with 20-50 properties (target volume)
-- Validate regression model accuracy
-- Verify scraper reliability across all sources
-- Ensure Floor Plan Quality Score accuracy
-- Performance testing (target: <5s per property)
+- [ ] Test with 20-50 properties (target volume)
+- [ ] Validate regression model accuracy
+- [ ] Verify scraper reliability across all sources
+- [ ] Ensure Floor Plan Quality Score accuracy
+- [ ] Performance testing (target: <5s per property)
 
 ---
 
