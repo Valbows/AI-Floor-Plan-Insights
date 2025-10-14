@@ -768,6 +768,7 @@ def analyze_floor_plan_enhanced(property_id):
         
         # Get query parameters
         include_detailed = request.args.get('detailed', 'true').lower() == 'true'
+        include_features = request.args.get('features', 'true').lower() == 'true'
         store_results = request.args.get('store', 'true').lower() == 'true'
         
         # Verify property ownership and get floor plan
@@ -806,7 +807,8 @@ def analyze_floor_plan_enhanced(property_id):
             else:
                 analysis_result = analyst.analyze_floor_plan(
                     image_path=tmp_path,
-                    include_measurements=False
+                    include_measurements=include_detailed,
+                    include_features=include_features
                 )
             
             # Store results in database if requested
@@ -821,8 +823,13 @@ def analyze_floor_plan_enhanced(property_id):
                 
                 # Store detailed measurements if available
                 if analysis_result.get('detailed_measurements'):
-                    measurements_data = analysis_result['detailed_measurements']
+                    measurements_data = analysis_result['detailed_measurements'].copy()
                     measurements_data['property_id'] = property_id
+                    
+                    # Merge feature detection data if available
+                    if analysis_result.get('feature_detection'):
+                        # The feature detection goes into detected_features field
+                        measurements_data['detected_features'] = analysis_result['feature_detection']
                     
                     # Upsert (insert or update)
                     admin_db.table('floor_plan_measurements').upsert(
@@ -835,6 +842,7 @@ def analyze_floor_plan_enhanced(property_id):
                 'property_id': property_id,
                 'basic_analysis': analysis_result['basic_analysis'],
                 'detailed_measurements': analysis_result.get('detailed_measurements'),
+                'feature_detection': analysis_result.get('feature_detection'),
                 'validation': analysis_result.get('validation'),
                 'stages_completed': analysis_result.get('stages_completed', 1),
                 'stored_in_database': store_results

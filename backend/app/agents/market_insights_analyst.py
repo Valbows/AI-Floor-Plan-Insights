@@ -14,7 +14,7 @@ import json
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew
-from crewai_tools import tool
+from crewai.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.clients.attom_client import AttomAPIClient
 import asyncio

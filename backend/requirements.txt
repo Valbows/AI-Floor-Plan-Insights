@@ -1,5 +1,6 @@
 # AI Floor Plan and Market Insights - Backend Dependencies
-# Python 3.11+ (Phase 0 - Foundation Only)
+# REQUIRES: Python 3.10+ (CrewAI dependency)
+# RECOMMENDED: Python 3.11+
 
 # ================================
 # Core Framework
@@ -31,10 +32,9 @@ redis==5.0.3
 # AI & LLM (Phase 2+)
 # ================================
 google-generativeai==0.8.3
-crewai==0.86.0
-crewai-tools==0.17.0
-langchain==0.3.13
-langchain-google-genai==2.0.8
+crewai>=0.1.0,<1.0.0  # Use latest stable version (includes crewai_tools)
+langchain>=0.1.0
+langchain-google-genai>=1.0.0
 
 # ================================
 # API Clients
@@ -51,9 +51,10 @@ beautifulsoup4==4.12.3
 lxml==5.1.0
 
 # ================================
-# Image Processing
+# Image Processing & OCR
 # ================================
 Pillow==10.3.0
+pytesseract==0.3.10  # OCR fallback for dimension extraction
 
 # ================================
 # Data Validation

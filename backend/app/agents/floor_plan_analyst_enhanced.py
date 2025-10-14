@@ -26,6 +26,12 @@ from app.services.floor_plan_measurements import (
     FloorPlanMeasurements
 )
 
+# Phase 2 feature detection
+from app.services.feature_detection import (
+    FloorPlanFeatureDetector,
+    FeatureDetectionResult
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,16 +40,19 @@ class EnhancedFloorPlanAnalyst:
     Enhanced Floor Plan Analyst combining:
     1. Basic extraction (bedrooms, bathrooms) - Agent #1
     2. Detailed measurements (room-by-room) - Phase 1 service
+    3. Feature detection (doors, windows) - Phase 2 service
     
-    Two-stage analysis:
+    Three-stage analysis:
     - Stage 1: Quick extraction of key metrics (Agent #1)
     - Stage 2: Detailed measurement estimation (AI measurement service)
+    - Stage 3: Feature detection (doors, windows, closets)
     """
     
     def __init__(self):
-        """Initialize both analyzers"""
+        """Initialize all analyzers"""
         self.basic_analyst = FloorPlanAnalyst()
         self.measurement_estimator = FloorPlanMeasurementEstimator()
+        self.feature_detector = FloorPlanFeatureDetector()
         
         logger.info("Enhanced Floor Plan Analyst initialized (Phase 2)")
     
@@ -52,16 +61,18 @@ class EnhancedFloorPlanAnalyst:
         image_path: str = None,
         image_url: str = None,
         image_bytes: bytes = None,
-        include_measurements: bool = True
+        include_measurements: bool = True,
+        include_features: bool = True
     ) -> Dict[str, Any]:
         """
-        Complete floor plan analysis with optional detailed measurements
+        Complete floor plan analysis with optional detailed measurements and features
         
         Args:
             image_path: Local path to floor plan image
             image_url: URL to floor plan image
             image_bytes: Raw image bytes
             include_measurements: If True, includes room-by-room measurements
+            include_features: If True, includes door/window detection
             
         Returns:
             Combined analysis results
@@ -115,12 +126,43 @@ class EnhancedFloorPlanAnalyst:
                 logger.error(f"Stage 2 failed: {e}")
                 measurements_data = None
         
+        # Stage 3: Feature detection (if requested)
+        features_data = None
+        if include_features and image_path:
+            logger.info("[Stage 3/3] Detecting doors, windows, and features...")
+            
+            try:
+                # Pass room data for context
+                room_data = measurements_data.get('rooms') if measurements_data else None
+                
+                features = self.feature_detector.detect_features(
+                    image_path=image_path,
+                    room_data=room_data
+                )
+                
+                # Convert to database format
+                features_data = self.feature_detector.to_database_format(features)
+                
+                logger.info(f"✅ Stage 3 complete: {features.total_doors} doors, {features.total_windows} windows, {features.total_closets} closets")
+            
+            except Exception as e:
+                logger.error(f"Stage 3 failed: {e}")
+                features_data = None
+        
+        # Calculate stages completed
+        stages = 1
+        if measurements_data:
+            stages = 2
+        if features_data:
+            stages = 3
+        
         # Combine results
         result = {
             'basic_analysis': basic_data,
             'detailed_measurements': measurements_data,
+            'feature_detection': features_data,
             'analysis_complete': True,
-            'stages_completed': 2 if measurements_data else 1
+            'stages_completed': stages
         }
         
         return result
@@ -141,7 +183,8 @@ class EnhancedFloorPlanAnalyst:
             image_path=image_path,
             image_url=image_url,
             image_bytes=image_bytes,
-            include_measurements=True
+            include_measurements=True,
+            include_features=True
         )
         
         # Cross-validate measurements
