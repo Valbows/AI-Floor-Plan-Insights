@@ -40,7 +40,7 @@ class StreetEasyScraper(BaseScraper):
             html = await self.client.scrape_page(
                 search_url,
                 wait_for='div[class*="listingCard"]',
-                wait_timeout=30000
+                wait_timeout=5000  # Reduced from 30s to 5s for fast failure
             )
             
             soup = self.parse_html(html)
@@ -67,7 +67,7 @@ class StreetEasyScraper(BaseScraper):
             html = await self.client.scrape_page(
                 property_url,
                 wait_for='div[class*="DetailsPage"]',
-                wait_timeout=30000
+                wait_timeout=5000  # Reduced from 30s to 5s for fast failure
             )
             
             soup = self.parse_html(html)

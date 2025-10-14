@@ -19,6 +19,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from app.clients.attom_client import AttomAPIClient
 import asyncio
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +134,42 @@ def get_avm_estimate(address: str, city: str, state: str, zip_code: str = "") ->
         return json.dumps(avm, indent=2)
     except Exception as e:
         return f"AVM not available: {str(e)}"
+
+
+@tool("ATTOM Sales Trends")
+def get_market_sales_trends(zip_code: str, interval: str = "monthly") -> str:
+    """
+    Get comprehensive sales trend data for market analysis and comp set building.
+    
+    ⚠️ NOTE: This endpoint may require ATTOM premium subscription (not in free trial).
+    If unavailable, use ATTOM Property Search + Comparables instead.
+    
+    PRIMARY DATA SOURCE for:
+    - Price per square foot (for regression models)
+    - Median/average sale prices (for comparables)
+    - Market velocity (days on market trends)
+    - Year-over-year appreciation rates
+    - Historical pricing data (2 years)
+    
+    Args:
+        zip_code: ZIP code for market area (required)
+        interval: 'monthly', 'quarterly', or 'yearly' (default: monthly)
+    
+    Returns:
+        str: JSON with comprehensive market trends OR error message if not available
+    
+    If this tool returns an error, fall back to:
+    1. ATTOM Property Search (get recent sales in area)
+    2. ATTOM AVM (automated valuation)
+    3. Multi-Source Scraping (Zillow/Redfin estimates)
+    """
+    try:
+        client = AttomAPIClient()
+        trends = client.get_sales_trends(zip_code, interval=interval)
+        return json.dumps(trends, indent=2)
+    except Exception as e:
+        # Sales trends is a premium feature - provide helpful error
+        return f"❌ ATTOM Sales Trends not available (likely requires premium subscription). Error: {str(e)}\n\n💡 RECOMMENDATION: Use alternative tools:\n1. ATTOM Property Search - Find recent sales in the area\n2. ATTOM AVM - Get automated valuation\n3. Multi-Source Scraping - Get Zillow/Redfin pricing\n4. Tavily Web Search - Research market trends"
 
 
 @tool("Multi-Source Property Scraping")
@@ -259,22 +296,33 @@ class MarketInsightsAnalyst:
         self.expertise = """You are a senior real estate market analyst with 20 years of experience 
         in residential property valuation, market trend analysis, and investment assessment. 
         You specialize in analyzing comparable sales, market conditions, and investment potential 
-        to provide data-driven insights for real estate professionals. You have access to ATTOM 
-        property data, multi-source web scraping (Zillow, Redfin, StreetEasy), and web research tools."""
+        to provide data-driven insights for real estate professionals.
         
-        # Build tools list (ATTOM + Web Scraping + optional Tavily)
+        DATA STRATEGY (use in this order):
+        1. ALWAYS start with ATTOM Sales Trends (2 years of market data, price per sqft, velocity)
+        2. Use ATTOM Property Search & AVM for subject property details
+        3. Use Multi-Source Scraping (Zillow/Redfin/StreetEasy) as backup if ATTOM has gaps
+        4. Use Tavily Web Search for general market research and neighborhood insights
+        
+        The ATTOM Sales Trends tool is your PRIMARY source for building comp sets and 
+        understanding market pricing. Always call it first to establish baseline pricing."""
+        
+        # Build tools list (prioritized by reliability and data quality)
         tools = [
+            # Tier 1: ATTOM API (primary, most reliable)
+            get_market_sales_trends,  # NEW: Primary source for market trends and comp data
             search_property_data,
             get_comparable_properties,
             get_avm_estimate,
-            scrape_property_data  # NEW: Multi-source web scraping
+            # Tier 2: Web scraping (backup when ATTOM has limited data)
+            scrape_property_data  # Bright Data multi-source scraping
         ]
         
         # Add Tavily web search tool if API key is available
         if os.getenv('TAVILY_API_KEY'):
             tools.append(tavily_search_tool)
         
-        # Create CrewAI agent
+        # Create CrewAI agent with strict limits
         self.agent = Agent(
             role=self.role,
             goal="Analyze property market data from multiple sources and provide comprehensive investment insights",
@@ -282,7 +330,9 @@ class MarketInsightsAnalyst:
             tools=tools,
             llm=self.llm,
             verbose=True,
-            allow_delegation=False
+            allow_delegation=False,
+            max_iter=3,  # Reduce to limit LLM/tool loops
+            max_rpm=6    # Safer than free-tier 10 RPM
         )
     
     def analyze_property(self, address: str, property_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -313,39 +363,27 @@ class MarketInsightsAnalyst:
             Exception: If CorewAI execution fails
         """
         try:
-            # Create analysis task for CrewAI
+            # Create simplified task for CrewAI (faster execution)
             task_description = f"""
-Analyze the real estate market for the following property:
+Analyze property at: {address}
 
-ADDRESS: {address}
+Property: {property_data.get('bedrooms', 0)} bed, {property_data.get('bathrooms', 0)} bath, {property_data.get('square_footage', 0)} sqft
 
-PROPERTY DETAILS (from floor plan analysis):
-- Bedrooms: {property_data.get('bedrooms', 0)}
-- Bathrooms: {property_data.get('bathrooms', 0)}
-- Square Footage: {property_data.get('square_footage', 0)}
-- Layout: {property_data.get('layout_type', 'Not specified')}
-- Features: {', '.join(property_data.get('features', []))}
+INSTRUCTIONS:
+1. Try ATTOM tools first (Property Search, AVM, Comparables) - these are fastest
+2. If ATTOM fails or has limited data, try Multi-Source Scraping
+3. If both fail, use Tavily Web Search for general market info
+4. DO NOT retry failed tools - move to next option immediately
+5. Stop after getting ANY useful data - don't over-analyze
 
-TASKS:
-1. Use the ATTOM Property Search tool to find official property data
-2. Use the Multi-Source Property Scraping tool to get current market prices from Zillow, Redfin, and StreetEasy
-3. Use the ATTOM AVM Estimate tool to get automated valuation
-4. Use the ATTOM Comparables tool to find similar properties
-5. If web search is available, research local market trends and neighborhood info
-6. Analyze all data from multiple sources and provide:
-   - Price estimate with confidence level and reasoning
-   - Market trend analysis (direction, appreciation, demand, inventory)
-   - Investment analysis (score 1-100, rental potential, cap rate from RAM, risks, opportunities)
-   - Executive summary with actionable insights
+Return JSON with:
+- price_estimate: {{estimated_value, confidence, value_range_low, value_range_high, reasoning}}
+- market_trend: {{trend_direction, appreciation_rate, days_on_market_avg, inventory_level, buyer_demand, insights}}
+- investment_analysis: {{investment_score, rental_potential, estimated_rental_income, cap_rate, appreciation_potential, risk_factors[], opportunities[]}}
+- comparable_properties: []
+- summary: string
 
-Provide your analysis in valid JSON format with the following structure:
-- price_estimate (object with estimated_value, confidence, value_range_low, value_range_high, reasoning)
-- market_trend (object with trend_direction, appreciation_rate, days_on_market_avg, inventory_level, buyer_demand, insights)
-- investment_analysis (object with investment_score 1-100, rental_potential, estimated_rental_income, cap_rate, appreciation_potential, risk_factors array, opportunities array)
-- comparable_properties (empty array for now)
-- summary (executive summary string)
-
-Return ONLY valid JSON matching the MarketInsights schema. Be data-driven and specific.
+Be concise. If data is unavailable, estimate based on property characteristics and note low confidence.
 """
             
             task = Task(
@@ -363,8 +401,18 @@ Return ONLY valid JSON matching the MarketInsights schema. Be data-driven and sp
             
             print(f"[CrewAI] Starting market analysis for: {address}")
             print(f"[DEBUG] About to call crew.kickoff()")
-            
-            result = crew.kickoff(inputs={'address': address})
+
+            # One-time retry with short backoff on rate limit/quota
+            try:
+                result = crew.kickoff(inputs={'address': address})
+            except Exception as e:
+                em = str(e).lower()
+                if any(tok in em for tok in ['ratelimit', 'quota', 'resource_exhausted', '429']):
+                    print("[CrewAI] Rate limited, retrying in ~2s...")
+                    time.sleep(2)
+                    result = crew.kickoff(inputs={'address': address})
+                else:
+                    raise
             
             print(f"[DEBUG] crew.kickoff() completed successfully")
             print(f"[DEBUG] Result type: {type(result)}")
@@ -591,13 +639,22 @@ Comp #{i}:
         # Rough estimate based on square footage (national average ~$200/sqft)
         estimated_value = sqft * 200 if sqft > 0 else 300000
         
+        # Sanitize error for user-facing reasoning
+        safe_error = 'External data sources were temporarily unavailable.'
+        try:
+            em = str(error_message).lower()
+            if 'ratelimit' in em or 'quota' in em or 'resource_exhausted' in em:
+                safe_error = 'Temporarily rate-limited by the AI service. Please wait about a minute and retry.'
+        except Exception:
+            pass
+
         return {
             'price_estimate': {
                 'estimated_value': estimated_value,
                 'confidence': 'low',
                 'value_range_low': int(estimated_value * 0.85),
                 'value_range_high': int(estimated_value * 1.15),
-                'reasoning': f'Estimate based on square footage only. External data sources unavailable: {error_message}'
+                'reasoning': f'Estimate based on square footage only. {safe_error}'
             },
             'market_trend': {
                 'trend_direction': 'unknown',

@@ -4,10 +4,11 @@ import {
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
   FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone, Check,
-  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2
+  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2, RefreshCw
 } from 'lucide-react'
 import axios from 'axios'
 import Analytics from '../components/Analytics'
+import FloorPlanAnalysisDetails from '../components/FloorPlanAnalysisDetails'
 
 const PropertyDetail = () => {
   const { id } = useParams()
@@ -19,6 +20,7 @@ const PropertyDetail = () => {
   const [activeTab, setActiveTab] = useState('market')
   const [showProgressOverlay, setShowProgressOverlay] = useState(searchParams.get('showProgress') === 'true')
   const [analysisStep, setAnalysisStep] = useState(0)
+  const [reEnriching, setReEnriching] = useState(false)
   
   // Edit states
   const [editMode, setEditMode] = useState(false) // Master edit mode toggle
@@ -91,14 +93,36 @@ const PropertyDetail = () => {
     }
   }, [property?.status])
 
-  const loadProperty = async () => {
+  const loadProperty = async (retryCount = 0) => {
     try {
       const response = await axios.get(`/api/properties/${id}`)
       setProperty(response.data.property)
       setLoading(false)
+      setError('') // Clear any previous errors
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load property')
-      setLoading(false)
+      // If property not found and we haven't retried yet, wait and try again
+      // This handles the case where property is being created by Celery
+      if (err.response?.status === 404 && retryCount < 3) {
+        setTimeout(() => {
+          loadProperty(retryCount + 1)
+        }, 2000) // Wait 2 seconds before retry
+      } else {
+        setError(err.response?.data?.message || 'Failed to load property')
+        setLoading(false)
+      }
+    }
+  }
+
+  const handleReEnrich = async () => {
+    try {
+      setReEnriching(true)
+      await axios.post(`/api/properties/${id}/enrich`)
+      // trigger immediate reload and let polling take over
+      await loadProperty()
+    } catch (err) {
+      alert('Failed to re-run market insights. Please try again.')
+    } finally {
+      setReEnriching(false)
     }
   }
 
@@ -644,13 +668,13 @@ const PropertyDetail = () => {
               </div>
             )}
 
-            {/* AI Notes */}
-            {extracted.notes && (
-              <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
-                <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>AI Analysis</h3>
-                <p className="text-sm leading-relaxed" style={{color: '#000000'}}>{extracted.notes}</p>
-              </div>
-            )}
+            {/* AI Analysis - Detailed Floor Plan Breakdown */}
+            <div className="mt-6">
+              <h3 className="text-xs font-bold uppercase mb-4" style={{color: '#666666', letterSpacing: '1px'}}>
+                AI Analysis - Floor Plan Details
+              </h3>
+              <FloorPlanAnalysisDetails extractedData={extracted} />
+            </div>
             </div>
           </div>
 
@@ -738,6 +762,45 @@ const PropertyDetail = () => {
             <div className="space-y-6">
             {activeTab === 'market' && (
               <div className="space-y-6">
+                {/* Data Sources + Re-run Button */}
+                <div className="flex items-center justify-between rounded-lg p-3" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Data Sources Used:</span>
+                    {/* Build pills from extracted.data_sources if available */}
+                    {extracted.data_sources ? (
+                      <>
+                        {extracted.data_sources.attom_property && (
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>ATTOM Property</span>
+                        )}
+                        {extracted.data_sources.attom_avm && (
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>ATTOM AVM</span>
+                        )}
+                        {extracted.data_sources.attom_area && (
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Area</span>
+                        )}
+                        {extracted.data_sources.parcel && (
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Parcel</span>
+                        )}
+                        {extracted.data_sources.fallback && (
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #FF5959', borderRadius: '9999px', color: '#FF5959'}}>Fallback</span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #CCCCCC', borderRadius: '9999px', color: '#666666'}}>Unknown</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleReEnrich}
+                    disabled={reEnriching}
+                    className="flex items-center space-x-2 px-3 py-2 text-xs font-bold uppercase"
+                    style={{border: '2px solid #000000', borderRadius: '6px', color: reEnriching ? '#666666' : '#000000', background: '#FFFFFF', cursor: reEnriching ? 'not-allowed' : 'pointer'}}
+                    onMouseEnter={(e) => { if (!reEnriching) { e.currentTarget.style.background = '#000000'; e.currentTarget.style.color = '#FFFFFF' } }}
+                    onMouseLeave={(e) => { if (!reEnriching) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#000000' } }}
+                  >
+                    {reEnriching ? <Loader className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    <span>{reEnriching ? 'Re-running...' : 'Re-run Market Insights'}</span>
+                  </button>
+                </div>
                 {/* Market Insights (Agent #2) */}
                 {extracted.market_insights ? (
                   <>
@@ -888,24 +951,140 @@ const PropertyDetail = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* ATTOM Data (Property, AVM, Parcel, Area) */}
+                    {extracted.attom && (
+                      <div className="rounded-lg p-6 space-y-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>ATTOM Data</h2>
+                        {/* Property Characteristics */}
+                        {extracted.attom.property && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Property Characteristics</h3>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><p className="text-gray-600">Type</p><p className="font-semibold text-gray-900">{extracted.attom.property.property_type || '—'}</p></div>
+                              <div><p className="text-gray-600">Year Built</p><p className="font-semibold text-gray-900">{extracted.attom.property.year_built || '—'}</p></div>
+                              <div><p className="text-gray-600">Beds</p><p className="font-semibold text-gray-900">{extracted.attom.property.bedrooms ?? '—'}</p></div>
+                              <div><p className="text-gray-600">Baths</p><p className="font-semibold text-gray-900">{extracted.attom.property.bathrooms ?? '—'}</p></div>
+                              <div><p className="text-gray-600">Sq Ft</p><p className="font-semibold text-gray-900">{extracted.attom.property.square_feet?.toLocaleString?.() || extracted.attom.property.square_feet || '—'}</p></div>
+                              <div><p className="text-gray-600">Last Sale</p><p className="font-semibold text-gray-900">{extracted.attom.property.last_sale_date || '—'}{extracted.attom.property.last_sale_price ? ` • $${Number(extracted.attom.property.last_sale_price).toLocaleString()}` : ''}</p></div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* AVM */}
+                        {extracted.attom.avm && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>ATTOM AVM</h3>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><p className="text-gray-600">Estimated Value</p><p className="font-semibold text-gray-900">${Number(extracted.attom.avm.estimated_value || 0).toLocaleString()}</p></div>
+                              <div><p className="text-gray-600">Confidence</p><p className="font-semibold text-gray-900">{extracted.attom.avm.confidence_score ? `${extracted.attom.avm.confidence_score}%` : '—'}</p></div>
+                              <div><p className="text-gray-600">Range</p><p className="font-semibold text-gray-900">${Number(extracted.attom.avm.value_range_low || 0).toLocaleString()} - ${Number(extracted.attom.avm.value_range_high || 0).toLocaleString()}</p></div>
+                              <div><p className="text-gray-600">As of</p><p className="font-semibold text-gray-900">{extracted.attom.avm.as_of_date || '—'}</p></div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Parcel Summary */}
+                        {extracted.attom.parcel && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Parcel</h3>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><p className="text-gray-600">APN</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.apn || '—'}</p></div>
+                              <div><p className="text-gray-600">FIPS</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.fips || '—'}</p></div>
+                              <div><p className="text-gray-600">Lot Size (acres)</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.lot_size_acres ?? '—'}</p></div>
+                              <div><p className="text-gray-600">Lot Size (sqft)</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.lot_size_sqft?.toLocaleString?.() || extracted.attom.parcel.lot_size_sqft || '—'}</p></div>
+                              <div><p className="text-gray-600">Zoning</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.zoning || '—'}</p></div>
+                              <div><p className="text-gray-600">Use</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.county_use || '—'}</p></div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Area / Demographics */}
+                        {extracted.attom.area_stats && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Area</h3>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><p className="text-gray-600">Median Home Value</p><p className="font-semibold text-gray-900">${Number(extracted.attom.area_stats.median_home_value || 0).toLocaleString()}</p></div>
+                              <div><p className="text-gray-600">Median Household Income</p><p className="font-semibold text-gray-900">${Number(extracted.attom.area_stats.median_household_income || 0).toLocaleString()}</p></div>
+                              <div><p className="text-gray-600">Population</p><p className="font-semibold text-gray-900">{Number(extracted.attom.area_stats.population || 0).toLocaleString()}</p></div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : (
-                  <div className="border border-gray-200 rounded-lg p-12 text-center">
-                    <Loader className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Analyzing Market Data</h3>
-                    <p className="text-sm text-gray-600 mb-4">Our AI is gathering comparable properties and calculating market value...</p>
-                    <div className="max-w-md mx-auto">
-                      <div className="flex items-center space-x-2 text-xs text-gray-500">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span>Floor plan analysis complete</span>
+                  <>
+                    {/* ATTOM Data available even if Market Insights are still processing */}
+                    {extracted.attom && (
+                      <div className="rounded-lg p-6 space-y-6 mb-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>ATTOM Data</h2>
+                        {extracted.attom.property && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Property Characteristics</h3>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><p className="text-gray-600">Type</p><p className="font-semibold text-gray-900">{extracted.attom.property.property_type || '—'}</p></div>
+                              <div><p className="text-gray-600">Year Built</p><p className="font-semibold text-gray-900">{extracted.attom.property.year_built || '—'}</p></div>
+                              <div><p className="text-gray-600">Beds</p><p className="font-semibold text-gray-900">{extracted.attom.property.bedrooms ?? '—'}</p></div>
+                              <div><p className="text-gray-600">Baths</p><p className="font-semibold text-gray-900">{extracted.attom.property.bathrooms ?? '—'}</p></div>
+                              <div><p className="text-gray-600">Sq Ft</p><p className="font-semibold text-gray-900">{extracted.attom.property.square_feet?.toLocaleString?.() || extracted.attom.property.square_feet || '—'}</p></div>
+                              <div><p className="text-gray-600">Last Sale</p><p className="font-semibold text-gray-900">{extracted.attom.property.last_sale_date || '—'}{extracted.attom.property.last_sale_price ? ` • $${Number(extracted.attom.property.last_sale_price).toLocaleString()}` : ''}</p></div>
+                            </div>
+                          </div>
+                        )}
+                        {extracted.attom.avm && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>ATTOM AVM</h3>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><p className="text-gray-600">Estimated Value</p><p className="font-semibold text-gray-900">${Number(extracted.attom.avm.estimated_value || 0).toLocaleString()}</p></div>
+                              <div><p className="text-gray-600">Confidence</p><p className="font-semibold text-gray-900">{extracted.attom.avm.confidence_score ? `${extracted.attom.avm.confidence_score}%` : '—'}</p></div>
+                              <div><p className="text-gray-600">Range</p><p className="font-semibold text-gray-900">${Number(extracted.attom.avm.value_range_low || 0).toLocaleString()} - ${Number(extracted.attom.avm.value_range_high || 0).toLocaleString()}</p></div>
+                              <div><p className="text-gray-600">As of</p><p className="font-semibold text-gray-900">{extracted.attom.avm.as_of_date || '—'}</p></div>
+                            </div>
+                          </div>
+                        )}
+                        {extracted.attom.parcel && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Parcel</h3>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><p className="text-gray-600">APN</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.apn || '—'}</p></div>
+                              <div><p className="text-gray-600">FIPS</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.fips || '—'}</p></div>
+                              <div><p className="text-gray-600">Lot Size (acres)</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.lot_size_acres ?? '—'}</p></div>
+                              <div><p className="text-gray-600">Lot Size (sqft)</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.lot_size_sqft?.toLocaleString?.() || extracted.attom.parcel.lot_size_sqft || '—'}</p></div>
+                              <div><p className="text-gray-600">Zoning</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.zoning || '—'}</p></div>
+                              <div><p className="text-gray-600">Use</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.county_use || '—'}</p></div>
+                            </div>
+                          </div>
+                        )}
+                        {extracted.attom.area_stats && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Area</h3>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><p className="text-gray-600">Median Home Value</p><p className="font-semibold text-gray-900">${Number(extracted.attom.area_stats.median_home_value || 0).toLocaleString()}</p></div>
+                              <div><p className="text-gray-600">Median Household Income</p><p className="font-semibold text-gray-900">${Number(extracted.attom.area_stats.median_household_income || 0).toLocaleString()}</p></div>
+                              <div><p className="text-gray-600">Population</p><p className="font-semibold text-gray-900">{Number(extracted.attom.area_stats.population || 0).toLocaleString()}</p></div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center space-x-2 text-xs text-blue-600 mt-2">
-                        <Loader className="w-4 h-4 animate-spin" />
-                        <span>Processing market insights...</span>
+                    )}
+                    <div className="border border-gray-200 rounded-lg p-12 text-center">
+                      <Loader className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Analyzing Market Data</h3>
+                      <p className="text-sm text-gray-600 mb-4">Our AI is gathering comparable properties and calculating market value...</p>
+                      <div className="max-w-md mx-auto">
+                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span>Floor plan analysis complete</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-xs text-blue-600 mt-2">
+                          <Loader className="w-4 h-4 animate-spin" />
+                          <span>Processing market insights...</span>
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-4">This usually takes 1-2 minutes</p>
+                      <p className="text-xs text-gray-400 mt-4">This usually takes 1-2 minutes</p>
                   </div>
+                  </>
                 )}
               </div>
             )}

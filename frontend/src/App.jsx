@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard'
 import PropertyDetail from './pages/PropertyDetail'
 import NewProperty from './pages/NewProperty'
 import PublicReport from './pages/PublicReport'
+import Analytics from './pages/Analytics'
 
 function App() {
   return (
@@ -43,6 +44,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <PropertyDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
               </ProtectedRoute>
             }
           />

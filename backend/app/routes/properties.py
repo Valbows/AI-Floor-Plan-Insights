@@ -914,3 +914,41 @@ def get_floor_plan_measurements(property_id):
             'error': 'Failed to fetch measurements',
             'message': str(e)
         }), 500
+
+
+@properties_bp.route('/<property_id>/enrich', methods=['POST'])
+@jwt_required()
+def retrigger_enrichment(property_id):
+    """
+    Re-trigger enrichment (ATTOM fetch + market insights) for an existing property.
+    Does not re-run floor plan analysis.
+
+    Returns 202 when the Celery task has been queued.
+    """
+    try:
+        user_id = get_jwt_identity()
+
+        # Verify property ownership
+        db = get_db()
+        result = db.table('properties').select('id').eq('id', property_id).eq('agent_id', user_id).execute()
+
+        if not result.data:
+            return jsonify({
+                'error': 'Property not found',
+                'message': 'Property does not exist or you do not have access'
+            }), 404
+
+        # Queue enrichment task
+        from app.tasks.property_tasks import enrich_property_data_task
+        enrich_property_data_task.delay(property_id)
+
+        return jsonify({
+            'message': 'Enrichment started',
+            'property_id': property_id
+        }), 202
+
+    except Exception as e:
+        return jsonify({
+            'error': 'Failed to start enrichment',
+            'message': str(e)
+        }), 500

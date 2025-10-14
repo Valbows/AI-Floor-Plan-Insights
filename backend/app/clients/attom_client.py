@@ -391,6 +391,132 @@ class AttomAPIClient:
             # Comps may not be available in free trial
             return []
     
+    def get_sales_trends(self, zip_code: str, interval: str = 'monthly') -> Dict[str, Any]:
+        """
+        Get sales trend data for market analysis and regression modeling
+        
+        Provides 2 years of historical sales data including:
+        - Average/median sale prices
+        - Sale counts (market velocity)
+        - Price per square foot trends
+        - Month-over-month/year-over-year changes
+        
+        Args:
+            zip_code: ZIP code for market area
+            interval: 'monthly', 'quarterly', or 'yearly' (default: monthly)
+        
+        Returns:
+            {
+                "zip_code": "10022",
+                "interval": "monthly",
+                "current_median_price": 850000,
+                "current_avg_price": 900000,
+                "price_per_sqft": 1200,
+                "sale_count_12mo": 145,
+                "trends": [
+                    {
+                        "period": "2024-10",
+                        "median_price": 850000,
+                        "avg_price": 900000,
+                        "sale_count": 12,
+                        "price_change_pct": 2.5
+                    },
+                    ...
+                ],
+                "yoy_change_pct": 8.5,
+                "market_velocity": "moderate"
+            }
+        
+        Raises:
+            Exception: If sales trend data unavailable or API error
+        """
+        params = {
+            'postalcode': zip_code,
+            'interval': interval
+        }
+        
+        try:
+            # Try different salestrend endpoint variations
+            # Free trial may have limited access to this endpoint
+            endpoints_to_try = [
+                'salestrend/snapshot',
+                'salestrend/detail',
+                'area/salestrend'
+            ]
+            
+            result = None
+            last_error = None
+            
+            for endpoint in endpoints_to_try:
+                try:
+                    result = self._make_request(endpoint, params=params)
+                    break  # Success!
+                except Exception as e:
+                    last_error = e
+                    continue
+            
+            if not result:
+                raise last_error or Exception("Sales trend endpoint not available")
+            
+            status = result.get('status', {})
+            if status.get('code') != 0:
+                raise Exception(f"ATTOM sales trend error: {status.get('msg')}")
+            
+            trends = result.get('salestrends', [])
+            if not trends:
+                raise Exception(f"No sales trend data found for ZIP: {zip_code}")
+            
+            # Extract most recent data point
+            latest = trends[0] if trends else {}
+            
+            # Calculate year-over-year change if we have 12+ months of data
+            yoy_change = None
+            if len(trends) >= 12:
+                current_price = latest.get('medianSalePrice', 0)
+                year_ago_price = trends[11].get('medianSalePrice', 0)
+                if current_price and year_ago_price:
+                    yoy_change = ((current_price - year_ago_price) / year_ago_price) * 100
+            
+            # Calculate price per sqft if available
+            price_per_sqft = None
+            if latest.get('medianSalePrice') and latest.get('medianSquareFeet'):
+                price_per_sqft = latest.get('medianSalePrice') / latest.get('medianSquareFeet')
+            
+            # Determine market velocity based on sale count trends
+            market_velocity = "unknown"
+            if len(trends) >= 3:
+                recent_avg = sum([t.get('saleCount', 0) for t in trends[:3]]) / 3
+                older_avg = sum([t.get('saleCount', 0) for t in trends[3:6]]) / 3 if len(trends) >= 6 else recent_avg
+                if recent_avg > older_avg * 1.2:
+                    market_velocity = "high"
+                elif recent_avg < older_avg * 0.8:
+                    market_velocity = "low"
+                else:
+                    market_velocity = "moderate"
+            
+            return {
+                'zip_code': zip_code,
+                'interval': interval,
+                'current_median_price': latest.get('medianSalePrice'),
+                'current_avg_price': latest.get('avgSalePrice'),
+                'price_per_sqft': price_per_sqft,
+                'sale_count_12mo': sum([t.get('saleCount', 0) for t in trends[:12]]),
+                'trends': [
+                    {
+                        'period': t.get('periodBegin'),
+                        'median_price': t.get('medianSalePrice'),
+                        'avg_price': t.get('avgSalePrice'),
+                        'sale_count': t.get('saleCount'),
+                        'median_sqft': t.get('medianSquareFeet')
+                    } for t in trends
+                ],
+                'yoy_change_pct': yoy_change,
+                'market_velocity': market_velocity
+            }
+            
+        except Exception as e:
+            raise Exception(f"Failed to get sales trends: {str(e)}")
+    
     def get_area_stats(self, zip_code: str) -> Dict[str, Any]:
         """
         Get area/neighborhood statistics by ZIP code

@@ -13,6 +13,8 @@ from pydantic import BaseModel, Field, field_validator
 from crewai import Agent, Task, Crew
 from crewai.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
+from app.parsing.parser import FloorPlanParser
+from litellm import completion as litellm_completion
 
 class Room(BaseModel):
     """Individual room information"""
@@ -51,14 +53,11 @@ class FloorPlanData(BaseModel):
 
 def _analyze_with_gemini_vision(image_url: str, image_bytes_b64: str = None) -> str:
     """
-    Internal function to analyze floor plan with Gemini Vision.
+    Internal function to analyze floor plan with Gemini Vision using LiteLLM REST API.
     Returns JSON string with structured data.
     """
-    import google.generativeai as genai
-    genai.configure(api_key=os.getenv('GOOGLE_GEMINI_API_KEY'))
-    
-    # Use Gemini 2.5 Flash for better accuracy
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    # Set API key for LiteLLM
+    os.environ['GEMINI_API_KEY'] = os.getenv('GOOGLE_GEMINI_API_KEY')
     
     prompt = """Analyze this floor plan image and extract structured data.
 
@@ -94,24 +93,30 @@ Return a JSON object with this exact structure:
 Be precise with bedroom and bathroom counts. This is critical for real estate listings."""
     
     try:
-        # Prepare image
+        # Prepare image data URL
         if image_bytes_b64:
-            image_part = {'mime_type': 'image/png', 'data': image_bytes_b64}
+            image_data = f"data:image/jpeg;base64,{image_bytes_b64}"
         else:
             response_data = requests.get(image_url).content
-            image_part = {'mime_type': 'image/png', 'data': base64.b64encode(response_data).decode('utf-8')}
+            image_b64 = base64.b64encode(response_data).decode('utf-8')
+            image_data = f"data:image/jpeg;base64,{image_b64}"
         
-        # Use JSON mode (schema validation happens in Python)
-        generation_config = genai.GenerationConfig(
-            response_mime_type="application/json"
+        # Call Gemini via LiteLLM (REST API only, no gRPC)
+        response = litellm_completion(
+            model="gemini/gemini-2.5-flash",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": image_data}}
+                    ]
+                }
+            ],
+            response_format={"type": "json_object"}
         )
         
-        response = model.generate_content(
-            [prompt, image_part],
-            generation_config=generation_config
-        )
-        
-        return response.text  # Returns valid JSON string
+        return response.choices[0].message.content  # Returns JSON string
         
     except Exception as e:
         # Return error in JSON format
@@ -167,6 +172,9 @@ class FloorPlanAnalyst:
             temperature=0.1
         )
         
+        # Initialize OCR Parser (Gemini Vision + Pytesseract fallback)
+        self.ocr_parser = FloorPlanParser()
+        
         self.role = "Expert Real Estate Floor Plan Analyst"
         
         self.goal = """Analyze floor plan images to extract comprehensive property data 
@@ -192,7 +200,10 @@ class FloorPlanAnalyst:
     
     def analyze_floor_plan(self, image_url: str = None, image_bytes: bytes = None) -> Dict[str, Any]:
         """
-        Analyze a floor plan image and extract structured data using Gemini Vision
+        Analyze a floor plan image using DUAL STRATEGY:
+        1. OCR Parser (Gemini Vision + Pytesseract) for dimensions
+        2. Gemini Vision for room analysis and layout
+        3. Merge both for complete data
         
         Args:
             image_url: URL to the floor plan image (optional)
@@ -210,7 +221,15 @@ class FloorPlanAnalyst:
             image_bytes_b64 = base64.b64encode(image_bytes).decode('utf-8')
         
         try:
-            # Call the Gemini Vision function directly (returns perfect JSON)
+            # STEP 1: Extract dimensions using OCR Parser (Gemini + Pytesseract)
+            print("🔍 Step 1: Running OCR to extract dimensions...")
+            ocr_result = None
+            if image_bytes:
+                ocr_result = self.ocr_parser.parse_dimensions_from_image(image_bytes)
+                print(f"   OCR found {len(ocr_result.get('dimensions', []))} dimensions via {ocr_result.get('extraction_method', 'unknown')}")
+            
+            # STEP 2: Analyze floor plan layout with Gemini Vision
+            print("🔍 Step 2: Analyzing floor plan layout with Gemini Vision...")
             result_text = _analyze_with_gemini_vision(
                 image_url=image_url or '',
                 image_bytes_b64=image_bytes_b64 or ''
@@ -219,15 +238,50 @@ class FloorPlanAnalyst:
             # Parse JSON (tool returns valid JSON string)
             extracted_data = json.loads(result_text)
             
+            # STEP 3: Merge OCR dimensions with Vision analysis
+            if ocr_result and ocr_result.get('has_dimensions'):
+                print("🔗 Step 3: Merging OCR dimensions with Vision analysis...")
+                
+                # Use OCR square footage if more confident (handle None values)
+                ocr_sqft = ocr_result.get('total_sqft') or 0
+                if ocr_sqft > 0:
+                    extracted_data['square_footage'] = ocr_sqft
+                
+                # Add OCR dimensions to room data
+                for dim in ocr_result.get('dimensions', []):
+                    room_name = dim.get('room', '') or ''
+                    # Try to match with existing rooms or add as new
+                    matched = False
+                    for room in extracted_data.get('rooms', []):
+                        room_type = room.get('type', '') or ''
+                        if room_name and room_type and room_name.lower() in room_type.lower():
+                            room['dimensions'] = dim.get('raw_text', '') or ''
+                            matched = True
+                            break
+                    
+                    if not matched and room_name:
+                        # Add as new room
+                        extracted_data.setdefault('rooms', []).append({
+                            'type': room_name,
+                            'dimensions': dim.get('raw_text', '') or '',
+                            'features': []
+                        })
+                
+                # Add OCR metadata to notes
+                extraction_method = ocr_result.get('extraction_method', 'unknown')
+                extracted_data['notes'] = f"{extracted_data.get('notes', '')} | OCR: {extraction_method}".strip(' |')
+            
             # Validate against schema
             validated_data = FloorPlanData(**extracted_data)
             
-            print(f"✅ Floor plan analysis successful: {validated_data.bedrooms} BR, {validated_data.bathrooms} BA, {validated_data.square_footage} sq ft")
+            print(f"✅ Floor plan analysis complete: {validated_data.bedrooms} BR, {validated_data.bathrooms} BA, {validated_data.square_footage} sq ft")
             
             return validated_data.model_dump()
             
         except Exception as e:
             print(f"❌ Floor plan analysis error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             # Return partial data on error
             return {
                 'address': '',

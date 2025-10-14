@@ -7,6 +7,8 @@ from app import celery
 from app.utils.supabase_client import get_admin_db
 from app.agents.floor_plan_analyst import FloorPlanAnalyst
 import requests
+from app.clients.attom_client import AttomAPIClient
+from app.utils.geocoding import normalize_address
 
 
 @celery.task(name='process_floor_plan', bind=True, max_retries=3)
@@ -154,8 +156,91 @@ def enrich_property_data_task(self, property_id: str):
         db.table('properties').update({
             'status': 'enrichment_complete'  # Will change to enrichment_in_progress in future
         }).eq('id', property_id).execute()
-        
-        # Initialize Market Insights Analyst (Agent #2)
+
+        attom_bundle = {}
+        try:
+            client = AttomAPIClient()
+            # Normalize address for structured ATTOM queries
+            norm = normalize_address(address)
+            street = (norm.get('street') or address).strip()
+            city_norm = (norm.get('city') or '').strip() or None
+            state_norm = (norm.get('state') or '').strip() or None
+            zip_norm = (norm.get('zip') or '').strip() or None
+            print(f"[ATTOM] Normalized address => street='{street}', city='{city_norm}', state='{state_norm}', zip='{zip_norm}'")
+
+            # Use structured search when possible; fallback to unstructured
+            try:
+                if city_norm and state_norm:
+                    prop_core = client.search_property(street, city=city_norm, state=state_norm, zip_code=zip_norm)
+                else:
+                    prop_core = client.search_property(street)
+            except Exception as e:
+                print(f"[ATTOM] Structured search failed ({e}); retrying with raw address string")
+                prop_core = client.search_property(address)
+            attom_id = prop_core.get('attom_id')
+            details = None
+            if attom_id:
+                details = client.get_property_details(attom_id)
+            avm = None
+            try:
+                city = city_norm or prop_core.get('city')
+                state = state_norm or prop_core.get('state')
+                zip_code = zip_norm or prop_core.get('zip')
+                if city and state:
+                    avm = client.get_avm(street or prop_core.get('address') or address, city, state, zip_code=zip_code)
+            except Exception:
+                avm = None
+            area_stats = None
+            try:
+                zip_for_area = prop_core.get('zip') or zip_norm
+                if zip_for_area:
+                    area_stats = client.get_area_stats(zip_for_area)
+            except Exception:
+                area_stats = None
+            # Build parcel summary (non-geometry) from details when available
+            parcel = None
+            try:
+                if details:
+                    lot = (details or {}).get('lot', {}) or {}
+                    area = (details or {}).get('area', {}) or {}
+                    identifier = (details or {}).get('identifier', {}) or {}
+                    location = (details or {}).get('location', {}) or {}
+                    geo = (location.get('latitude'), location.get('longitude')) if location else (None, None)
+                    parcel = {
+                        'apn': identifier.get('apn') or prop_core.get('apn'),
+                        'fips': identifier.get('fips') or prop_core.get('fips'),
+                        'lot_number': lot.get('lotnum'),
+                        'lot_depth': lot.get('depth'),
+                        'lot_frontage': lot.get('frontage'),
+                        'lot_size_acres': lot.get('lotsize1'),
+                        'lot_size_sqft': lot.get('lotsize2'),
+                        'zoning': area.get('zoning'),
+                        'county_use': area.get('countyuse1') or area.get('countyuse2'),
+                        'muncode': area.get('muncode'),
+                        'geo': {
+                            'latitude': location.get('latitude'),
+                            'longitude': location.get('longitude')
+                        }
+                    }
+            except Exception:
+                parcel = None
+            print(f"[ATTOM] Property found: {bool(prop_core)} attom_id={attom_id}")
+            print(f"[ATTOM] Details present: {bool(details)} | AVM present: {bool(avm)} | Area present: {bool(area_stats)}")
+            attom_bundle = {
+                'property': prop_core,
+                'details': details,
+                'avm': avm,
+                'area_stats': area_stats,
+                'parcel': parcel
+            }
+            current_data = property_record.get('extracted_data', {}) or {}
+            current_data['attom'] = attom_bundle
+            db.table('properties').update({
+                'extracted_data': current_data
+            }).eq('id', property_id).execute()
+        except Exception:
+            pass
+
         from app.agents.market_insights_analyst import MarketInsightsAnalyst
         analyst = MarketInsightsAnalyst()
         
@@ -167,10 +252,37 @@ def enrich_property_data_task(self, property_id: str):
         )
         
         print(f"Market insights generated: Price estimate ${market_insights.get('price_estimate', {}).get('estimated_value', 0):,}")
-        
+
         # Merge market insights into extracted_data
         current_data = property_record.get('extracted_data', {})
         current_data['market_insights'] = market_insights
+
+        # Compute data sources used for UI badge
+        try:
+            sources = {
+                'attom_property': bool(attom_bundle.get('property')),
+                'attom_details': bool(attom_bundle.get('details')),
+                'attom_avm': bool(attom_bundle.get('avm')),
+                'attom_area': bool(attom_bundle.get('area_stats')),
+                'parcel': bool(attom_bundle.get('parcel')),
+                # Best-effort flags for fallbacks
+                'fallback': False,
+                'tavily': False,
+                'scraping': False,
+            }
+            # Detect fallback by reasoning text
+            pe = market_insights.get('price_estimate', {}) or {}
+            reasoning = str(pe.get('reasoning', '')).lower()
+            if 'square footage only' in reasoning or 'external data sources unavailable' in reasoning:
+                sources['fallback'] = True
+
+            # Heuristic: if confidence is low and no ATTOM components, consider fallback
+            if (not any([sources['attom_property'], sources['attom_details'], sources['attom_avm'], sources['attom_area']])) and (str(pe.get('confidence', '')).lower() == 'low'):
+                sources['fallback'] = True
+
+            current_data['data_sources'] = sources
+        except Exception:
+            pass
         
         # Update property with market insights
         db.table('properties').update({

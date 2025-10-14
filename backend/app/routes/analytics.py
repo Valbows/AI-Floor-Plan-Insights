@@ -502,6 +502,176 @@ def get_sqft_impact():
         }), 500
 
 
+@analytics_bp.route('/quality-score/<property_id>', methods=['GET'])
+@jwt_required()
+def get_quality_score(property_id):
+    """
+    Calculate Floor Plan Quality Score for a property
+    
+    Quality Score is based on:
+    - Measurement completeness (all rooms measured)
+    - Image clarity and resolution
+    - Feature detection accuracy
+    - Data consistency
+    
+    Returns score 0-100 with detailed breakdown
+    """
+    try:
+        user_id = get_jwt_identity()
+        db = get_db()
+        
+        # Get property and measurements (use execute() without single() to avoid exception)
+        property_result = db.table('properties')\
+            .select('*, floor_plan_measurements(*)')\
+            .eq('id', property_id)\
+            .eq('agent_id', user_id)\
+            .execute()
+        
+        if not property_result.data or len(property_result.data) == 0:
+            return jsonify({
+                'error': 'Property not found',
+                'message': f'Property with ID {property_id} not found or unauthorized'
+            }), 404
+        
+        property_data = property_result.data[0]
+        measurements = property_data.get('floor_plan_measurements')
+        
+        if not measurements:
+            return jsonify({
+                'error': 'No measurements',
+                'message': 'Property has no floor plan measurements'
+            }), 400
+        
+        # Calculate quality score components
+        quality_score = measurements.get('quality_score', 0)
+        quality_factors = measurements.get('quality_factors', {})
+        
+        # Build detailed breakdown
+        breakdown = {
+            'completeness': quality_factors.get('completeness', 0),
+            'accuracy': quality_factors.get('accuracy', 0),
+            'clarity': quality_factors.get('clarity', 0),
+            'consistency': quality_factors.get('consistency', 0)
+        }
+        
+        # Determine quality level
+        if quality_score >= 80:
+            quality_level = 'excellent'
+            color = 'green'
+        elif quality_score >= 60:
+            quality_level = 'good'
+            color = 'blue'
+        elif quality_score >= 40:
+            quality_level = 'fair'
+            color = 'yellow'
+        else:
+            quality_level = 'poor'
+            color = 'red'
+        
+        # Get room count and total sqft
+        rooms = measurements.get('rooms', [])
+        total_sqft = measurements.get('total_square_feet', 0)
+        
+        return jsonify({
+            'property_id': property_id,
+            'quality_score': quality_score,
+            'quality_level': quality_level,
+            'color': color,
+            'breakdown': breakdown,
+            'metadata': {
+                'rooms_measured': len(rooms),
+                'total_square_feet': total_sqft,
+                'measurement_method': measurements.get('measurement_method', 'unknown'),
+                'confidence': measurements.get('total_square_feet_confidence', 0)
+            },
+            'recommendations': get_quality_recommendations(quality_score, breakdown)
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error calculating quality score: {e}")
+        return jsonify({
+            'error': 'Quality score calculation failed',
+            'message': str(e)
+        }), 500
+
+
+def get_quality_recommendations(score: int, breakdown: dict) -> list:
+    """Generate recommendations based on quality score"""
+    recommendations = []
+    
+    if score < 80:
+        if breakdown.get('completeness', 0) < 70:
+            recommendations.append('Ensure all rooms are clearly visible in the floor plan')
+        if breakdown.get('accuracy', 0) < 70:
+            recommendations.append('Verify measurements match actual dimensions')
+        if breakdown.get('clarity', 0) < 70:
+            recommendations.append('Use a higher resolution image for better analysis')
+        if breakdown.get('consistency', 0) < 70:
+            recommendations.append('Check for inconsistent scaling in the floor plan')
+    
+    if not recommendations:
+        recommendations.append('Floor plan quality is excellent - no improvements needed')
+    
+    return recommendations
+
+
+@analytics_bp.route('/property-analytics/<property_id>', methods=['GET'])
+@jwt_required()
+def get_property_analytics(property_id):
+    """
+    Get comprehensive analytics for a property in one call
+    
+    Returns:
+    - Predicted price
+    - Quality score
+    - Feature breakdown
+    - Model performance
+    
+    Useful for frontend to load all analytics data at once
+    """
+    try:
+        user_id = get_jwt_identity()
+        
+        # Get quality score
+        quality_response = get_quality_score(property_id)
+        quality_data = quality_response[0].get_json() if quality_response[1] == 200 else None
+        
+        # Get price prediction - directly call with params
+        try:
+            # Try to get prediction (it will handle model training internally)
+            features = get_property_features_from_db(property_id, user_id)
+            
+            # Check if model is trained, if not return None for prediction
+            if not hasattr(PropertyRegressionModel, '_instance') or PropertyRegressionModel._instance is None:
+                prediction_data = {'message': 'Model not trained. Call /api/analytics/model/train first'}
+            else:
+                model = PropertyRegressionModel()
+                predicted_price, confidence = model.predict(features)
+                prediction_data = {
+                    'predicted_price': predicted_price,
+                    'confidence': confidence,
+                    'features': features.__dict__
+                }
+        except Exception as pred_error:
+            logger.warning(f"Price prediction failed: {pred_error}")
+            prediction_data = {'error': str(pred_error)}
+        
+        # Combine results
+        return jsonify({
+            'property_id': property_id,
+            'quality_score': quality_data,
+            'price_prediction': prediction_data,
+            'timestamp': '2025-10-13T22:30:00Z'
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error getting property analytics: {e}")
+        return jsonify({
+            'error': 'Analytics retrieval failed',
+            'message': str(e)
+        }), 500
+
+
 # ============================================================================
 # ERROR HANDLERS
 # ============================================================================

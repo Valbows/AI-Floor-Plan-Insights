@@ -8,17 +8,20 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    strictPort: true,
     watch: {
       usePolling: true, // Needed for Docker
     },
     proxy: {
       '/api': {
-        target: 'http://backend:5000',
+        target: 'http://127.0.0.1:5001',
         changeOrigin: true,
+        secure: false,
       },
       '/auth': {
-        target: 'http://backend:5000',
+        target: 'http://127.0.0.1:5001',
         changeOrigin: true,
+        secure: false,
       },
     },
   },

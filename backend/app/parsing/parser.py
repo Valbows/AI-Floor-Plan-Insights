@@ -14,8 +14,9 @@ from typing import Dict, Any, Optional, List, Tuple
 from PIL import Image
 import io
 
-# Gemini Vision
-import google.generativeai as genai
+# Gemini Vision - Using LiteLLM for REST API ONLY (no gRPC)
+from litellm import completion
+import base64
 
 # Pytesseract OCR (fallback)
 try:
@@ -80,10 +81,10 @@ class FloorPlanParser:
         if not self.api_key:
             raise ValueError("Google Gemini API key required")
         
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        # Set API key for LiteLLM
+        os.environ['GEMINI_API_KEY'] = self.api_key
         
-        logger.info("Floor Plan Parser initialized (Gemini + Pytesseract)")
+        logger.info("Floor Plan Parser initialized (LiteLLM REST API + Pytesseract)")
     
     def parse_dimensions_from_image(
         self,
@@ -140,23 +141,29 @@ class FloorPlanParser:
         }
     
     def _parse_with_gemini(self, image_bytes: bytes) -> Optional[Dict[str, Any]]:
-        """Parse dimensions using Gemini Vision"""
+        """Parse dimensions using Gemini Vision via LiteLLM REST API"""
         try:
-            # Prepare image
-            image_part = {'mime_type': 'image/png', 'data': image_bytes}
+            # Prepare image as base64
+            image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+            image_url = f"data:image/jpeg;base64,{image_b64}"
             
-            # Call Gemini with JSON mode
-            generation_config = genai.GenerationConfig(
-                response_mime_type="application/json"
-            )
-            
-            response = self.model.generate_content(
-                [DIMENSION_EXTRACTION_PROMPT, image_part],
-                generation_config=generation_config
+            # Call Gemini via LiteLLM (REST API only, no gRPC)
+            response = completion(
+                model="gemini/gemini-2.5-flash",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": DIMENSION_EXTRACTION_PROMPT},
+                            {"type": "image_url", "image_url": {"url": image_url}}
+                        ]
+                    }
+                ],
+                response_format={"type": "json_object"}
             )
             
             # Parse JSON response
-            result = json.loads(response.text)
+            result = json.loads(response.choices[0].message.content)
             
             # Validate structure
             if not isinstance(result, dict):
