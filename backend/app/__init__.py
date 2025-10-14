@@ -151,9 +151,11 @@ def create_app(config_name='development'):
     from app.routes.auth import auth_bp
     from app.routes.properties import properties_bp
     from app.routes.public import public_bp
+    from app.routes.analytics import analytics_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(properties_bp, url_prefix='/api/properties')
+    app.register_blueprint(analytics_bp)  # Already has /api/analytics prefix
     app.register_blueprint(public_bp)
     
     # ================================
