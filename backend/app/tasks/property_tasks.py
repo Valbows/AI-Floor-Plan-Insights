@@ -176,7 +176,34 @@ def enrich_property_data_task(self, property_id: str):
                     prop_core = client.search_property(street)
             except Exception as e:
                 print(f"[ATTOM] Structured search failed ({e}); retrying with raw address string")
-                prop_core = client.search_property(address)
+                prop_core = None
+                try:
+                    prop_core = client.search_property(address)
+                except Exception as e2:
+                    print(f"[ATTOM] Raw address search failed: {e2}")
+                    prop_core = None
+
+            # Fallback: proximity search by lat/lng if no property found
+            if not prop_core or not prop_core.get('attom_id'):
+                lat, lng = norm.get('lat'), norm.get('lng')
+                if lat and lng:
+                    print("[ATTOM] Attempting proximity fallback via expandedprofile (lat/lng)")
+                    nearby = client.get_nearby_properties_by_latlng(lat, lng, radius_miles=0.2, max_results=10)
+                    # Prefer a candidate with matching ZIP, else take the closest
+                    candidate = None
+                    if nearby:
+                        if zip_norm:
+                            for p in nearby:
+                                if str(p.get('zip')).strip() == str(zip_norm):
+                                    candidate = p
+                                    break
+                        candidate = candidate or (nearby[0] if nearby else None)
+                    if candidate:
+                        prop_core = candidate
+                        print(f"[ATTOM] Proximity fallback matched: attom_id={prop_core.get('attom_id')} line1='{prop_core.get('address')}' zip='{prop_core.get('zip')}'")
+                    else:
+                        print("[ATTOM] Proximity fallback found no candidates")
+
             attom_id = prop_core.get('attom_id')
             details = None
             if attom_id:

@@ -390,6 +390,69 @@ class AttomAPIClient:
         except Exception:
             # Comps may not be available in free trial
             return []
+
+    def get_nearby_properties_by_latlng(self, latitude: float, longitude: float,
+                                        radius_miles: float = 0.2, max_results: int = 10) -> List[Dict[str, Any]]:
+        """
+        Find nearby properties using latitude/longitude when address matching fails.
+
+        Args:
+            latitude: Latitude of target point
+            longitude: Longitude of target point
+            radius_miles: Search radius in miles (default 0.2)
+            max_results: Max properties to return (default 10)
+
+        Returns:
+            List of normalized property dicts similar to search_property() output
+        """
+        params = {
+            'latitude': latitude,
+            'longitude': longitude,
+            'radius': radius_miles,
+            'orderby': 'distance'
+        }
+
+        try:
+            result = self._make_request('property/expandedprofile', params=params)
+            status = result.get('status', {})
+            if status.get('code') != 0:
+                return []
+
+            properties = result.get('property', [])[:max_results]
+            normalized: List[Dict[str, Any]] = []
+            for prop in properties:
+                identifier = prop.get('identifier', {})
+                address_data = prop.get('address', {})
+                building = prop.get('building', {})
+                rooms = building.get('rooms', {})
+                size = building.get('size', {})
+                lot = prop.get('lot', {})
+                sale = prop.get('sale', {})
+                assessment = prop.get('assessment', {})
+
+                normalized.append({
+                    'attom_id': identifier.get('attomId'),
+                    'apn': identifier.get('apn'),
+                    'fips': identifier.get('fips'),
+                    'address': address_data.get('line1') or address_data.get('oneLine'),
+                    'city': address_data.get('locality'),
+                    'state': address_data.get('countrySubd'),
+                    'zip': address_data.get('postal1'),
+                    'county': address_data.get('county'),
+                    'property_type': prop.get('summary', {}).get('proptype') or building.get('summary', {}).get('proptype'),
+                    'year_built': building.get('summary', {}).get('yearbuilt'),
+                    'bedrooms': rooms.get('beds'),
+                    'bathrooms': rooms.get('bathstotal'),
+                    'square_feet': size.get('universalsize'),
+                    'lot_size': lot.get('lotsize1'),
+                    'last_sale_date': sale.get('saleTransDate'),
+                    'last_sale_price': sale.get('saleAmtStndUnit'),
+                    'assessed_value': assessment.get('assessed', {}).get('assdttlvalue') if isinstance(assessment.get('assessed', {}), dict) else None,
+                })
+
+            return normalized
+        except Exception:
+            return []
     
     def get_sales_trends(self, zip_code: str, interval: str = 'monthly') -> Dict[str, Any]:
         """

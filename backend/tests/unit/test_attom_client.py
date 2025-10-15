@@ -109,7 +109,7 @@ class TestAttomAPIClient:
         # Verify API call
         mock_get.assert_called_once()
         call_args = mock_get.call_args
-        assert 'property/address' in call_args[0][0]
+        assert 'property/basicprofile' in call_args[0][0]
     
     @patch('app.clients.attom_client.requests.Session.get')
     def test_search_property_not_found(self, mock_get, attom_client):
@@ -274,6 +274,49 @@ class TestAttomAPIClient:
         assert result['median_household_income'] == 75000
         assert result['population'] == 25000
         assert 'demographics' in result
+
+    @patch('app.clients.attom_client.requests.Session.get')
+    def test_get_nearby_properties_by_latlng_success(self, mock_get, attom_client):
+        """Test nearby properties fallback using expandedprofile"""
+        mock_get.return_value.json.return_value = {
+            'status': {'code': 0},
+            'property': [{
+                'identifier': {'attomId': '168834166', 'apn': '123', 'fips': '36081'},
+                'address': {
+                    'line1': '174A BEACH 118TH ST',
+                    'locality': 'ROCKAWAY PARK',
+                    'countrySubd': 'NY',
+                    'postal1': '11694',
+                    'county': 'QUEENS'
+                },
+                'summary': {'proptype': 'SINGLE FAMILY'},
+                'building': {
+                    'summary': {'yearbuilt': 1930},
+                    'rooms': {'beds': 3, 'bathstotal': 2},
+                    'size': {'universalsize': 1500}
+                },
+                'lot': {'lotsize1': 0.05},
+                'sale': {'saleTransDate': '2019-01-01', 'saleAmtStndUnit': 500000},
+                'assessment': {'assessed': {'assdttlvalue': 450000}}
+            }]
+        }
+        mock_get.return_value.raise_for_status = Mock()
+
+        result = attom_client.get_nearby_properties_by_latlng(40.57853, -73.83807)
+        assert isinstance(result, list)
+        assert result and result[0]['attom_id'] == '168834166'
+        assert result[0]['zip'] == '11694'
+        # Verify endpoint
+        call_args = mock_get.call_args
+        assert 'property/expandedprofile' in call_args[0][0]
+
+    @patch('app.clients.attom_client.requests.Session.get')
+    def test_get_nearby_properties_by_latlng_empty(self, mock_get, attom_client):
+        """Test nearby properties when none found"""
+        mock_get.return_value.json.return_value = {'status': {'code': 0}, 'property': []}
+        mock_get.return_value.raise_for_status = Mock()
+        result = attom_client.get_nearby_properties_by_latlng(40.0, -73.0)
+        assert result == []
 
 
 if __name__ == '__main__':

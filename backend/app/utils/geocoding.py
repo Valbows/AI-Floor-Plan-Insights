@@ -34,7 +34,7 @@ def _parse_street(components) -> Optional[str]:
 
 
 def _derive_city(components) -> Optional[str]:
-    # Prefer locality (e.g., Long Island City), then sublocality_level_1, then neighborhood
+    # General preference: locality, then sublocality; neighborhood handled separately for NYC
     locality = _component(components, "locality")
     if locality:
         return locality
@@ -61,7 +61,7 @@ def normalize_address(raw_address: str) -> Dict[str, Optional[str]]:
     Returns best-effort components; fields may be None if unavailable.
     """
     if not raw_address:
-        return {"street": None, "city": None, "state": None, "zip": None, "lat": None, "lng": None}
+        return {"street": None, "city": None, "state": None, "zip": None, "lat": None, "lng": None, "neighborhood": None}
 
     # If API key missing, attempt a simple parse fallback
     if not GOOGLE_MAPS_API_KEY:
@@ -71,7 +71,7 @@ def normalize_address(raw_address: str) -> Dict[str, Optional[str]]:
         city = m.group(2).strip() if m else None
         state = m.group(3).strip() if m else None
         zip_code = m.group(4).strip() if m and m.group(4) else None
-        return {"street": street, "city": city, "state": state, "zip": zip_code, "lat": None, "lng": None}
+        return {"street": street, "city": city, "state": state, "zip": zip_code, "lat": None, "lng": None, "neighborhood": None}
 
     try:
         resp = requests.get(GEOCODE_URL, params={"address": raw_address, "key": GOOGLE_MAPS_API_KEY}, timeout=15)
@@ -84,7 +84,7 @@ def normalize_address(raw_address: str) -> Dict[str, Optional[str]]:
             city = m.group(2).strip() if m else None
             state = m.group(3).strip() if m else None
             zip_code = m.group(4).strip() if m and m.group(4) else None
-            return {"street": street, "city": city, "state": state, "zip": zip_code, "lat": None, "lng": None}
+            return {"street": street, "city": city, "state": state, "zip": zip_code, "lat": None, "lng": None, "neighborhood": None}
 
         result = data["results"][0]
         comps = result.get("address_components", [])
@@ -95,15 +95,26 @@ def normalize_address(raw_address: str) -> Dict[str, Optional[str]]:
         loc = result.get("geometry", {}).get("location", {})
         lat = loc.get("lat")
         lng = loc.get("lng")
+        neighborhood = _component(comps, "neighborhood")
 
-        # Clean up: ensure NYC borough names don't override locality if we have a better city
-        if city and city.upper() in NYC_BOROUGHS:
-            # If locality exists separately, prefer that
-            true_locality = _component(comps, "locality")
-            if true_locality:
-                city = true_locality
+        # NYC improvement: prefer neighborhood name (e.g., Rockaway Park) over borough when available
+        if city and city.upper() in NYC_BOROUGHS and neighborhood:
+            city = neighborhood
 
-        return {"street": street, "city": city, "state": state, "zip": zip_code, "lat": lat, "lng": lng}
+        # Queens hyphenated house numbers: prefer raw leading number + route to avoid mismatches like '1-74A'
+        try:
+            route = _component(comps, "route")
+            raw_num_match = re.match(r"^\s*(\d+)", raw_address.strip())
+            if route and raw_num_match:
+                raw_num = raw_num_match.group(1)
+                # If parsed street number contains hyphen or letters, reconstruct with raw numeric + route
+                street_num = _component(comps, "street_number") or ""
+                if street_num and ("-" in street_num or re.search(r"[A-Za-z]", street_num)):
+                    street = f"{raw_num} {route}"
+        except Exception:
+            pass
+
+        return {"street": street, "city": city, "state": state, "zip": zip_code, "lat": lat, "lng": lng, "neighborhood": neighborhood}
 
     except Exception:
         # Graceful fallback
@@ -112,4 +123,4 @@ def normalize_address(raw_address: str) -> Dict[str, Optional[str]]:
         city = m.group(2).strip() if m else None
         state = m.group(3).strip() if m else None
         zip_code = m.group(4).strip() if m and m.group(4) else None
-        return {"street": street, "city": city, "state": state, "zip": zip_code, "lat": None, "lng": None}
+        return {"street": street, "city": city, "state": state, "zip": zip_code, "lat": None, "lng": None, "neighborhood": None}

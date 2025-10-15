@@ -4,8 +4,11 @@ import axios from 'axios'
 import App from './App'
 import './index.css'
 
-// Configure axios baseURL for backend API
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+// Configure axios defaults
+// In development, rely on Vite's proxy by keeping relative URLs (no baseURL)
+if (import.meta.env.VITE_API_URL) {
+  axios.defaults.baseURL = import.meta.env.VITE_API_URL
+}
 axios.defaults.headers.common['Content-Type'] = 'application/json'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
