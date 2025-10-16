@@ -503,30 +503,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen" style={{background: '#F6F1EB'}}>
-      {/* Header */}
-      <header className="bg-black border-b-4" style={{borderBottomColor: '#FF5959'}}>
-        <div className="max-w-[1400px] mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Home className="w-5 h-5" style={{color: '#FF5959'}} />
-              <span className="text-lg font-black uppercase tracking-tight text-white">FP AI</span>
-            </div>
-            <div className="flex items-center space-x-6">
-              <span className="text-sm text-white">{user?.email}</span>
-              <button
-                onClick={logout}
-                className="transition-colors"
-                style={{color: '#FF5959'}}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-[1400px] mx-auto px-4 py-16">
         {/* Centered Title */}

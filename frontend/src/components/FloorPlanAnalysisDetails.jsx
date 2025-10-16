@@ -24,18 +24,18 @@ const FloorPlanAnalysisDetails = ({ extractedData }) => {
   return (
     <div className="space-y-6">
       {/* Analysis Method Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
         <div className="flex items-start gap-3">
-          <Eye className="w-5 h-5 text-blue-600 mt-0.5" />
+          <Eye className="w-4 h-4 mt-0.5" style={{color: '#FF5959'}} />
           <div className="flex-1">
-            <h3 className="font-semibold text-blue-900 mb-1">Analysis Method</h3>
-            <div className="text-sm text-blue-800 space-y-1">
-              <p>✅ <strong>Google Gemini Vision</strong>: Room identification and layout</p>
+            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Analysis Method</h3>
+            <div className="text-sm space-y-1" style={{color: '#000000'}}>
+              <p>✅ <span className="font-medium">Google Gemini Vision</span>: Room identification and layout</p>
               {usedOCR && (
-                <p>✅ <strong>OCR ({ocrMethod})</strong>: Dimension extraction and validation</p>
+                <p>✅ <span className="font-medium">OCR ({ocrMethod})</span>: Dimension extraction and validation</p>
               )}
               {!usedOCR && (
-                <p>⚠️ <strong>OCR</strong>: Not used (no dimensions found or failed)</p>
+                <p>⚠️ <span className="font-medium">OCR</span>: Not used (no dimensions found or failed)</p>
               )}
             </div>
           </div>
@@ -43,23 +43,23 @@ const FloorPlanAnalysisDetails = ({ extractedData }) => {
       </div>
 
       {/* Overall Metrics */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Maximize2 className="w-5 h-5" />
+      <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+        <h3 className="text-xs font-bold uppercase mb-4 flex items-center gap-2" style={{color: '#666666', letterSpacing: '1px'}}>
+          <Maximize2 className="w-4 h-4" />
           Overall Property Metrics
         </h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">Total Rooms Identified</p>
-            <p className="text-2xl font-bold text-gray-900">{rooms.length}</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-lg p-3" style={{background: '#FFFFFF'}}>
+            <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>Total Rooms Identified</p>
+            <p className="text-2xl font-bold" style={{color: '#000000'}}>{rooms.length}</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">Total Square Footage</p>
-            <p className="text-2xl font-bold text-gray-900">{square_footage?.toLocaleString() || 'N/A'}</p>
+          <div className="rounded-lg p-3" style={{background: '#FFFFFF'}}>
+            <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>Total Square Footage</p>
+            <p className="text-2xl font-bold" style={{color: '#000000'}}>{square_footage?.toLocaleString() || 'N/A'}</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">Rooms with Dimensions</p>
-            <p className="text-2xl font-bold text-gray-900">
+          <div className="rounded-lg p-3" style={{background: '#FFFFFF'}}>
+            <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>Rooms with Dimensions</p>
+            <p className="text-2xl font-bold" style={{color: '#000000'}}>
               {rooms.filter(r => r.dimensions).length}
             </p>
           </div>
@@ -67,64 +67,99 @@ const FloorPlanAnalysisDetails = ({ extractedData }) => {
       </div>
 
       {/* Room-by-Room Breakdown */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Ruler className="w-5 h-5" />
+      <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+        <h3 className="text-xs font-bold uppercase mb-4 flex items-center gap-2" style={{color: '#666666', letterSpacing: '1px'}}>
+          <Ruler className="w-4 h-4" />
           Room-by-Room Measurements
         </h3>
 
         {rooms.length === 0 ? (
-          <p className="text-gray-500">No rooms identified</p>
+          <p className="text-sm" style={{color: '#666666'}}>No rooms identified</p>
         ) : (
-          <div className="space-y-3">
-            {rooms.map((room, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900 capitalize">
-                      {room.type || 'Unknown Room'}
-                    </span>
-                    {room.dimensions && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        <Ruler className="w-3 h-3" />
-                        {room.dimensions}
+          <div className="overflow-x-auto">
+            <table className="w-full" style={{borderCollapse: 'separate', borderSpacing: '0 4px'}}>
+              <thead>
+                <tr>
+                  <th className="text-left text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent'}}>
+                    Room
+                  </th>
+                  <th className="text-center text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent'}}>
+                    Dimensions
+                  </th>
+                  <th className="text-left text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent'}}>
+                    Features
+                  </th>
+                  <th className="text-center text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '60px'}}>
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rooms.map((room, index) => (
+                  <tr
+                    key={index}
+                    className="transition-colors"
+                    style={{background: '#FFFFFF'}}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
+                  >
+                    <td className="px-3 py-3 rounded-l-lg" style={{borderLeft: '1px solid #E5E5E5', borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
+                      <span className="font-medium capitalize text-sm" style={{color: '#000000'}}>
+                        {room.type || 'Unknown Room'}
                       </span>
-                    )}
-                  </div>
-                  {room.features && room.features.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {room.features.map((feature, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs text-gray-600 bg-gray-200 px-2 py-0.5 rounded"
-                        >
-                          {feature}
+                    </td>
+                    <td className="px-3 py-3 text-center" style={{borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
+                      {room.dimensions ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded" style={{background: '#FFF5F5', color: '#FF5959'}}>
+                          <Ruler className="w-3 h-3" />
+                          {room.dimensions}
                         </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  {room.dimensions ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-gray-400" title="No dimensions found" />
-                  )}
-                </div>
-              </div>
-            ))}
+                      ) : (
+                        <span className="text-xs" style={{color: '#CCCCCC'}}>—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3" style={{borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
+                      {room.features && room.features.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {room.features.slice(0, 3).map((feature, idx) => (
+                            <span
+                              key={idx}
+                              className="text-xs px-2 py-0.5 rounded"
+                              style={{color: '#666666', background: '#F6F1EB'}}
+                            >
+                              {feature}
+                            </span>
+                          ))}
+                          {room.features.length > 3 && (
+                            <span className="text-xs font-medium" style={{color: '#666666'}}>
+                              +{room.features.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs" style={{color: '#CCCCCC'}}>—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-center rounded-r-lg" style={{borderRight: '1px solid #E5E5E5', borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
+                      {room.dimensions ? (
+                        <CheckCircle className="w-4 h-4 inline-block" style={{color: '#22C55E'}} />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 inline-block" style={{color: '#CCCCCC'}} title="No dimensions found" />
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
       {/* Analysis Notes */}
       {notes && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h4 className="font-semibold text-yellow-900 mb-2">Analysis Notes</h4>
-          <p className="text-sm text-yellow-800">{notes}</p>
+        <div className="rounded-lg p-4" style={{background: '#FFF5F5', border: '1px solid #FFE5E5'}}>
+          <h4 className="text-xs font-bold uppercase mb-2" style={{color: '#FF5959', letterSpacing: '1px'}}>Analysis Notes</h4>
+          <p className="text-sm" style={{color: '#000000'}}>{notes}</p>
         </div>
       )}
     </div>

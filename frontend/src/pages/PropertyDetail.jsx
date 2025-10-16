@@ -389,84 +389,90 @@ const PropertyDetail = () => {
         </div>
       )}
 
-      <header className="bg-black border-b-4" style={{borderBottomColor: '#FF5959'}}>
-        <div className="max-w-[1400px] mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Link 
-                to="/dashboard" 
-                className="transition-colors"
-                style={{color: '#FF5959'}}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <h1 className="text-xl font-black uppercase tracking-tight text-white" style={{letterSpacing: '-1px'}}>Property Details</h1>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => {
-                    setEditMode(!editMode)
-                    if (editMode) {
-                      setEditingField(null)
-                      setEditedContent({})
-                    }
-                  }}
-                  className="flex items-center space-x-2 px-5 py-2.5 transition-all font-bold uppercase text-sm"
-                  style={{
-                    background: editMode ? '#666666' : '#FF5959',
-                    color: '#FFFFFF',
-                    borderRadius: '4px',
-                    letterSpacing: '1px',
-                    boxShadow: editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = editMode ? '#555555' : '#E54545'
-                    e.currentTarget.style.transform = 'translateY(-1px)'
-                    e.currentTarget.style.boxShadow = editMode ? 'none' : '0 4px 12px rgba(255,89,89,0.4)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = editMode ? '#666666' : '#FF5959'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                    e.currentTarget.style.boxShadow = editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
-                  }}
-                  disabled={saving}
-                >
-                  {editMode ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-                  <span>{editMode ? 'Cancel' : 'Edit'}</span>
-                </button>
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="flex items-center space-x-2 px-4 py-2 transition-all font-bold uppercase text-sm"
-                  style={{background: 'transparent', color: editMode ? '#CCCCCC' : '#FF5959', border: `2px solid ${editMode ? '#CCCCCC' : '#FF5959'}`, borderRadius: '4px', letterSpacing: '1px', cursor: editMode ? 'not-allowed' : 'pointer'}}
-                  onMouseEnter={(e) => {if (!editMode) {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.color = '#FFFFFF'}}}
-                  onMouseLeave={(e) => {if (!editMode) {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FF5959'}}}
-                  disabled={editMode}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete</span>
-                </button>
-                {editMode && editingField && (
-                  <button
-                    onClick={() => saveEdit(editingField)}
-                    disabled={saving}
-                    className="flex items-center space-x-2 px-4 py-2 text-white transition-all font-bold uppercase text-sm"
-                    style={{background: saving ? '#CCCCCC' : '#22C55E', borderRadius: '4px', letterSpacing: '1px', cursor: saving ? 'not-allowed' : 'pointer'}}
-                    onMouseEnter={(e) => {if (!saving) e.currentTarget.style.background = '#16A34A'}}
-                    onMouseLeave={(e) => {if (!saving) e.currentTarget.style.background = '#22C55E'}}
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-                  </button>
-                )}
-              </div>
-            </div>
+      <main className="max-w-[1400px] mx-auto px-4 py-12">
+        {/* Page Header with Actions */}
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Link 
+              to="/dashboard" 
+              className="transition-all p-2 rounded-lg"
+              style={{color: '#000000'}}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#FF5959'
+                e.currentTarget.style.background = '#FFF5F5'
+                e.currentTarget.style.transform = 'translateX(-2px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#000000'
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.transform = 'translateX(0)'
+              }}
+            >
+              <ArrowLeft className="w-8 h-8" />
+            </Link>
+            <h1 className="text-5xl font-black uppercase tracking-tight" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
+              PROPERTY <span style={{color: '#FF5959'}}>DETAILS</span>
+            </h1>
             {getStatusBadge(property.status)}
           </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => {
+                setEditMode(!editMode)
+                if (editMode) {
+                  setEditingField(null)
+                  setEditedContent({})
+                }
+              }}
+              className="flex items-center space-x-2 px-5 py-2.5 transition-all font-bold uppercase text-sm"
+              style={{
+                background: editMode ? '#666666' : '#FF5959',
+                color: '#FFFFFF',
+                borderRadius: '4px',
+                letterSpacing: '1px',
+                boxShadow: editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = editMode ? '#555555' : '#E54545'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.boxShadow = editMode ? 'none' : '0 4px 12px rgba(255,89,89,0.4)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = editMode ? '#666666' : '#FF5959'
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
+              }}
+              disabled={saving}
+            >
+              {editMode ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+              <span>{editMode ? 'Cancel' : 'Edit'}</span>
+            </button>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 transition-all font-bold uppercase text-sm"
+              style={{background: 'transparent', color: editMode ? '#CCCCCC' : '#FF5959', border: `2px solid ${editMode ? '#CCCCCC' : '#FF5959'}`, borderRadius: '4px', letterSpacing: '1px', cursor: editMode ? 'not-allowed' : 'pointer'}}
+              onMouseEnter={(e) => {if (!editMode) {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.color = '#FFFFFF'}}}
+              onMouseLeave={(e) => {if (!editMode) {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FF5959'}}}
+              disabled={editMode}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete</span>
+            </button>
+            {editMode && editingField && (
+              <button
+                onClick={() => saveEdit(editingField)}
+                disabled={saving}
+                className="flex items-center space-x-2 px-4 py-2 text-white transition-all font-bold uppercase text-sm"
+                style={{background: saving ? '#CCCCCC' : '#22C55E', borderRadius: '4px', letterSpacing: '1px', cursor: saving ? 'not-allowed' : 'pointer'}}
+                onMouseEnter={(e) => {if (!saving) e.currentTarget.style.background = '#16A34A'}}
+                onMouseLeave={(e) => {if (!saving) e.currentTarget.style.background = '#22C55E'}}
+              >
+                <Save className="w-4 h-4" />
+                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+              </button>
+            )}
+          </div>
         </div>
-      </header>
-
-      <main className="max-w-[1400px] mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* LEFT COLUMN - Floor Plan + Property Details (Scrollable) */}
           <div className="space-y-4">
