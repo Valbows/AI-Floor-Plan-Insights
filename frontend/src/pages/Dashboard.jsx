@@ -435,10 +435,7 @@ const Dashboard = () => {
     const address = extractedData.address || property.address || ''
     const matchesSearch = address.toLowerCase().includes(searchTerm.toLowerCase())
     
-    // Only show properties with extracted data (hide those still in initial processing)
-    const hasBasicData = extractedData.bedrooms || extractedData.bathrooms || extractedData.square_footage
-    
-    return matchesSearch && hasBasicData
+    return matchesSearch
   })
 
   // Sort properties

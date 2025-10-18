@@ -4,7 +4,7 @@ import {
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
   FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone, Check,
-  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2, RefreshCw
+  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2, RefreshCw, Wrench
 } from 'lucide-react'
 import axios from 'axios'
 import Analytics from '../components/Analytics'
@@ -41,6 +41,9 @@ const PropertyDetail = () => {
   const [shareableLink, setShareableLink] = useState(null)
   const [generatingLink, setGeneratingLink] = useState(false)
   const [copied, setCopied] = useState(false)
+  
+  // Features expand state
+  const [showAllFeatures, setShowAllFeatures] = useState(false)
 
   const analysisSteps = [
     { icon: Upload, text: 'Uploading floor plan...', color: 'text-blue-600' },
@@ -640,14 +643,37 @@ const PropertyDetail = () => {
               <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
                 <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Features</h3>
                 <ul className="space-y-1.5">
-                  {extracted.features.slice(0, 6).map((feature, index) => (
+                  {extracted.features.slice(0, showAllFeatures ? extracted.features.length : 6).map((feature, index) => (
                     <li key={index} className="flex items-start text-sm">
                       <span className="mr-2" style={{color: '#FF5959'}}>•</span>
                       <span style={{color: '#000000'}}>{feature}</span>
                     </li>
                   ))}
-                  {extracted.features.length > 6 && (
-                    <li className="text-xs font-medium" style={{color: '#666666'}}>+{extracted.features.length - 6} more</li>
+                  {extracted.features.length > 6 && !showAllFeatures && (
+                    <li>
+                      <button
+                        onClick={() => setShowAllFeatures(true)}
+                        className="text-xs font-medium transition-all hover:underline cursor-pointer"
+                        style={{color: '#FF5959'}}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
+                      >
+                        +{extracted.features.length - 6} more
+                      </button>
+                    </li>
+                  )}
+                  {showAllFeatures && extracted.features.length > 6 && (
+                    <li>
+                      <button
+                        onClick={() => setShowAllFeatures(false)}
+                        className="text-xs font-medium transition-all hover:underline cursor-pointer"
+                        style={{color: '#666666'}}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}
+                      >
+                        Show less
+                      </button>
+                    </li>
                   )}
                 </ul>
               </div>
@@ -658,18 +684,27 @@ const PropertyDetail = () => {
               <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
                 <h3 className="text-xs font-bold uppercase mb-3" style={{color: '#666666', letterSpacing: '1px'}}>Room Facilities</h3>
                 <div className="grid grid-cols-4 gap-2">
-                  {extracted.rooms.slice(0, 8).map((room, index) => (
-                    <div key={index} className="flex flex-col items-center text-center p-2 rounded transition-colors" style={{background: '#FFFFFF'}} onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'} onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}>
-                      <div className="w-8 h-8 mb-1" style={{color: '#FF5959'}}>
-                        {room.type.toLowerCase().includes('bed') && <Bed className="w-full h-full" />}
-                        {room.type.toLowerCase().includes('bath') && <Bath className="w-full h-full" />}
-                        {room.type.toLowerCase().includes('living') && <Home className="w-full h-full" />}
-                        {room.type.toLowerCase().includes('kitchen') && <UtensilsCrossed className="w-full h-full" />}
-                        {!['bed', 'bath', 'living', 'kitchen'].some(t => room.type.toLowerCase().includes(t)) && <Maximize className="w-full h-full" />}
+                  {extracted.rooms.slice(0, 8).map((room, index) => {
+                    // Helper function to get icon based on room type (priority order)
+                    const getIcon = (type) => {
+                      const lowerType = type.toLowerCase()
+                      if (lowerType.includes('bedroom')) return <Bed className="w-full h-full" />
+                      if (lowerType.includes('bath')) return <Bath className="w-full h-full" />
+                      if (lowerType.includes('kitchen')) return <UtensilsCrossed className="w-full h-full" />
+                      if (lowerType.includes('living') || lowerType.includes('dining')) return <Home className="w-full h-full" />
+                      if (lowerType.includes('balcony') || lowerType.includes('foyer') || lowerType.includes('entryway') || lowerType.includes('corridor') || lowerType.includes('elevator') || lowerType.includes('lobby')) return <Maximize className="w-full h-full" />
+                      return <Maximize className="w-full h-full" />
+                    }
+                    
+                    return (
+                      <div key={index} className="flex flex-col items-center text-center p-2 rounded transition-colors" style={{background: '#FFFFFF'}} onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'} onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'} title={room.type}>
+                        <div className="w-8 h-8 mb-1 flex items-center justify-center" style={{color: '#FF5959'}}>
+                          {getIcon(room.type)}
+                        </div>
+                        <p className="text-xs font-medium truncate w-full" style={{color: '#000000'}}>{room.type}</p>
                       </div>
-                      <p className="text-xs font-medium truncate w-full" style={{color: '#000000'}}>{room.type}</p>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -776,16 +811,16 @@ const PropertyDetail = () => {
                     {extracted.data_sources ? (
                       <>
                         {extracted.data_sources.attom_property && (
-                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>ATTOM Property</span>
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Property Details</span>
                         )}
                         {extracted.data_sources.attom_avm && (
-                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>ATTOM AVM</span>
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Market Valuation</span>
                         )}
                         {extracted.data_sources.attom_area && (
-                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Area</span>
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Neighborhood Data</span>
                         )}
                         {extracted.data_sources.parcel && (
-                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Parcel</span>
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Public Records</span>
                         )}
                         {extracted.data_sources.fallback && (
                           <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #FF5959', borderRadius: '9999px', color: '#FF5959'}}>Fallback</span>
@@ -961,7 +996,7 @@ const PropertyDetail = () => {
                     {/* ATTOM Data (Property, AVM, Parcel, Area) */}
                     {extracted.attom && (
                       <div className="rounded-lg p-6 space-y-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
-                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>ATTOM Data</h2>
+                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Property & Market Data</h2>
                         {/* Property Characteristics */}
                         {extracted.attom.property && (
                           <div>
@@ -993,7 +1028,7 @@ const PropertyDetail = () => {
                         {/* Parcel Summary */}
                         {extracted.attom.parcel && (
                           <div>
-                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Parcel</h3>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Public Records</h3>
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div><p className="text-gray-600">APN</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.apn || '—'}</p></div>
                               <div><p className="text-gray-600">FIPS</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.fips || '—'}</p></div>
@@ -1024,7 +1059,7 @@ const PropertyDetail = () => {
                     {/* ATTOM Data available even if Market Insights are still processing */}
                     {extracted.attom && (
                       <div className="rounded-lg p-6 space-y-6 mb-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
-                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>ATTOM Data</h2>
+                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Property & Market Data</h2>
                         {extracted.attom.property && (
                           <div>
                             <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Property Characteristics</h3>
@@ -1051,7 +1086,7 @@ const PropertyDetail = () => {
                         )}
                         {extracted.attom.parcel && (
                           <div>
-                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Parcel</h3>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Public Records</h3>
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div><p className="text-gray-600">APN</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.apn || '—'}</p></div>
                               <div><p className="text-gray-600">FIPS</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.fips || '—'}</p></div>

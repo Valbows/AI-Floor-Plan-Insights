@@ -12,6 +12,7 @@ import PropertyDetail from './pages/PropertyDetail'
 import NewProperty from './pages/NewProperty'
 import PublicReport from './pages/PublicReport'
 import Analytics from './pages/Analytics'
+import AgentTools from './pages/AgentTools'
 
 function App() {
   return (
@@ -50,6 +51,26 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <PropertyDetail />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent-tools"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AgentTools />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent-tools/:id"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AgentTools />
                 </Layout>
               </ProtectedRoute>
             }
