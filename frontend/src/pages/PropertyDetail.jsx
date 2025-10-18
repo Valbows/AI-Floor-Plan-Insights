@@ -99,6 +99,9 @@ const PropertyDetail = () => {
   const loadProperty = async (retryCount = 0) => {
     try {
       const response = await axios.get(`/api/properties/${id}`)
+      console.log('PropertyDetail - Full response:', response.data)
+      console.log('PropertyDetail - Property:', response.data.property)
+      console.log('PropertyDetail - Extracted data:', response.data.property?.extracted_data)
       setProperty(response.data.property)
       setLoading(false)
       setError('') // Clear any previous errors
@@ -484,7 +487,7 @@ const PropertyDetail = () => {
                   </div>
                 ) : (
                   <button
-                    onClick={() => startEditing('address', extracted.address || '')}
+                    onClick={() => startEditing('address', extracted.address || property.address || '')}
                     className="p-1 hover:bg-gray-100 rounded transition"
                     title="Edit address"
                   >
@@ -495,7 +498,7 @@ const PropertyDetail = () => {
               {editMode ? (
                 <input
                   type="text"
-                  value={editingField === 'address' ? editedContent.address : (extracted.address || '')}
+                  value={editingField === 'address' ? editedContent.address : (extracted.address || property.address || '')}
                   onChange={(e) => {
                     setEditingField('address')
                     setEditedContent({ ...editedContent, address: e.target.value })
@@ -505,7 +508,7 @@ const PropertyDetail = () => {
                 />
               ) : (
                 <p className="text-sm text-gray-900">
-                  {extracted.address || 'Not specified'}
+                  {extracted.address || property.address || 'Not specified'}
                 </p>
               )}
             </div>
@@ -666,34 +669,35 @@ const PropertyDetail = () => {
 
           {/* RIGHT COLUMN - Tabbed Content (Market & Marketing) */}
           <div className="space-y-6">
-            {/* Tab Navigation - Sticky */}
-            <div className="sticky top-0 z-40 pb-4" style={{background: '#F6F1EB'}}>
-              <div className="flex space-x-2 p-1" style={{background: '#F6F1EB', borderRadius: '8px'}}>
-              <button
-                onClick={() => setActiveTab('market')}
-                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
-                style={{
-                  background: activeTab === 'market' ? '#FF5959' : 'transparent',
-                  color: activeTab === 'market' ? '#FFFFFF' : '#666666',
-                  borderRadius: '6px',
-                  letterSpacing: '1px'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== 'market') {
-                    e.currentTarget.style.background = '#FFFFFF'
-                    e.currentTarget.style.color = '#000000'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== 'market') {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = '#666666'
-                  }
-                }}
-              >
-                Market Insights
-              </button>
-              {showMarketingAndAnalytics && (
+            {/* Tab Navigation - HIDDEN since only showing Market Insights */}
+            {false && (
+              <div className="sticky top-0 z-40 pb-4" style={{background: '#F6F1EB'}}>
+                <div className="flex space-x-2 p-1" style={{background: '#F6F1EB', borderRadius: '8px'}}>
+                <button
+                  onClick={() => setActiveTab('market')}
+                  className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                  style={{
+                    background: activeTab === 'market' ? '#FF5959' : 'transparent',
+                    color: activeTab === 'market' ? '#FFFFFF' : '#666666',
+                    borderRadius: '6px',
+                    letterSpacing: '1px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeTab !== 'market') {
+                      e.currentTarget.style.background = '#FFFFFF'
+                      e.currentTarget.style.color = '#000000'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeTab !== 'market') {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.color = '#666666'
+                    }
+                  }}
+                >
+                  Market Insights
+                </button>
+                {showMarketingAndAnalytics && (
                 <>
                   <button
                     onClick={() => setActiveTab('marketing')}
@@ -747,6 +751,7 @@ const PropertyDetail = () => {
               )}
               </div>
             </div>
+            )}
 
             {/* Tab Content */}
             <div className="space-y-6">

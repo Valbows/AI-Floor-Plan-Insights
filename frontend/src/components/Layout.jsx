@@ -5,7 +5,7 @@ import Sidebar from './Sidebar'
 export const SidebarContext = createContext()
 
 const Layout = ({ children }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)  // Start collapsed for better UX
 
   return (
     <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed }}>

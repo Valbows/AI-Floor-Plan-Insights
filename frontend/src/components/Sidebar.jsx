@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, BarChart3, Plus, LogOut, User, ChevronLeft, ChevronRight, Wrench } from 'lucide-react'
+import { Home, BarChart3, Plus, LogOut, User, ChevronLeft, ChevronRight, Briefcase, Building2 } from 'lucide-react'
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const location = useLocation()
@@ -12,7 +12,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     { path: '/dashboard', icon: Home, label: 'Properties' },
     { path: '/analytics', icon: BarChart3, label: 'Analytics' },
     { path: '/properties/new', icon: Plus, label: 'Add Property' },
-    { path: '/agent-tools', icon: Wrench, label: 'Agent Tools', special: true },
+    { path: '/agent-tools', icon: Briefcase, label: 'Agent Tools', special: true },
   ]
 
   const handleLogout = () => {
@@ -22,30 +22,58 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
   return (
     <div 
-      className="fixed left-0 top-0 h-screen bg-black flex flex-col transition-all duration-300 z-50" 
+      className="fixed left-0 top-0 h-screen bg-black flex flex-col transition-all duration-300 z-50 overflow-hidden" 
       style={{ 
         width: isCollapsed ? '80px' : '256px',
         borderRight: '4px solid #FF5959' 
       }}
     >
       {/* Logo & Toggle */}
-      <div className="p-6 border-b" style={{ borderBottomColor: '#333333' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Home className="w-6 h-6" style={{ color: '#FF5959' }} />
-            {!isCollapsed && <span className="text-xl font-black uppercase tracking-tight text-white">FP AI</span>}
+      <div 
+        className="border-b relative transition-all duration-300" 
+        style={{ 
+          borderBottomColor: '#333333', 
+          padding: isCollapsed ? '16px 8px' : '24px'
+        }}
+      >
+        {isCollapsed ? (
+          // Collapsed: Only show chevron button
+          <div className="flex justify-center" style={{ minHeight: '24px' }}>
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1 rounded transition-all duration-200"
+              style={{ color: '#CCCCCC' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#CCCCCC'}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded transition-all"
-            style={{ color: '#CCCCCC' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#CCCCCC'}
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-        </div>
-        {!isCollapsed && <p className="text-xs text-gray-400 mt-1">Floor Plan Insights</p>}
+        ) : (
+          // Expanded: Show full header
+          <div style={{ minHeight: '24px' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <Building2 className="w-6 h-6 flex-shrink-0" style={{ color: '#FF5959' }} />
+                <span className="text-xl font-black uppercase tracking-tight text-white whitespace-nowrap">
+                  FP AI
+                </span>
+              </div>
+              <button
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="p-1 rounded transition-all duration-200 flex-shrink-0"
+                style={{ color: '#CCCCCC' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#CCCCCC'}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-1 whitespace-nowrap">
+              Floor Plan Insights
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
@@ -63,7 +91,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               
               <Link
                 to={item.path}
-                className="flex items-center rounded-lg transition-all group"
+                className="flex items-center rounded-lg transition-all group overflow-hidden"
                 style={{
                   background: isActive ? '#FF5959' : (item.special ? '#1A1A1A' : 'transparent'),
                   color: isActive ? '#FFFFFF' : '#CCCCCC',
@@ -92,8 +120,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 }}
                 title={isCollapsed ? item.label : ''}
               >
-                <Icon className="w-5 h-5" />
-                {!isCollapsed && <span className="font-bold text-sm uppercase tracking-wide">{item.label}</span>}
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                {!isCollapsed && (
+                  <span 
+                    className="font-bold text-sm uppercase tracking-wide whitespace-nowrap transition-opacity duration-200"
+                    style={{ opacity: isCollapsed ? 0 : 1 }}
+                  >
+                    {item.label}
+                  </span>
+                )}
               </Link>
             </div>
           )
@@ -101,22 +136,22 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       </nav>
 
       {/* User Info & Logout */}
-      <div className="p-4 border-t" style={{ borderTopColor: '#333333' }}>
+      <div className="p-4 border-t overflow-hidden" style={{ borderTopColor: '#333333' }}>
         {!isCollapsed ? (
           <>
-            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg mb-2" style={{ background: '#1A1A1A' }}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#FF5959' }}>
+            <div className="flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 overflow-hidden" style={{ background: '#1A1A1A' }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#FF5959' }}>
                 <User className="w-4 h-4 text-white" />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-400">Logged in as</p>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <p className="text-xs text-gray-400 whitespace-nowrap">Logged in as</p>
                 <p className="text-sm text-white font-medium truncate">{user?.email}</p>
               </div>
             </div>
             
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-all"
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-all overflow-hidden"
               style={{ background: 'transparent', color: '#FF5959', border: '2px solid #FF5959' }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#FF5959'
@@ -127,8 +162,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 e.currentTarget.style.color = '#FF5959'
               }}
             >
-              <LogOut className="w-4 h-4" />
-              <span className="font-bold text-sm uppercase">Logout</span>
+              <LogOut className="w-4 h-4 flex-shrink-0" />
+              <span className="font-bold text-sm uppercase whitespace-nowrap">Logout</span>
             </button>
           </>
         ) : (
