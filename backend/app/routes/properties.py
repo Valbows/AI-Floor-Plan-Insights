@@ -256,7 +256,7 @@ def search_property():
         }), 500
 
 
-@properties_bp.route('/', methods=['GET'])
+@properties_bp.route('/', methods=['GET'], strict_slashes=False)
 @jwt_required()
 def list_properties():
     """
@@ -937,6 +937,16 @@ def retrigger_enrichment(property_id):
                 'error': 'Property not found',
                 'message': 'Property does not exist or you do not have access'
             }), 404
+
+        # Immediately mark as in-progress so frontend starts polling (use allowed status)
+        try:
+            admin_db = get_admin_db()
+            admin_db.table('properties').update({
+                'status': 'processing'
+            }).eq('id', property_id).eq('agent_id', user_id).execute()
+        except Exception as e:
+            # Non-fatal: continue to queue task
+            print(f"Failed to set enrichment_in_progress for {property_id}: {e}")
 
         # Queue enrichment task
         from app.tasks.property_tasks import enrich_property_data_task
