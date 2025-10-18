@@ -9,6 +9,10 @@ import {
 import axios from 'axios'
 import Analytics from '../components/Analytics'
 import FloorPlanAnalysisDetails from '../components/FloorPlanAnalysisDetails'
+import ShareModal from '../components/modals/ShareModal'
+import DeleteModal from '../components/modals/DeleteModal'
+import FloorPlanZoomModal from '../components/modals/FloorPlanZoomModal'
+import ProgressOverlay from '../components/modals/ProgressOverlay'
 
 const PropertyDetail = () => {
   const { id } = useParams()
@@ -45,12 +49,8 @@ const PropertyDetail = () => {
   // Features expand state
   const [showAllFeatures, setShowAllFeatures] = useState(false)
 
-  const analysisSteps = [
-    { icon: Upload, text: 'Uploading floor plan...', color: 'text-blue-600' },
-    { icon: Eye, text: 'Analyzing layout and rooms...', color: 'text-purple-600' },
-    { icon: DollarSign, text: 'Calculating market value...', color: 'text-green-600' },
-    { icon: FileText, text: 'Generating listing content...', color: 'text-orange-600' }
-  ]
+  // Hide marketing/analytics tabs and share button (now only in Agent Tools)
+  const showMarketingAndAnalytics = false
 
   useEffect(() => {
     loadProperty()
@@ -61,7 +61,7 @@ const PropertyDetail = () => {
     if (showProgressOverlay) {
       const interval = setInterval(() => {
         setAnalysisStep(prev => {
-          if (prev < analysisSteps.length - 1) {
+          if (prev < 3) {  // 4 steps (0-3)
             return prev + 1
           }
           // Keep cycling through steps while processing
@@ -332,65 +332,10 @@ const PropertyDetail = () => {
   return (
     <div className="min-h-screen relative" style={{background: '#F6F1EB'}}>
       {/* Progress Overlay */}
-      {showProgressOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)'}}>
-          <div className="bg-white p-10 max-w-md w-full mx-4" style={{borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)'}}>
-            <div className="text-center mb-8">
-              <Loader className="w-20 h-20 mx-auto mb-4 animate-spin" style={{color: '#FF5959'}} />
-              <h3 className="text-3xl font-black uppercase mb-3" style={{color: '#000000', letterSpacing: '-1px'}}>Analyzing Your <span style={{color: '#FF5959'}}>Property</span></h3>
-              <p className="text-base" style={{color: '#666666'}}>Please wait while our AI processes your floor plan...</p>
-            </div>
-
-            {/* Analysis Steps */}
-            <div className="space-y-4">
-              {analysisSteps.map((step, index) => {
-                const StepIcon = step.icon
-                const isActive = index === analysisStep
-                const isCompleted = index < analysisStep
-                
-                return (
-                  <div 
-                    key={index}
-                    className="flex items-center space-x-3 p-4 transition-all"
-                    style={{
-                      background: isActive ? '#FFF5F5' : isCompleted ? '#F0FDF4' : '#F6F1EB',
-                      border: `2px solid ${isActive ? '#FF5959' : isCompleted ? '#22C55E' : '#E5E5E5'}`,
-                      borderRadius: '8px',
-                      opacity: isActive || isCompleted ? 1 : 0.5,
-                      transform: isActive ? 'scale(1.02)' : 'scale(1)'
-                    }}
-                  >
-                    <div className={`flex-shrink-0 ${isActive ? 'animate-pulse' : ''}`}>
-                      {isCompleted ? (
-                        <CheckCircle className="w-6 h-6" style={{color: '#22C55E'}} />
-                      ) : (
-                        <StepIcon className="w-6 h-6" style={{color: isActive ? '#FF5959' : '#999999'}} />
-                      )}
-                    </div>
-                    <p className="text-sm font-bold" style={{
-                      color: isActive ? '#000000' : isCompleted ? '#22C55E' : '#999999'
-                    }}>
-                      {step.text}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="mt-6">
-              <div className="w-full rounded-full h-2" style={{background: '#E5E5E5'}}>
-                <div 
-                  className="h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${((analysisStep + 1) / analysisSteps.length) * 100}%`, background: '#FF5959' }}
-                ></div>
-              </div>
-              <p className="text-xs font-bold mt-2 text-center uppercase" style={{color: '#666666', letterSpacing: '1px'}}>
-                Step {analysisStep + 1} of {analysisSteps.length}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProgressOverlay 
+        showProgressOverlay={showProgressOverlay}
+        analysisStep={analysisStep}
+      />
 
       <main className="max-w-[1400px] mx-auto px-4 py-12">
         {/* Page Header with Actions */}
@@ -748,54 +693,58 @@ const PropertyDetail = () => {
               >
                 Market Insights
               </button>
-              <button
-                onClick={() => setActiveTab('marketing')}
-                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
-                style={{
-                  background: activeTab === 'marketing' ? '#FF5959' : 'transparent',
-                  color: activeTab === 'marketing' ? '#FFFFFF' : '#666666',
-                  borderRadius: '6px',
-                  letterSpacing: '1px'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== 'marketing') {
-                    e.currentTarget.style.background = '#FFFFFF'
-                    e.currentTarget.style.color = '#000000'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== 'marketing') {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = '#666666'
-                  }
-                }}
-              >
-                Marketing Content
-              </button>
-              <button
-                onClick={() => setActiveTab('analytics')}
-                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
-                style={{
-                  background: activeTab === 'analytics' ? '#FF5959' : 'transparent',
-                  color: activeTab === 'analytics' ? '#FFFFFF' : '#666666',
-                  borderRadius: '6px',
-                  letterSpacing: '1px'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== 'analytics') {
-                    e.currentTarget.style.background = '#FFFFFF'
-                    e.currentTarget.style.color = '#000000'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== 'analytics') {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = '#666666'
-                  }
-                }}
-              >
-                Analytics
-              </button>
+              {showMarketingAndAnalytics && (
+                <>
+                  <button
+                    onClick={() => setActiveTab('marketing')}
+                    className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                    style={{
+                      background: activeTab === 'marketing' ? '#FF5959' : 'transparent',
+                      color: activeTab === 'marketing' ? '#FFFFFF' : '#666666',
+                      borderRadius: '6px',
+                      letterSpacing: '1px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeTab !== 'marketing') {
+                        e.currentTarget.style.background = '#FFFFFF'
+                        e.currentTarget.style.color = '#000000'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeTab !== 'marketing') {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.color = '#666666'
+                      }
+                    }}
+                  >
+                    Marketing Content
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('analytics')}
+                    className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                    style={{
+                      background: activeTab === 'analytics' ? '#FF5959' : 'transparent',
+                      color: activeTab === 'analytics' ? '#FFFFFF' : '#666666',
+                      borderRadius: '6px',
+                      letterSpacing: '1px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeTab !== 'analytics') {
+                        e.currentTarget.style.background = '#FFFFFF'
+                        e.currentTarget.style.color = '#000000'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeTab !== 'analytics') {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.color = '#666666'
+                      }
+                    }}
+                  >
+                    Analytics
+                  </button>
+                </>
+              )}
               </div>
             </div>
 
@@ -1130,7 +1079,7 @@ const PropertyDetail = () => {
               </div>
             )}
 
-            {activeTab === 'marketing' && (
+            {showMarketingAndAnalytics && activeTab === 'marketing' && (
               <div className="space-y-6">
                 {/* Listing Copy (Agent #3) */}
                 {extracted.listing_copy ? (
@@ -1424,7 +1373,7 @@ const PropertyDetail = () => {
               </div>
             )}
 
-            {activeTab === 'analytics' && (
+            {showMarketingAndAnalytics && activeTab === 'analytics' && (
               <Analytics propertyId={id} />
             )}
             </div>
@@ -1432,226 +1381,64 @@ const PropertyDetail = () => {
         </div>
       </main>
       
-      {/* Share Link Modal */}
-      {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)'}}>
-          <div className="bg-white max-w-lg w-full p-8" style={{borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', border: '2px solid #000000'}}>
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h3 className="text-2xl font-black uppercase mb-2" style={{color: '#000000', letterSpacing: '-1px'}}>Share <span style={{color: '#FF5959'}}>Property</span></h3>
-                <p className="text-sm" style={{color: '#666666'}}>Generate a public link to share this property</p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowShareModal(false)
-                  setCopied(false)
-                }}
-                className="transition-colors p-1"
-                style={{color: '#FF5959'}}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {generatingLink ? (
-              <div className="text-center py-8">
-                <Loader className="w-8 h-8 animate-spin mx-auto mb-4" style={{color: '#FF5959'}} />
-                <p className="text-sm" style={{color: '#666666'}}>Generating shareable link...</p>
-              </div>
-            ) : shareableLink ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold uppercase mb-2" style={{color: '#000000', letterSpacing: '1px'}}>
-                    Shareable Link
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={shareableLink.shareable_url}
-                      readOnly
-                      className="flex-1 px-4 py-2 text-sm focus:outline-none"
-                      style={{border: '2px solid #000000', borderRadius: '4px', background: '#F6F1EB', color: '#000000'}}
-                    />
-                    <button
-                      onClick={handleCopyLink}
-                      className="px-4 py-2 transition-all flex items-center space-x-2 font-bold uppercase text-sm"
-                      style={{
-                        background: copied ? '#F0FDF4' : '#FF5959',
-                        color: copied ? '#22C55E' : '#FFFFFF',
-                        borderRadius: '4px',
-                        letterSpacing: '1px'
-                      }}
-                      onMouseEnter={(e) => {if (!copied) {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-1px)'}}}
-                      onMouseLeave={(e) => {if (!copied) {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'}}}
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="rounded-lg p-4 space-y-2" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span style={{color: '#666666'}}>Expires:</span>
-                    <span className="font-bold" style={{color: '#000000'}}>
-                      {new Date(shareableLink.expires_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-xs" style={{color: '#666666'}}>
-                    This link will remain active for 30 days. Anyone with this link can view the property details.
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-end space-x-3 pt-2">
-                  <button
-                    onClick={() => {
-                      setShowShareModal(false)
-                      setCopied(false)
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-sm text-gray-600">Failed to load shareable link.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Modals */}
+      <ShareModal 
+        showShareModal={showShareModal}
+        setShowShareModal={setShowShareModal}
+        generatingLink={generatingLink}
+        shareableLink={shareableLink}
+        copied={copied}
+        handleCopyLink={handleCopyLink}
+        setCopied={setCopied}
+      />
       
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-start mb-4">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-              <div className="ml-4 flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  Delete Property?
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Are you sure you want to delete this property? This action cannot be undone. 
-                  All property data, floor plans, and analysis will be permanently removed.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                disabled={deleting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
-              >
-                {deleting ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    <span>Deleting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete Property</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteModal 
+        showDeleteModal={showDeleteModal}
+        setShowDeleteModal={setShowDeleteModal}
+        deleting={deleting}
+        handleDelete={handleDelete}
+      />
       
-      {/* Floating Share Button - Sticky Side Box */}
-      <button
-        onClick={openShareModal}
-        className="fixed text-white shadow-lg transition-all duration-200 z-40 flex flex-col items-center justify-center space-y-2"
-        style={{
-          background: '#FF5959',
-          width: '80px',
-          height: '100px',
-          top: '50%',
-          right: '0',
-          transform: 'translateY(-50%)',
-          borderTopLeftRadius: '12px',
-          borderBottomLeftRadius: '12px',
-          borderRight: 'none'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = '#E54545'
-          e.currentTarget.style.width = '90px'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = '#FF5959'
-          e.currentTarget.style.width = '80px'
-        }}
-        title="Share Property"
-      >
-        <Share2 className="w-8 h-8" />
-        <span className="text-xs font-black uppercase" style={{letterSpacing: '1px'}}>Share</span>
-      </button>
+      {/* Share Button - only visible when showMarketingAndAnalytics is true */}
+      {showMarketingAndAnalytics && (
+        <button
+          onClick={openShareModal}
+          className="fixed text-white shadow-lg transition-all duration-200 z-40 flex flex-col items-center justify-center space-y-2"
+          style={{
+            background: '#FF5959',
+            width: '80px',
+            height: '100px',
+            top: '50%',
+            right: '0',
+            transform: 'translateY(-50%)',
+            borderTopLeftRadius: '12px',
+            borderBottomLeftRadius: '12px',
+            borderRight: 'none'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#E54545'
+            e.currentTarget.style.width = '90px'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#FF5959'
+            e.currentTarget.style.width = '80px'
+          }}
+          title="Share Property"
+        >
+          <Share2 className="w-8 h-8" />
+          <span className="text-xs font-black uppercase" style={{letterSpacing: '1px'}}>Share</span>
+        </button>
+      )}
 
       {/* Floor Plan Zoom Modal */}
-      {showFloorPlanModal && property.image_url && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onClick={closeFloorPlanModal}>
-          <button
-            onClick={closeFloorPlanModal}
-            className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
-          >
-            <X className="w-6 h-6 text-gray-900" />
-          </button>
-          
-          <div className="absolute top-4 left-4 flex space-x-2 z-10">
-            <button
-              onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
-              className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <ZoomIn className="w-6 h-6 text-gray-900" />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
-              className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <ZoomOut className="w-6 h-6 text-gray-900" />
-            </button>
-            <div className="px-3 py-2 bg-white rounded-full text-sm font-medium text-gray-900">
-              {Math.round(zoomLevel * 100)}%
-            </div>
-          </div>
-
-          <div className="overflow-auto max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={property.image_url}
-              alt="Floor Plan - Full Size"
-              style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.2s' }}
-              className="max-w-none"
-            />
-          </div>
-        </div>
-      )}
+      <FloorPlanZoomModal 
+        showFloorPlanModal={showFloorPlanModal}
+        closeFloorPlanModal={closeFloorPlanModal}
+        imageUrl={property.image_url}
+        zoomLevel={zoomLevel}
+        handleZoomIn={handleZoomIn}
+        handleZoomOut={handleZoomOut}
+      />
     </div>
   )
 }
