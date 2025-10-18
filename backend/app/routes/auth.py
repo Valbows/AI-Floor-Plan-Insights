@@ -206,6 +206,22 @@ def login():
         
         user_data = user_response.data[0] if user_response.data else {}
         
+        # Auto-upsert minimal user profile if missing
+        if not user_response.data:
+            try:
+                admin_client = get_admin_db()
+                admin_client.table('users').upsert({
+                    'id': user_id,
+                    'email': email,
+                    'full_name': user_data.get('full_name', '') if isinstance(user_data, dict) else ''
+                }, on_conflict='id').execute()
+                # Re-fetch for response payload
+                refetch = supabase.table('users').select('*').eq('id', user_id).execute()
+                if refetch.data:
+                    user_data = refetch.data[0]
+            except Exception:
+                pass
+        
         # Create JWT access token
         access_token = create_access_token(
             identity=user_id,
@@ -286,10 +302,26 @@ def verify():
         user_response = supabase.table('users').select('*').eq('id', user_id).execute()
         
         if not user_response.data:
-            return jsonify({
-                'error': 'User not found',
-                'message': 'Invalid token or user does not exist'
-            }), 404
+            try:
+                admin_client = get_admin_db()
+                admin_client.table('users').upsert({
+                    'id': user_id,
+                    'email': email,
+                    'full_name': ''
+                }, on_conflict='id').execute()
+                # After upsert, return minimal payload
+                return jsonify({
+                    'user': {
+                        'id': user_id,
+                        'email': email,
+                        'full_name': ''
+                    }
+                }), 200
+            except Exception:
+                return jsonify({
+                    'error': 'User not found',
+                    'message': 'Invalid token or user does not exist'
+                }), 404
         
         user_data = user_response.data[0]
         

@@ -579,6 +579,126 @@ class AttomAPIClient:
             
         except Exception as e:
             raise Exception(f"Failed to get sales trends: {str(e)}")
+
+    def get_sales_trends_v4(self, geo_id_v4: Optional[str] = None, interval: str = 'monthly',
+                            start_year: Optional[int] = None, end_year: Optional[int] = None,
+                            property_type: str = 'all', postal_code: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Get sales trends using ATTOM v4 transaction endpoint with geoIdv4.
+
+        Docs example:
+        https://api.gateway.attomdata.com/v4/transaction/salestrend?geoIdv4=...&interval=monthly&startyear=2020&endyear=2022&propertyType=all
+
+        Args:
+            geo_id_v4: Geo identifier (v4) string
+            interval: 'monthly'|'quarterly'|'yearly'
+            start_year: optional start year (int)
+            end_year: optional end year (int)
+            property_type: e.g., 'all'
+
+        Returns:
+            A dict with normalized trend fields when available, otherwise raw payload.
+        """
+        url = "https://api.gateway.attomdata.com/v4/transaction/salestrend"
+        params: Dict[str, Any] = {
+            'interval': interval
+        }
+        # Prefer explicit geoIdv4 when provided; otherwise try geoType/geoId using ZIP
+        if geo_id_v4:
+            # Correct v4 parameter name is geoIdV4 (capital V)
+            params['geoIdV4'] = geo_id_v4
+        elif postal_code:
+            params['geoType'] = 'postalcode'
+            params['geoId'] = str(postal_code)
+        # Default to last 2 calendar years if not provided
+        if start_year is None or end_year is None:
+            now_year = datetime.utcnow().year
+            start_year = now_year - 1
+            end_year = now_year
+        params['startyear'] = start_year
+        params['endyear'] = end_year
+        if property_type:
+            params['propertyType'] = property_type
+
+        try:
+            resp = self.session.get(url, params=params, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Attempt to normalize common fields if present
+            trends = data.get('salestrends') or data.get('trends') or data.get('data') or []
+            latest = trends[0] if isinstance(trends, list) and trends else {}
+
+            normalized = {
+                'geo_id_v4': geo_id_v4,
+                'interval': interval,
+                'start_year': start_year,
+                'end_year': end_year,
+                'property_type': property_type,
+                'postal_code': postal_code,
+                'trends': trends,
+                'latest': latest
+            }
+            return normalized
+        except requests.exceptions.HTTPError as e:
+            raise Exception(f"ATTOM v4 salestrend error: {e.response.status_code} - {e.response.text}")
+        except Exception as e:
+            raise Exception(f"Failed to get v4 sales trends: {str(e)}")
+    
+    def lookup_geo_id_v4(self, name: str, geography_type_abbreviation: Optional[str] = None,
+                         state_abbreviation: Optional[str] = None, page_size: int = 10) -> List[Dict[str, Any]]:
+        """
+        Look up ATTOM v4 geographies and return raw geography entries (including geoIdV4).
+
+        Args:
+            name: Free-text name like 'Cranford, NJ' or 'Union County, NJ'.
+            geography_type_abbreviation: Optional filter (e.g., 'CI' for Postal City, 'CO' for County).
+
+        Returns:
+            List of geography dicts with keys like geoIdV4, geographyName, geographyTypeName, geographyTypeAbbreviation.
+        """
+        url = "https://api.gateway.attomdata.com/v4/location/lookup"
+        params: Dict[str, Any] = {'name': name}
+        if geography_type_abbreviation:
+            params['geographyTypeAbbreviation'] = geography_type_abbreviation
+        if state_abbreviation:
+            params['stateAbbreviation'] = state_abbreviation
+        if page_size:
+            params['pageSize'] = page_size
+        try:
+            resp = self.session.get(url, params=params, timeout=30)
+            resp.raise_for_status()
+            data = resp.json() or {}
+            return data.get('geographies') or []
+        except requests.exceptions.HTTPError as e:
+            raise Exception(f"ATTOM v4 location lookup error: {e.response.status_code} - {e.response.text}")
+        except Exception as e:
+            raise Exception(f"Failed location lookup: {str(e)}")
+
+    def find_geo_id_v4_for_area(self, city: Optional[str], state: Optional[str], county: Optional[str] = None) -> Optional[str]:
+        """
+        Derive a usable geoIdV4 for SalesTrends by trying City (Postal City, 'CI') then County ('CO').
+
+        Returns the first matching geoIdV4 or None if none found.
+        """
+        # Try Postal City first
+        try:
+            if city and state:
+                # Prefer separating stateAbbreviation for better matches
+                geos = self.lookup_geo_id_v4(city, geography_type_abbreviation='CI', state_abbreviation=state)
+                if geos:
+                    return geos[0].get('geoIdV4')
+        except Exception:
+            pass
+        # Then try County if provided
+        try:
+            if county and state:
+                geos = self.lookup_geo_id_v4(county, geography_type_abbreviation='CO', state_abbreviation=state)
+                if geos:
+                    return geos[0].get('geoIdV4')
+        except Exception:
+            pass
+        return None
     
     def get_area_stats(self, zip_code: str) -> Dict[str, Any]:
         """

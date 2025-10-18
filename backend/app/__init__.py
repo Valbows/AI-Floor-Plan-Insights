@@ -22,7 +22,10 @@ celery = Celery(
 
 # Import tasks to register them with Celery
 # Must be after celery initialization
-from app.tasks import property_tasks  # noqa: E402
+try:
+    from app.tasks import property_tasks  # noqa: E402
+except Exception:
+    property_tasks = None
 
 
 def create_app(config_name='development'):

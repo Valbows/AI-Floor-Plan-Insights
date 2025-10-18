@@ -9,6 +9,8 @@ from app.agents.floor_plan_analyst import FloorPlanAnalyst
 import requests
 from app.clients.attom_client import AttomAPIClient
 from app.utils.geocoding import normalize_address
+import re
+import os
 
 
 @celery.task(name='process_floor_plan', bind=True, max_retries=3)
@@ -48,9 +50,12 @@ def process_floor_plan_task(self, property_id: str):
             raise ValueError(f"Property {property_id} has no floor plan image")
         
         # Update status to indicate processing has started
-        db.table('properties').update({
-            'status': 'processing'
-        }).eq('id', property_id).execute()
+        try:
+            db.table('properties').update({
+                'status': 'processing'
+            }).eq('id', property_id).execute()
+        except Exception:
+            pass
         
         # Download floor plan image from Storage
         image_path = property_record['image_storage_path']
@@ -152,9 +157,9 @@ def enrich_property_data_task(self, property_id: str):
         if not address:
             raise ValueError(f"Property {property_id} has no address for market analysis")
         
-        # Update status to indicate enrichment has started
+        # Update status to indicate enrichment has started (use allowed status)
         db.table('properties').update({
-            'status': 'enrichment_complete'  # Will change to enrichment_in_progress in future
+            'status': 'processing'
         }).eq('id', property_id).execute()
 
         attom_bundle = {}
@@ -170,15 +175,18 @@ def enrich_property_data_task(self, property_id: str):
 
             # Use structured search when possible; fallback to unstructured
             try:
+                # Strip unit/suite designators from street for ATTOM matching
+                street_clean = re.sub(r"\s+(apt|unit|ste|suite|bldg|fl|floor|#)\b.*$", "", street, flags=re.IGNORECASE).strip()
                 if city_norm and state_norm:
-                    prop_core = client.search_property(street, city=city_norm, state=state_norm, zip_code=zip_norm)
+                    prop_core = client.search_property(street_clean, city=city_norm, state=state_norm, zip_code=zip_norm)
                 else:
-                    prop_core = client.search_property(street)
+                    prop_core = client.search_property(street_clean)
             except Exception as e:
                 print(f"[ATTOM] Structured search failed ({e}); retrying with raw address string")
                 prop_core = None
                 try:
-                    prop_core = client.search_property(address)
+                    address_clean = re.sub(r"\s+(apt|unit|ste|suite|bldg|fl|floor|#)\b.*$", "", address, flags=re.IGNORECASE).strip()
+                    prop_core = client.search_property(address_clean)
                 except Exception as e2:
                     print(f"[ATTOM] Raw address search failed: {e2}")
                     prop_core = None
@@ -214,7 +222,8 @@ def enrich_property_data_task(self, property_id: str):
                 state = state_norm or prop_core.get('state')
                 zip_code = zip_norm or prop_core.get('zip')
                 if city and state:
-                    avm = client.get_avm(street or prop_core.get('address') or address, city, state, zip_code=zip_code)
+                    avm_street = street_clean if 'street_clean' in locals() else (street or prop_core.get('address') or address)
+                    avm = client.get_avm(avm_street, city, state, zip_code=zip_code)
             except Exception:
                 avm = None
             area_stats = None
@@ -224,6 +233,115 @@ def enrich_property_data_task(self, property_id: str):
                     area_stats = client.get_area_stats(zip_for_area)
             except Exception:
                 area_stats = None
+            # Comparables (deterministic) – fetch even if LLM omits
+            comps = None
+            try:
+                city_for_comps = city_norm or prop_core.get('city')
+                state_for_comps = state_norm or prop_core.get('state')
+                if city_for_comps and state_for_comps:
+                    comps_address = street_clean if 'street_clean' in locals() else (street or prop_core.get('address') or address)
+                    comps = client.get_comparables(comps_address, city_for_comps, state_for_comps, radius_miles=0.5, max_results=10)
+            except Exception:
+                comps = None
+            # ATTOM sales trends
+            # Prefer v4 via geoIdv4; resolve geoIdv4 from city/county when not explicitly provided
+            sales_trends_v4 = None
+            sales_trends_zip = None
+            geoid_v4 = os.getenv('ATTOM_GEOID_V4')
+            # Compute ZIP early so we can fallback even if v4 is configured
+            zip_for_trends = prop_core.get('zip') or zip_norm
+            # Resolve a regional geoIdV4 when not explicitly configured
+            city_for_geo = city_norm or prop_core.get('city')
+            state_for_geo = state_norm or prop_core.get('state')
+            county_for_geo = (prop_core or {}).get('county')
+            resolved_geo_v4 = None
+            # Prefer per-area resolution; if none found, use env override
+            if not resolved_geo_v4:
+                try:
+                    resolved_geo_v4 = client.find_geo_id_v4_for_area(city_for_geo, state_for_geo, county_for_geo)
+                except Exception:
+                    resolved_geo_v4 = None
+            if not resolved_geo_v4 and geoid_v4:
+                resolved_geo_v4 = geoid_v4
+            if resolved_geo_v4:
+                v4_has_trends = False
+                try:
+                    sales_trends_v4 = client.get_sales_trends_v4(
+                        geo_id_v4=resolved_geo_v4,
+                        interval='monthly',
+                        property_type='all'
+                    )
+                    v4_has_trends = bool(sales_trends_v4) and bool(sales_trends_v4.get('trends')) and isinstance(sales_trends_v4.get('trends'), list)
+                    print(f"[ATTOM] v4 SalesTrends fetched: {bool(sales_trends_v4)} (has_trends={v4_has_trends}) for geoIdv4={resolved_geo_v4}")
+                except Exception as e:
+                    print(f"[ATTOM] v4 salestrend error: {e}")
+                    sales_trends_v4 = None
+                    v4_has_trends = False
+                # Fallback to County if city-level v4 produced no usable trends
+                if not v4_has_trends and county_for_geo and state_for_geo:
+                    try:
+                        geos = client.lookup_geo_id_v4(f"{county_for_geo}, {state_for_geo}", geography_type_abbreviation='CO')
+                        if geos:
+                            alt_geo = geos[0].get('geoIdV4')
+                            if alt_geo:
+                                sales_trends_v4 = client.get_sales_trends_v4(
+                                    geo_id_v4=alt_geo,
+                                    interval='monthly', property_type='all'
+                                )
+                                v4_has_trends = bool(sales_trends_v4) and bool(sales_trends_v4.get('trends')) and isinstance(sales_trends_v4.get('trends'), list)
+                                print(f"[ATTOM] v4 County SalesTrends fetched: {bool(sales_trends_v4)} (has_trends={v4_has_trends}) for county={county_for_geo}")
+                    except Exception as e:
+                        print(f"[ATTOM] v4 county salestrend error: {e}")
+                if not v4_has_trends and zip_for_trends:
+                    try:
+                        print(f"[ATTOM] v4 trends empty or unavailable; attempting legacy ZIP fallback for zip={zip_for_trends}")
+                        sales_trends_zip = client.get_sales_trends(str(zip_for_trends), interval='monthly')
+                        print(f"[ATTOM] ZIP SalesTrends fetched (fallback): {bool(sales_trends_zip)} for zip={zip_for_trends}")
+                    except Exception as e:
+                        print(f"[ATTOM] ZIP salestrend error (fallback): {e}")
+            else:
+                # Resolve geoIdV4 dynamically when no explicit v4 id configured
+                try:
+                    v4_has_trends = False
+                    city_for_geo = city_norm or prop_core.get('city')
+                    state_for_geo = state_norm or prop_core.get('state')
+                    county_for_geo = (prop_core or {}).get('county')
+                    resolved_geo_v4 = None
+                    try:
+                        resolved_geo_v4 = client.find_geo_id_v4_for_area(city_for_geo, state_for_geo, county_for_geo)
+                    except Exception:
+                        resolved_geo_v4 = None
+                    if resolved_geo_v4:
+                        sales_trends_v4 = client.get_sales_trends_v4(
+                            geo_id_v4=resolved_geo_v4,
+                            interval='monthly', property_type='all'
+                        )
+                        v4_has_trends = bool(sales_trends_v4) and bool(sales_trends_v4.get('trends')) and isinstance(sales_trends_v4.get('trends'), list)
+                        print(f"[ATTOM] v4 SalesTrends fetched: {bool(sales_trends_v4)} (has_trends={v4_has_trends}) for geoIdv4={resolved_geo_v4}")
+                    # County fallback
+                    if not v4_has_trends and county_for_geo and state_for_geo:
+                        try:
+                            geos = client.lookup_geo_id_v4(f"{county_for_geo}, {state_for_geo}", geography_type_abbreviation='CO')
+                            if geos:
+                                alt_geo = geos[0].get('geoIdV4')
+                                if alt_geo:
+                                    sales_trends_v4 = client.get_sales_trends_v4(
+                                        geo_id_v4=alt_geo,
+                                        interval='monthly', property_type='all'
+                                    )
+                                    v4_has_trends = bool(sales_trends_v4) and bool(sales_trends_v4.get('trends')) and isinstance(sales_trends_v4.get('trends'), list)
+                                    print(f"[ATTOM] v4 County SalesTrends fetched: {bool(sales_trends_v4)} (has_trends={v4_has_trends}) for county={county_for_geo}")
+                        except Exception as e:
+                            print(f"[ATTOM] v4 county salestrend error: {e}")
+                    # Legacy ZIP fallback
+                    if not v4_has_trends and zip_for_trends:
+                        try:
+                            sales_trends_zip = client.get_sales_trends(str(zip_for_trends), interval='monthly')
+                            print(f"[ATTOM] ZIP SalesTrends fetched: {bool(sales_trends_zip)} for zip={zip_for_trends}")
+                        except Exception as e:
+                            print(f"[ATTOM] ZIP salestrend error: {e}")
+                except Exception as e:
+                    print(f"[ATTOM] SalesTrends resolution error: {e}")
             # Build parcel summary (non-geometry) from details when available
             parcel = None
             try:
@@ -253,12 +371,16 @@ def enrich_property_data_task(self, property_id: str):
                 parcel = None
             print(f"[ATTOM] Property found: {bool(prop_core)} attom_id={attom_id}")
             print(f"[ATTOM] Details present: {bool(details)} | AVM present: {bool(avm)} | Area present: {bool(area_stats)}")
+            print(f"[ATTOM] SalesTrends v4 present: {bool(sales_trends_v4)} | ZIP present: {bool(sales_trends_zip)}")
             attom_bundle = {
                 'property': prop_core,
                 'details': details,
                 'avm': avm,
                 'area_stats': area_stats,
-                'parcel': parcel
+                'sales_trends_v4': sales_trends_v4,
+                'sales_trends': sales_trends_zip,
+                'parcel': parcel,
+                'comparables': comps
             }
             current_data = property_record.get('extracted_data', {}) or {}
             current_data['attom'] = attom_bundle
@@ -282,6 +404,12 @@ def enrich_property_data_task(self, property_id: str):
 
         # Merge market insights into extracted_data
         current_data = property_record.get('extracted_data', {})
+        # If LLM omitted comps, attach ATTOM comps we fetched
+        try:
+            if (not market_insights.get('comparable_properties')) and (current_data.get('attom', {}) or {}).get('comparables'):
+                market_insights['comparable_properties'] = current_data['attom']['comparables']
+        except Exception:
+            pass
         current_data['market_insights'] = market_insights
 
         # Compute data sources used for UI badge
@@ -334,7 +462,7 @@ def enrich_property_data_task(self, property_id: str):
             current_data = db.table('properties').select('extracted_data').eq('id', property_id).execute().data[0].get('extracted_data', {})
             current_data['enrichment_error'] = str(e)
             db.table('properties').update({
-                'status': 'enrichment_failed',
+                'status': 'failed',
                 'extracted_data': current_data
             }).eq('id', property_id).execute()
         except Exception as update_error:
@@ -428,7 +556,7 @@ def generate_listing_copy_task(self, property_id: str):
             current_data = db.table('properties').select('extracted_data').eq('id', property_id).execute().data[0].get('extracted_data', {})
             current_data['listing_error'] = str(e)
             db.table('properties').update({
-                'status': 'listing_failed',
+                'status': 'failed',
                 'extracted_data': current_data
             }).eq('id', property_id).execute()
         except Exception as update_error:

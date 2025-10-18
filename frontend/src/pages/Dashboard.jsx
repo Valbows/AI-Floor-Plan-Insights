@@ -363,7 +363,7 @@ const Dashboard = () => {
       }
       
       // Make request with explicit Authorization header
-      const response = await axios.get('/api/properties', {
+      const response = await axios.get('/api/properties/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -372,10 +372,8 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Error fetching properties:', err)
       if (err.response?.status === 401) {
-        setError('Session expired. Please log in again.')
-        // Optional: Clear token and redirect to login
-        localStorage.removeItem('token')
-        window.location.href = '/login'
+        // Do not clear token or force redirect; avoid immediate logout loop
+        setError('Unable to load properties right now. Please try again shortly.')
       } else {
         setError('Failed to load properties. Please try again.')
       }

@@ -83,6 +83,17 @@ class FloorPlanParser:
         
         # Set API key for LiteLLM
         os.environ['GEMINI_API_KEY'] = self.api_key
+
+        # Configure pytesseract binary path if provided (macOS/Homebrew)
+        if PYTESSERACT_AVAILABLE:
+            try:
+                import pytesseract as _pt
+                tcmd = os.getenv('TESSERACT_CMD') or os.getenv('TESSERACT_PATH')
+                if tcmd:
+                    _pt.pytesseract.tesseract_cmd = tcmd
+                    logger.info(f"Configured Tesseract command path: {tcmd}")
+            except Exception:
+                pass
         
         logger.info("Floor Plan Parser initialized (LiteLLM REST API + Pytesseract)")
     
@@ -209,12 +220,19 @@ class FloorPlanParser:
         
         except Exception as e:
             logger.error(f"Pytesseract OCR parsing failed: {e}")
+            err_str = str(e)
+            tesseract_missing = 'TesseractNotFoundError' in err_str or 'tesseract is not installed' in err_str.lower()
+            hint = None
+            if tesseract_missing:
+                hint = "Install Tesseract OCR (e.g., brew install tesseract) and ensure it is on PATH."
             return {
                 'dimensions': [],
                 'total_sqft': 0,
                 'has_dimensions': False,
                 'extraction_confidence': 0.0,
-                'error': str(e)
+                'error': err_str,
+                'tesseract_missing': tesseract_missing,
+                'hint': hint
             }
     
     def _validate_with_ocr(

@@ -31,15 +31,21 @@ export const AuthProvider = ({ children }) => {
       const savedToken = localStorage.getItem('token')
       if (savedToken) {
         try {
+          // Ensure Authorization header is set before verification
+          axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
+          setToken(savedToken)
           // Verify token is still valid by making a test request
           const response = await axios.get('/auth/verify')
           setUser(response.data.user)
-          setToken(savedToken)
         } catch (error) {
-          // Token invalid, clear it
-          localStorage.removeItem('token')
-          setToken(null)
-          setUser(null)
+          // Only clear token on explicit 401; keep session on transient/backend errors
+          if (error?.response?.status === 401) {
+            localStorage.removeItem('token')
+            setToken(null)
+            setUser(null)
+          } else {
+            // Keep token and existing user; backend may be temporarily unavailable
+          }
         }
       }
       setLoading(false)

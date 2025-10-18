@@ -951,6 +951,20 @@ const PropertyDetail = () => {
                         </div>
                       </div>
                     )}
+                    {(!extracted.market_insights?.comparable_properties || extracted.market_insights.comparable_properties.length === 0) && (
+                      <div className="border border-gray-200 rounded-lg p-6">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-2">Comparable Properties</h2>
+                        <p className="text-sm text-gray-600 mb-4">No comparable properties found yet for this area.</p>
+                        <button
+                          onClick={handleReEnrich}
+                          disabled={reEnriching}
+                          className="px-4 py-2 text-white rounded text-xs font-bold uppercase tracking-wide"
+                          style={{ background: reEnriching ? '#CCCCCC' : '#FF5959' }}
+                        >
+                          {reEnriching ? 'Re-enriching…' : 'Retry enrichment'}
+                        </button>
+                      </div>
+                    )}
 
                     {/* ATTOM Data (Property, AVM, Parcel, Area) */}
                     {extracted.attom && (
@@ -1010,6 +1024,97 @@ const PropertyDetail = () => {
                             </div>
                           </div>
                         )}
+                        {(extracted.attom.sales_trends_v4 || extracted.attom.sales_trends) && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Sales Trends</h3>
+                            {extracted.attom.sales_trends_v4 && (() => {
+                              const v4 = extracted.attom.sales_trends_v4
+                              const latest = v4.latest || {}
+                              const v4Ppsf = (latest.medianSalePrice && latest.medianSquareFeet) ? Math.round(latest.medianSalePrice / latest.medianSquareFeet) : null
+                              const rows = Array.isArray(v4.trends) ? v4.trends.slice(0, 6) : []
+                              return (
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-3 gap-3 text-sm">
+                                    <div><p className="text-gray-600">Median Price</p><p className="font-semibold text-gray-900">{latest.medianSalePrice ? `$${Number(latest.medianSalePrice).toLocaleString()}` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Avg Price</p><p className="font-semibold text-gray-900">{latest.avgSalePrice ? `$${Number(latest.avgSalePrice).toLocaleString()}` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Price/SqFt</p><p className="font-semibold text-gray-900">{v4Ppsf ? `$${v4Ppsf.toLocaleString()}` : '—'}</p></div>
+                                  </div>
+                                  <div className="overflow-x-auto">
+                                    <table className="min-w-full text-xs">
+                                      <thead>
+                                        <tr className="text-gray-600 text-left">
+                                          <th className="py-2 pr-4">Period</th>
+                                          <th className="py-2 pr-4">Median</th>
+                                          <th className="py-2 pr-4">Avg</th>
+                                          <th className="py-2 pr-4">Sales</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {rows.map((t, i) => (
+                                          <tr key={i} className="border-t border-gray-100">
+                                            <td className="py-2 pr-4 text-gray-900">{t.periodBegin || t.period || '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{t.medianSalePrice ? `$${Number(t.medianSalePrice).toLocaleString()}` : '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{t.avgSalePrice ? `$${Number(t.avgSalePrice).toLocaleString()}` : '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{t.saleCount ?? '—'}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                            {(
+                              !extracted.attom.sales_trends_v4 ||
+                              !(Array.isArray(extracted.attom.sales_trends_v4.trends) && extracted.attom.sales_trends_v4.trends.length)
+                            ) && extracted.attom.sales_trends && (() => {
+                              const z = extracted.attom.sales_trends
+                              const rows = Array.isArray(z.trends) ? z.trends.slice(0, 6) : []
+                              return (
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-3 gap-3 text-sm">
+                                    <div><p className="text-gray-600">Median Price</p><p className="font-semibold text-gray-900">{z.current_median_price ? `$${Number(z.current_median_price).toLocaleString()}` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Avg Price</p><p className="font-semibold text-gray-900">{z.current_avg_price ? `$${Number(z.current_avg_price).toLocaleString()}` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Price/SqFt</p><p className="font-semibold text-gray-900">{z.price_per_sqft ? `$${Number(z.price_per_sqft).toLocaleString()}` : '—'}</p></div>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-3 text-xs">
+                                    <div><p className="text-gray-600">12-mo Sales</p><p className="font-semibold text-gray-900">{z.sale_count_12mo ?? '—'}</p></div>
+                                    <div><p className="text-gray-600">YoY Change</p><p className="font-semibold text-gray-900">{(z.yoy_change_pct ?? z.yoy_change_pct === 0) ? `${Number(z.yoy_change_pct).toFixed(1)}%` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Velocity</p><p className="font-semibold text-gray-900">{z.market_velocity || '—'}</p></div>
+                                  </div>
+                                  <div className="overflow-x-auto">
+                                    <table className="min-w-full text-xs">
+                                      <thead>
+                                        <tr className="text-gray-600 text-left">
+                                          <th className="py-2 pr-4">Period</th>
+                                          <th className="py-2 pr-4">Median</th>
+                                          <th className="py-2 pr-4">Avg</th>
+                                          <th className="py-2 pr-4">Sales</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {rows.map((t, i) => (
+                                          <tr key={i} className="border-t border-gray-100">
+                                            <td className="py-2 pr-4 text-gray-900">{t.period || t.periodBegin || '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{(t.median_price ?? t.medianSalePrice) ? `$${Number((t.median_price ?? t.medianSalePrice)).toLocaleString()}` : '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{(t.avg_price ?? t.avgSalePrice) ? `$${Number((t.avg_price ?? t.avgSalePrice)).toLocaleString()}` : '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{t.sale_count ?? t.saleCount ?? '—'}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                            {extracted.attom.sales_trends_v4 && (
+                              (!Array.isArray(extracted.attom.sales_trends_v4.trends) || !extracted.attom.sales_trends_v4.trends.length) &&
+                              !extracted.attom.sales_trends && (
+                                <p className="text-xs text-gray-500 mt-2">No regional v4 sales trend data available for this area.</p>
+                              )
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
@@ -1064,6 +1169,97 @@ const PropertyDetail = () => {
                               <div><p className="text-gray-600">Median Household Income</p><p className="font-semibold text-gray-900">${Number(extracted.attom.area_stats.median_household_income || 0).toLocaleString()}</p></div>
                               <div><p className="text-gray-600">Population</p><p className="font-semibold text-gray-900">{Number(extracted.attom.area_stats.population || 0).toLocaleString()}</p></div>
                             </div>
+                          </div>
+                        )}
+                        {(extracted.attom.sales_trends_v4 || extracted.attom.sales_trends) && (
+                          <div>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Sales Trends</h3>
+                            {extracted.attom.sales_trends_v4 && (() => {
+                              const v4 = extracted.attom.sales_trends_v4
+                              const latest = v4.latest || {}
+                              const v4Ppsf = (latest.medianSalePrice && latest.medianSquareFeet) ? Math.round(latest.medianSalePrice / latest.medianSquareFeet) : null
+                              const rows = Array.isArray(v4.trends) ? v4.trends.slice(0, 6) : []
+                              return (
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-3 gap-3 text-sm">
+                                    <div><p className="text-gray-600">Median Price</p><p className="font-semibold text-gray-900">{latest.medianSalePrice ? `$${Number(latest.medianSalePrice).toLocaleString()}` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Avg Price</p><p className="font-semibold text-gray-900">{latest.avgSalePrice ? `$${Number(latest.avgSalePrice).toLocaleString()}` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Price/SqFt</p><p className="font-semibold text-gray-900">{v4Ppsf ? `$${v4Ppsf.toLocaleString()}` : '—'}</p></div>
+                                  </div>
+                                  <div className="overflow-x-auto">
+                                    <table className="min-w-full text-xs">
+                                      <thead>
+                                        <tr className="text-gray-600 text-left">
+                                          <th className="py-2 pr-4">Period</th>
+                                          <th className="py-2 pr-4">Median</th>
+                                          <th className="py-2 pr-4">Avg</th>
+                                          <th className="py-2 pr-4">Sales</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {rows.map((t, i) => (
+                                          <tr key={i} className="border-t border-gray-100">
+                                            <td className="py-2 pr-4 text-gray-900">{t.periodBegin || t.period || '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{t.medianSalePrice ? `$${Number(t.medianSalePrice).toLocaleString()}` : '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{t.avgSalePrice ? `$${Number(t.avgSalePrice).toLocaleString()}` : '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{t.saleCount ?? '—'}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                            {(
+                              !extracted.attom.sales_trends_v4 ||
+                              !(Array.isArray(extracted.attom.sales_trends_v4.trends) && extracted.attom.sales_trends_v4.trends.length)
+                            ) && extracted.attom.sales_trends && (() => {
+                              const z = extracted.attom.sales_trends
+                              const rows = Array.isArray(z.trends) ? z.trends.slice(0, 6) : []
+                              return (
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-3 gap-3 text-sm">
+                                    <div><p className="text-gray-600">Median Price</p><p className="font-semibold text-gray-900">{z.current_median_price ? `$${Number(z.current_median_price).toLocaleString()}` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Avg Price</p><p className="font-semibold text-gray-900">{z.current_avg_price ? `$${Number(z.current_avg_price).toLocaleString()}` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Price/SqFt</p><p className="font-semibold text-gray-900">{z.price_per_sqft ? `$${Number(z.price_per_sqft).toLocaleString()}` : '—'}</p></div>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-3 text-xs">
+                                    <div><p className="text-gray-600">12-mo Sales</p><p className="font-semibold text-gray-900">{z.sale_count_12mo ?? '—'}</p></div>
+                                    <div><p className="text-gray-600">YoY Change</p><p className="font-semibold text-gray-900">{(z.yoy_change_pct ?? z.yoy_change_pct === 0) ? `${Number(z.yoy_change_pct).toFixed(1)}%` : '—'}</p></div>
+                                    <div><p className="text-gray-600">Velocity</p><p className="font-semibold text-gray-900">{z.market_velocity || '—'}</p></div>
+                                  </div>
+                                  <div className="overflow-x-auto">
+                                    <table className="min-w-full text-xs">
+                                      <thead>
+                                        <tr className="text-gray-600 text-left">
+                                          <th className="py-2 pr-4">Period</th>
+                                          <th className="py-2 pr-4">Median</th>
+                                          <th className="py-2 pr-4">Avg</th>
+                                          <th className="py-2 pr-4">Sales</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {rows.map((t, i) => (
+                                          <tr key={i} className="border-t border-gray-100">
+                                            <td className="py-2 pr-4 text-gray-900">{t.period || t.periodBegin || '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{(t.median_price ?? t.medianSalePrice) ? `$${Number((t.median_price ?? t.medianSalePrice)).toLocaleString()}` : '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{(t.avg_price ?? t.avgSalePrice) ? `$${Number((t.avg_price ?? t.avgSalePrice)).toLocaleString()}` : '—'}</td>
+                                            <td className="py-2 pr-4 text-gray-900">{t.sale_count ?? t.saleCount ?? '—'}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                            {extracted.attom.sales_trends_v4 && (
+                              (!Array.isArray(extracted.attom.sales_trends_v4.trends) || !extracted.attom.sales_trends_v4.trends.length) &&
+                              !extracted.attom.sales_trends && (
+                                <p className="text-xs text-gray-500 mt-2">No regional v4 sales trend data available for this area.</p>
+                              )
+                            )}
                           </div>
                         )}
                       </div>

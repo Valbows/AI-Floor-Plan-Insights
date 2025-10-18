@@ -46,6 +46,23 @@ class FloorPlanData(BaseModel):
         """Convert None to empty string for all string fields"""
         return v if v is not None else ""
 
+    @field_validator('square_footage', mode='before')
+    @classmethod
+    def coerce_square_footage(cls, v):
+        """Allow floats/strings for square_footage by coercing to a non-negative int."""
+        try:
+            if v is None:
+                return 0
+            # Convert strings like "7138.08" or "7,138" safely
+            if isinstance(v, str):
+                v = v.replace(",", "").strip()
+            num = float(v)
+            if num < 0:
+                num = 0
+            return int(round(num))
+        except Exception:
+            return 0
+
 
 # ================================
 # CrewAI Tools

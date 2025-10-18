@@ -318,6 +318,45 @@ class TestAttomAPIClient:
         result = attom_client.get_nearby_properties_by_latlng(40.0, -73.0)
         assert result == []
 
+    @patch('app.clients.attom_client.requests.Session.get')
+    def test_get_sales_trends_v4_params_and_url(self, mock_get, attom_client):
+        """Ensure v4 salestrend uses the exact endpoint and parameters"""
+        mock_get.return_value.json.return_value = {
+            'salestrends': [
+                {'period': '2020-01', 'medianSalePrice': 500000, 'saleCount': 10}
+            ]
+        }
+        mock_get.return_value.raise_for_status = Mock()
+
+        geo = 'ad377fb32e71ade195d8c35343f1921c'
+        result = attom_client.get_sales_trends_v4(
+            geo_id_v4=geo,
+            interval='monthly',
+            start_year=2020,
+            end_year=2022,
+            property_type='all'
+        )
+
+        # Normalized fields
+        assert result['geo_id_v4'] == geo
+        assert result['interval'] == 'monthly'
+        assert result['start_year'] == 2020
+        assert result['end_year'] == 2022
+        assert result['property_type'] == 'all'
+        assert result['trends'] and result['latest']
+
+        # Verify endpoint and params
+        args, kwargs = mock_get.call_args
+        assert args[0] == 'https://api.gateway.attomdata.com/v4/transaction/salestrend'
+        sent = kwargs.get('params', {})
+        assert sent == {
+            'geoIdv4': geo,
+            'interval': 'monthly',
+            'startyear': 2020,
+            'endyear': 2022,
+            'propertyType': 'all'
+        }
+
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
