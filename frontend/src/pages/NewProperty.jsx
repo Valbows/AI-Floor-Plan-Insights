@@ -110,23 +110,6 @@ const NewProperty = () => {
 
   return (
     <div className="min-h-screen" style={{background: '#F6F1EB'}}>
-      <header className="bg-black border-b-4" style={{borderBottomColor: '#FF5959'}}>
-        <div className="max-w-[1400px] mx-auto px-4 py-4">
-          <div className="flex items-center space-x-3">
-            <Link 
-              to="/dashboard" 
-              className="transition-colors"
-              style={{color: '#FF5959'}}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
-              onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
-            <h1 className="text-2xl font-black uppercase tracking-tight text-white" style={{letterSpacing: '-1px'}}>Upload Floor Plan</h1>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-[1400px] mx-auto px-4 py-16">
         {!loading && (
           <div className="max-w-3xl mx-auto">

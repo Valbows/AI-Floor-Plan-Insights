@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import Layout from './components/Layout'
 
 // Pages
 import Login from './pages/Login'
@@ -11,6 +12,7 @@ import PropertyDetail from './pages/PropertyDetail'
 import NewProperty from './pages/NewProperty'
 import PublicReport from './pages/PublicReport'
 import Analytics from './pages/Analytics'
+import AgentTools from './pages/AgentTools'
 
 function App() {
   return (
@@ -27,7 +29,9 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Layout>
+                  <Dashboard />
+                </Layout>
               </ProtectedRoute>
             }
           />
@@ -35,7 +39,9 @@ function App() {
             path="/properties/new"
             element={
               <ProtectedRoute>
-                <NewProperty />
+                <Layout>
+                  <NewProperty />
+                </Layout>
               </ProtectedRoute>
             }
           />
@@ -43,7 +49,29 @@ function App() {
             path="/properties/:id"
             element={
               <ProtectedRoute>
-                <PropertyDetail />
+                <Layout>
+                  <PropertyDetail />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent-tools"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AgentTools />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent-tools/:id"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AgentTools />
+                </Layout>
               </ProtectedRoute>
             }
           />
@@ -51,7 +79,9 @@ function App() {
             path="/analytics"
             element={
               <ProtectedRoute>
-                <Analytics />
+                <Layout>
+                  <Analytics />
+                </Layout>
               </ProtectedRoute>
             }
           />

@@ -4,11 +4,15 @@ import {
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
   FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone, Check,
-  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2, RefreshCw
+  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2, RefreshCw, Wrench
 } from 'lucide-react'
 import axios from 'axios'
 import Analytics from '../components/Analytics'
 import FloorPlanAnalysisDetails from '../components/FloorPlanAnalysisDetails'
+import ShareModal from '../components/modals/ShareModal'
+import DeleteModal from '../components/modals/DeleteModal'
+import FloorPlanZoomModal from '../components/modals/FloorPlanZoomModal'
+import ProgressOverlay from '../components/modals/ProgressOverlay'
 
 const PropertyDetail = () => {
   const { id } = useParams()
@@ -41,13 +45,12 @@ const PropertyDetail = () => {
   const [shareableLink, setShareableLink] = useState(null)
   const [generatingLink, setGeneratingLink] = useState(false)
   const [copied, setCopied] = useState(false)
+  
+  // Features expand state
+  const [showAllFeatures, setShowAllFeatures] = useState(false)
 
-  const analysisSteps = [
-    { icon: Upload, text: 'Uploading floor plan...', color: 'text-blue-600' },
-    { icon: Eye, text: 'Analyzing layout and rooms...', color: 'text-purple-600' },
-    { icon: DollarSign, text: 'Calculating market value...', color: 'text-green-600' },
-    { icon: FileText, text: 'Generating listing content...', color: 'text-orange-600' }
-  ]
+  // Hide marketing/analytics tabs and share button (now only in Agent Tools)
+  const showMarketingAndAnalytics = false
 
   useEffect(() => {
     loadProperty()
@@ -58,7 +61,7 @@ const PropertyDetail = () => {
     if (showProgressOverlay) {
       const interval = setInterval(() => {
         setAnalysisStep(prev => {
-          if (prev < analysisSteps.length - 1) {
+          if (prev < 3) {  // 4 steps (0-3)
             return prev + 1
           }
           // Keep cycling through steps while processing
@@ -96,6 +99,9 @@ const PropertyDetail = () => {
   const loadProperty = async (retryCount = 0) => {
     try {
       const response = await axios.get(`/api/properties/${id}`)
+      console.log('PropertyDetail - Full response:', response.data)
+      console.log('PropertyDetail - Property:', response.data.property)
+      console.log('PropertyDetail - Extracted data:', response.data.property?.extracted_data)
       setProperty(response.data.property)
       setLoading(false)
       setError('') // Clear any previous errors
@@ -329,144 +335,95 @@ const PropertyDetail = () => {
   return (
     <div className="min-h-screen relative" style={{background: '#F6F1EB'}}>
       {/* Progress Overlay */}
-      {showProgressOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)'}}>
-          <div className="bg-white p-10 max-w-md w-full mx-4" style={{borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)'}}>
-            <div className="text-center mb-8">
-              <Loader className="w-20 h-20 mx-auto mb-4 animate-spin" style={{color: '#FF5959'}} />
-              <h3 className="text-3xl font-black uppercase mb-3" style={{color: '#000000', letterSpacing: '-1px'}}>Analyzing Your <span style={{color: '#FF5959'}}>Property</span></h3>
-              <p className="text-base" style={{color: '#666666'}}>Please wait while our AI processes your floor plan...</p>
-            </div>
-
-            {/* Analysis Steps */}
-            <div className="space-y-4">
-              {analysisSteps.map((step, index) => {
-                const StepIcon = step.icon
-                const isActive = index === analysisStep
-                const isCompleted = index < analysisStep
-                
-                return (
-                  <div 
-                    key={index}
-                    className="flex items-center space-x-3 p-4 transition-all"
-                    style={{
-                      background: isActive ? '#FFF5F5' : isCompleted ? '#F0FDF4' : '#F6F1EB',
-                      border: `2px solid ${isActive ? '#FF5959' : isCompleted ? '#22C55E' : '#E5E5E5'}`,
-                      borderRadius: '8px',
-                      opacity: isActive || isCompleted ? 1 : 0.5,
-                      transform: isActive ? 'scale(1.02)' : 'scale(1)'
-                    }}
-                  >
-                    <div className={`flex-shrink-0 ${isActive ? 'animate-pulse' : ''}`}>
-                      {isCompleted ? (
-                        <CheckCircle className="w-6 h-6" style={{color: '#22C55E'}} />
-                      ) : (
-                        <StepIcon className="w-6 h-6" style={{color: isActive ? '#FF5959' : '#999999'}} />
-                      )}
-                    </div>
-                    <p className="text-sm font-bold" style={{
-                      color: isActive ? '#000000' : isCompleted ? '#22C55E' : '#999999'
-                    }}>
-                      {step.text}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="mt-6">
-              <div className="w-full rounded-full h-2" style={{background: '#E5E5E5'}}>
-                <div 
-                  className="h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${((analysisStep + 1) / analysisSteps.length) * 100}%`, background: '#FF5959' }}
-                ></div>
-              </div>
-              <p className="text-xs font-bold mt-2 text-center uppercase" style={{color: '#666666', letterSpacing: '1px'}}>
-                Step {analysisStep + 1} of {analysisSteps.length}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <header className="bg-black border-b-4" style={{borderBottomColor: '#FF5959'}}>
-        <div className="max-w-[1400px] mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Link 
-                to="/dashboard" 
-                className="transition-colors"
-                style={{color: '#FF5959'}}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <h1 className="text-xl font-black uppercase tracking-tight text-white" style={{letterSpacing: '-1px'}}>Property Details</h1>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => {
-                    setEditMode(!editMode)
-                    if (editMode) {
-                      setEditingField(null)
-                      setEditedContent({})
-                    }
-                  }}
-                  className="flex items-center space-x-2 px-5 py-2.5 transition-all font-bold uppercase text-sm"
-                  style={{
-                    background: editMode ? '#666666' : '#FF5959',
-                    color: '#FFFFFF',
-                    borderRadius: '4px',
-                    letterSpacing: '1px',
-                    boxShadow: editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = editMode ? '#555555' : '#E54545'
-                    e.currentTarget.style.transform = 'translateY(-1px)'
-                    e.currentTarget.style.boxShadow = editMode ? 'none' : '0 4px 12px rgba(255,89,89,0.4)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = editMode ? '#666666' : '#FF5959'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                    e.currentTarget.style.boxShadow = editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
-                  }}
-                  disabled={saving}
-                >
-                  {editMode ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
-                  <span>{editMode ? 'Cancel' : 'Edit'}</span>
-                </button>
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="flex items-center space-x-2 px-4 py-2 transition-all font-bold uppercase text-sm"
-                  style={{background: 'transparent', color: editMode ? '#CCCCCC' : '#FF5959', border: `2px solid ${editMode ? '#CCCCCC' : '#FF5959'}`, borderRadius: '4px', letterSpacing: '1px', cursor: editMode ? 'not-allowed' : 'pointer'}}
-                  onMouseEnter={(e) => {if (!editMode) {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.color = '#FFFFFF'}}}
-                  onMouseLeave={(e) => {if (!editMode) {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FF5959'}}}
-                  disabled={editMode}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete</span>
-                </button>
-                {editMode && editingField && (
-                  <button
-                    onClick={() => saveEdit(editingField)}
-                    disabled={saving}
-                    className="flex items-center space-x-2 px-4 py-2 text-white transition-all font-bold uppercase text-sm"
-                    style={{background: saving ? '#CCCCCC' : '#22C55E', borderRadius: '4px', letterSpacing: '1px', cursor: saving ? 'not-allowed' : 'pointer'}}
-                    onMouseEnter={(e) => {if (!saving) e.currentTarget.style.background = '#16A34A'}}
-                    onMouseLeave={(e) => {if (!saving) e.currentTarget.style.background = '#22C55E'}}
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-            {getStatusBadge(property.status)}
-          </div>
-        </div>
-      </header>
+      <ProgressOverlay 
+        showProgressOverlay={showProgressOverlay}
+        analysisStep={analysisStep}
+      />
 
       <main className="max-w-[1400px] mx-auto px-4 py-12">
+        {/* Page Header with Actions */}
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Link 
+              to="/dashboard" 
+              className="transition-all p-2 rounded-lg"
+              style={{color: '#000000'}}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#FF5959'
+                e.currentTarget.style.background = '#FFF5F5'
+                e.currentTarget.style.transform = 'translateX(-2px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#000000'
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.transform = 'translateX(0)'
+              }}
+            >
+              <ArrowLeft className="w-8 h-8" />
+            </Link>
+            <h1 className="text-5xl font-black uppercase tracking-tight" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
+              PROPERTY <span style={{color: '#FF5959'}}>DETAILS</span>
+            </h1>
+            {getStatusBadge(property.status)}
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => {
+                setEditMode(!editMode)
+                if (editMode) {
+                  setEditingField(null)
+                  setEditedContent({})
+                }
+              }}
+              className="flex items-center space-x-2 px-5 py-2.5 transition-all font-bold uppercase text-sm"
+              style={{
+                background: editMode ? '#666666' : '#FF5959',
+                color: '#FFFFFF',
+                borderRadius: '4px',
+                letterSpacing: '1px',
+                boxShadow: editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = editMode ? '#555555' : '#E54545'
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.boxShadow = editMode ? 'none' : '0 4px 12px rgba(255,89,89,0.4)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = editMode ? '#666666' : '#FF5959'
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = editMode ? 'none' : '0 2px 8px rgba(255,89,89,0.3)'
+              }}
+              disabled={saving}
+            >
+              {editMode ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+              <span>{editMode ? 'Cancel' : 'Edit'}</span>
+            </button>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 transition-all font-bold uppercase text-sm"
+              style={{background: 'transparent', color: editMode ? '#CCCCCC' : '#FF5959', border: `2px solid ${editMode ? '#CCCCCC' : '#FF5959'}`, borderRadius: '4px', letterSpacing: '1px', cursor: editMode ? 'not-allowed' : 'pointer'}}
+              onMouseEnter={(e) => {if (!editMode) {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.color = '#FFFFFF'}}}
+              onMouseLeave={(e) => {if (!editMode) {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#FF5959'}}}
+              disabled={editMode}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete</span>
+            </button>
+            {editMode && editingField && (
+              <button
+                onClick={() => saveEdit(editingField)}
+                disabled={saving}
+                className="flex items-center space-x-2 px-4 py-2 text-white transition-all font-bold uppercase text-sm"
+                style={{background: saving ? '#CCCCCC' : '#22C55E', borderRadius: '4px', letterSpacing: '1px', cursor: saving ? 'not-allowed' : 'pointer'}}
+                onMouseEnter={(e) => {if (!saving) e.currentTarget.style.background = '#16A34A'}}
+                onMouseLeave={(e) => {if (!saving) e.currentTarget.style.background = '#22C55E'}}
+              >
+                <Save className="w-4 h-4" />
+                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+              </button>
+            )}
+          </div>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* LEFT COLUMN - Floor Plan + Property Details (Scrollable) */}
           <div className="space-y-4">
@@ -530,7 +487,7 @@ const PropertyDetail = () => {
                   </div>
                 ) : (
                   <button
-                    onClick={() => startEditing('address', extracted.address || '')}
+                    onClick={() => startEditing('address', extracted.address || property.address || '')}
                     className="p-1 hover:bg-gray-100 rounded transition"
                     title="Edit address"
                   >
@@ -541,7 +498,7 @@ const PropertyDetail = () => {
               {editMode ? (
                 <input
                   type="text"
-                  value={editingField === 'address' ? editedContent.address : (extracted.address || '')}
+                  value={editingField === 'address' ? editedContent.address : (extracted.address || property.address || '')}
                   onChange={(e) => {
                     setEditingField('address')
                     setEditedContent({ ...editedContent, address: e.target.value })
@@ -551,7 +508,7 @@ const PropertyDetail = () => {
                 />
               ) : (
                 <p className="text-sm text-gray-900">
-                  {extracted.address || 'Not specified'}
+                  {extracted.address || property.address || 'Not specified'}
                 </p>
               )}
             </div>
@@ -634,14 +591,37 @@ const PropertyDetail = () => {
               <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
                 <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Features</h3>
                 <ul className="space-y-1.5">
-                  {extracted.features.slice(0, 6).map((feature, index) => (
+                  {extracted.features.slice(0, showAllFeatures ? extracted.features.length : 6).map((feature, index) => (
                     <li key={index} className="flex items-start text-sm">
                       <span className="mr-2" style={{color: '#FF5959'}}>•</span>
                       <span style={{color: '#000000'}}>{feature}</span>
                     </li>
                   ))}
-                  {extracted.features.length > 6 && (
-                    <li className="text-xs font-medium" style={{color: '#666666'}}>+{extracted.features.length - 6} more</li>
+                  {extracted.features.length > 6 && !showAllFeatures && (
+                    <li>
+                      <button
+                        onClick={() => setShowAllFeatures(true)}
+                        className="text-xs font-medium transition-all hover:underline cursor-pointer"
+                        style={{color: '#FF5959'}}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
+                      >
+                        +{extracted.features.length - 6} more
+                      </button>
+                    </li>
+                  )}
+                  {showAllFeatures && extracted.features.length > 6 && (
+                    <li>
+                      <button
+                        onClick={() => setShowAllFeatures(false)}
+                        className="text-xs font-medium transition-all hover:underline cursor-pointer"
+                        style={{color: '#666666'}}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}
+                      >
+                        Show less
+                      </button>
+                    </li>
                   )}
                 </ul>
               </div>
@@ -652,18 +632,27 @@ const PropertyDetail = () => {
               <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
                 <h3 className="text-xs font-bold uppercase mb-3" style={{color: '#666666', letterSpacing: '1px'}}>Room Facilities</h3>
                 <div className="grid grid-cols-4 gap-2">
-                  {extracted.rooms.slice(0, 8).map((room, index) => (
-                    <div key={index} className="flex flex-col items-center text-center p-2 rounded transition-colors" style={{background: '#FFFFFF'}} onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'} onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}>
-                      <div className="w-8 h-8 mb-1" style={{color: '#FF5959'}}>
-                        {room.type.toLowerCase().includes('bed') && <Bed className="w-full h-full" />}
-                        {room.type.toLowerCase().includes('bath') && <Bath className="w-full h-full" />}
-                        {room.type.toLowerCase().includes('living') && <Home className="w-full h-full" />}
-                        {room.type.toLowerCase().includes('kitchen') && <UtensilsCrossed className="w-full h-full" />}
-                        {!['bed', 'bath', 'living', 'kitchen'].some(t => room.type.toLowerCase().includes(t)) && <Maximize className="w-full h-full" />}
+                  {extracted.rooms.slice(0, 8).map((room, index) => {
+                    // Helper function to get icon based on room type (priority order)
+                    const getIcon = (type) => {
+                      const lowerType = type.toLowerCase()
+                      if (lowerType.includes('bedroom')) return <Bed className="w-full h-full" />
+                      if (lowerType.includes('bath')) return <Bath className="w-full h-full" />
+                      if (lowerType.includes('kitchen')) return <UtensilsCrossed className="w-full h-full" />
+                      if (lowerType.includes('living') || lowerType.includes('dining')) return <Home className="w-full h-full" />
+                      if (lowerType.includes('balcony') || lowerType.includes('foyer') || lowerType.includes('entryway') || lowerType.includes('corridor') || lowerType.includes('elevator') || lowerType.includes('lobby')) return <Maximize className="w-full h-full" />
+                      return <Maximize className="w-full h-full" />
+                    }
+                    
+                    return (
+                      <div key={index} className="flex flex-col items-center text-center p-2 rounded transition-colors" style={{background: '#FFFFFF'}} onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'} onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'} title={room.type}>
+                        <div className="w-8 h-8 mb-1 flex items-center justify-center" style={{color: '#FF5959'}}>
+                          {getIcon(room.type)}
+                        </div>
+                        <p className="text-xs font-medium truncate w-full" style={{color: '#000000'}}>{room.type}</p>
                       </div>
-                      <p className="text-xs font-medium truncate w-full" style={{color: '#000000'}}>{room.type}</p>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -680,83 +669,89 @@ const PropertyDetail = () => {
 
           {/* RIGHT COLUMN - Tabbed Content (Market & Marketing) */}
           <div className="space-y-6">
-            {/* Tab Navigation - Sticky */}
-            <div className="sticky top-0 z-40 pb-4" style={{background: '#F6F1EB'}}>
-              <div className="flex space-x-2 p-1" style={{background: '#F6F1EB', borderRadius: '8px'}}>
-              <button
-                onClick={() => setActiveTab('market')}
-                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
-                style={{
-                  background: activeTab === 'market' ? '#FF5959' : 'transparent',
-                  color: activeTab === 'market' ? '#FFFFFF' : '#666666',
-                  borderRadius: '6px',
-                  letterSpacing: '1px'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== 'market') {
-                    e.currentTarget.style.background = '#FFFFFF'
-                    e.currentTarget.style.color = '#000000'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== 'market') {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = '#666666'
-                  }
-                }}
-              >
-                Market Insights
-              </button>
-              <button
-                onClick={() => setActiveTab('marketing')}
-                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
-                style={{
-                  background: activeTab === 'marketing' ? '#FF5959' : 'transparent',
-                  color: activeTab === 'marketing' ? '#FFFFFF' : '#666666',
-                  borderRadius: '6px',
-                  letterSpacing: '1px'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== 'marketing') {
-                    e.currentTarget.style.background = '#FFFFFF'
-                    e.currentTarget.style.color = '#000000'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== 'marketing') {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = '#666666'
-                  }
-                }}
-              >
-                Marketing Content
-              </button>
-              <button
-                onClick={() => setActiveTab('analytics')}
-                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
-                style={{
-                  background: activeTab === 'analytics' ? '#FF5959' : 'transparent',
-                  color: activeTab === 'analytics' ? '#FFFFFF' : '#666666',
-                  borderRadius: '6px',
-                  letterSpacing: '1px'
-                }}
-                onMouseEnter={(e) => {
-                  if (activeTab !== 'analytics') {
-                    e.currentTarget.style.background = '#FFFFFF'
-                    e.currentTarget.style.color = '#000000'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (activeTab !== 'analytics') {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = '#666666'
-                  }
-                }}
-              >
-                Analytics
-              </button>
+            {/* Tab Navigation - HIDDEN since only showing Market Insights */}
+            {false && (
+              <div className="sticky top-0 z-40 pb-4" style={{background: '#F6F1EB'}}>
+                <div className="flex space-x-2 p-1" style={{background: '#F6F1EB', borderRadius: '8px'}}>
+                <button
+                  onClick={() => setActiveTab('market')}
+                  className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                  style={{
+                    background: activeTab === 'market' ? '#FF5959' : 'transparent',
+                    color: activeTab === 'market' ? '#FFFFFF' : '#666666',
+                    borderRadius: '6px',
+                    letterSpacing: '1px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (activeTab !== 'market') {
+                      e.currentTarget.style.background = '#FFFFFF'
+                      e.currentTarget.style.color = '#000000'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (activeTab !== 'market') {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.color = '#666666'
+                    }
+                  }}
+                >
+                  Market Insights
+                </button>
+                {showMarketingAndAnalytics && (
+                <>
+                  <button
+                    onClick={() => setActiveTab('marketing')}
+                    className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                    style={{
+                      background: activeTab === 'marketing' ? '#FF5959' : 'transparent',
+                      color: activeTab === 'marketing' ? '#FFFFFF' : '#666666',
+                      borderRadius: '6px',
+                      letterSpacing: '1px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeTab !== 'marketing') {
+                        e.currentTarget.style.background = '#FFFFFF'
+                        e.currentTarget.style.color = '#000000'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeTab !== 'marketing') {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.color = '#666666'
+                      }
+                    }}
+                  >
+                    Marketing Content
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('analytics')}
+                    className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                    style={{
+                      background: activeTab === 'analytics' ? '#FF5959' : 'transparent',
+                      color: activeTab === 'analytics' ? '#FFFFFF' : '#666666',
+                      borderRadius: '6px',
+                      letterSpacing: '1px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeTab !== 'analytics') {
+                        e.currentTarget.style.background = '#FFFFFF'
+                        e.currentTarget.style.color = '#000000'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeTab !== 'analytics') {
+                        e.currentTarget.style.background = 'transparent'
+                        e.currentTarget.style.color = '#666666'
+                      }
+                    }}
+                  >
+                    Analytics
+                  </button>
+                </>
+              )}
               </div>
             </div>
+            )}
 
             {/* Tab Content */}
             <div className="space-y-6">
@@ -770,16 +765,16 @@ const PropertyDetail = () => {
                     {extracted.data_sources ? (
                       <>
                         {extracted.data_sources.attom_property && (
-                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>ATTOM Property</span>
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Property Details</span>
                         )}
                         {extracted.data_sources.attom_avm && (
-                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>ATTOM AVM</span>
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Market Valuation</span>
                         )}
                         {extracted.data_sources.attom_area && (
-                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Area</span>
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Neighborhood Data</span>
                         )}
                         {extracted.data_sources.parcel && (
-                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Parcel</span>
+                          <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #000000', borderRadius: '9999px', color: '#000000'}}>Public Records</span>
                         )}
                         {extracted.data_sources.fallback && (
                           <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #FF5959', borderRadius: '9999px', color: '#FF5959'}}>Fallback</span>
@@ -969,7 +964,7 @@ const PropertyDetail = () => {
                     {/* ATTOM Data (Property, AVM, Parcel, Area) */}
                     {extracted.attom && (
                       <div className="rounded-lg p-6 space-y-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
-                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>ATTOM Data</h2>
+                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Property & Market Data</h2>
                         {/* Property Characteristics */}
                         {extracted.attom.property && (
                           <div>
@@ -1001,7 +996,7 @@ const PropertyDetail = () => {
                         {/* Parcel Summary */}
                         {extracted.attom.parcel && (
                           <div>
-                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Parcel</h3>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Public Records</h3>
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div><p className="text-gray-600">APN</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.apn || '—'}</p></div>
                               <div><p className="text-gray-600">FIPS</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.fips || '—'}</p></div>
@@ -1123,7 +1118,7 @@ const PropertyDetail = () => {
                     {/* ATTOM Data available even if Market Insights are still processing */}
                     {extracted.attom && (
                       <div className="rounded-lg p-6 space-y-6 mb-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
-                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>ATTOM Data</h2>
+                        <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Property & Market Data</h2>
                         {extracted.attom.property && (
                           <div>
                             <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Property Characteristics</h3>
@@ -1150,7 +1145,7 @@ const PropertyDetail = () => {
                         )}
                         {extracted.attom.parcel && (
                           <div>
-                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Parcel</h3>
+                            <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Public Records</h3>
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div><p className="text-gray-600">APN</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.apn || '—'}</p></div>
                               <div><p className="text-gray-600">FIPS</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.fips || '—'}</p></div>
@@ -1285,7 +1280,7 @@ const PropertyDetail = () => {
               </div>
             )}
 
-            {activeTab === 'marketing' && (
+            {showMarketingAndAnalytics && activeTab === 'marketing' && (
               <div className="space-y-6">
                 {/* Listing Copy (Agent #3) */}
                 {extracted.listing_copy ? (
@@ -1579,7 +1574,7 @@ const PropertyDetail = () => {
               </div>
             )}
 
-            {activeTab === 'analytics' && (
+            {showMarketingAndAnalytics && activeTab === 'analytics' && (
               <Analytics propertyId={id} />
             )}
             </div>
@@ -1587,226 +1582,64 @@ const PropertyDetail = () => {
         </div>
       </main>
       
-      {/* Share Link Modal */}
-      {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)'}}>
-          <div className="bg-white max-w-lg w-full p-8" style={{borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', border: '2px solid #000000'}}>
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h3 className="text-2xl font-black uppercase mb-2" style={{color: '#000000', letterSpacing: '-1px'}}>Share <span style={{color: '#FF5959'}}>Property</span></h3>
-                <p className="text-sm" style={{color: '#666666'}}>Generate a public link to share this property</p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowShareModal(false)
-                  setCopied(false)
-                }}
-                className="transition-colors p-1"
-                style={{color: '#FF5959'}}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {generatingLink ? (
-              <div className="text-center py-8">
-                <Loader className="w-8 h-8 animate-spin mx-auto mb-4" style={{color: '#FF5959'}} />
-                <p className="text-sm" style={{color: '#666666'}}>Generating shareable link...</p>
-              </div>
-            ) : shareableLink ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold uppercase mb-2" style={{color: '#000000', letterSpacing: '1px'}}>
-                    Shareable Link
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={shareableLink.shareable_url}
-                      readOnly
-                      className="flex-1 px-4 py-2 text-sm focus:outline-none"
-                      style={{border: '2px solid #000000', borderRadius: '4px', background: '#F6F1EB', color: '#000000'}}
-                    />
-                    <button
-                      onClick={handleCopyLink}
-                      className="px-4 py-2 transition-all flex items-center space-x-2 font-bold uppercase text-sm"
-                      style={{
-                        background: copied ? '#F0FDF4' : '#FF5959',
-                        color: copied ? '#22C55E' : '#FFFFFF',
-                        borderRadius: '4px',
-                        letterSpacing: '1px'
-                      }}
-                      onMouseEnter={(e) => {if (!copied) {e.currentTarget.style.background = '#E54545'; e.currentTarget.style.transform = 'translateY(-1px)'}}}
-                      onMouseLeave={(e) => {if (!copied) {e.currentTarget.style.background = '#FF5959'; e.currentTarget.style.transform = 'translateY(0)'}}}
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="rounded-lg p-4 space-y-2" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span style={{color: '#666666'}}>Expires:</span>
-                    <span className="font-bold" style={{color: '#000000'}}>
-                      {new Date(shareableLink.expires_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-xs" style={{color: '#666666'}}>
-                    This link will remain active for 30 days. Anyone with this link can view the property details.
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-end space-x-3 pt-2">
-                  <button
-                    onClick={() => {
-                      setShowShareModal(false)
-                      setCopied(false)
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-sm text-gray-600">Failed to load shareable link.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Modals */}
+      <ShareModal 
+        showShareModal={showShareModal}
+        setShowShareModal={setShowShareModal}
+        generatingLink={generatingLink}
+        shareableLink={shareableLink}
+        copied={copied}
+        handleCopyLink={handleCopyLink}
+        setCopied={setCopied}
+      />
       
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-start mb-4">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-              <div className="ml-4 flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  Delete Property?
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Are you sure you want to delete this property? This action cannot be undone. 
-                  All property data, floor plans, and analysis will be permanently removed.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                disabled={deleting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
-              >
-                {deleting ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    <span>Deleting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete Property</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteModal 
+        showDeleteModal={showDeleteModal}
+        setShowDeleteModal={setShowDeleteModal}
+        deleting={deleting}
+        handleDelete={handleDelete}
+      />
       
-      {/* Floating Share Button - Sticky Side Box */}
-      <button
-        onClick={openShareModal}
-        className="fixed text-white shadow-lg transition-all duration-200 z-40 flex flex-col items-center justify-center space-y-2"
-        style={{
-          background: '#FF5959',
-          width: '80px',
-          height: '100px',
-          top: '50%',
-          right: '0',
-          transform: 'translateY(-50%)',
-          borderTopLeftRadius: '12px',
-          borderBottomLeftRadius: '12px',
-          borderRight: 'none'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = '#E54545'
-          e.currentTarget.style.width = '90px'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = '#FF5959'
-          e.currentTarget.style.width = '80px'
-        }}
-        title="Share Property"
-      >
-        <Share2 className="w-8 h-8" />
-        <span className="text-xs font-black uppercase" style={{letterSpacing: '1px'}}>Share</span>
-      </button>
+      {/* Share Button - only visible when showMarketingAndAnalytics is true */}
+      {showMarketingAndAnalytics && (
+        <button
+          onClick={openShareModal}
+          className="fixed text-white shadow-lg transition-all duration-200 z-40 flex flex-col items-center justify-center space-y-2"
+          style={{
+            background: '#FF5959',
+            width: '80px',
+            height: '100px',
+            top: '50%',
+            right: '0',
+            transform: 'translateY(-50%)',
+            borderTopLeftRadius: '12px',
+            borderBottomLeftRadius: '12px',
+            borderRight: 'none'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#E54545'
+            e.currentTarget.style.width = '90px'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#FF5959'
+            e.currentTarget.style.width = '80px'
+          }}
+          title="Share Property"
+        >
+          <Share2 className="w-8 h-8" />
+          <span className="text-xs font-black uppercase" style={{letterSpacing: '1px'}}>Share</span>
+        </button>
+      )}
 
       {/* Floor Plan Zoom Modal */}
-      {showFloorPlanModal && property.image_url && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onClick={closeFloorPlanModal}>
-          <button
-            onClick={closeFloorPlanModal}
-            className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
-          >
-            <X className="w-6 h-6 text-gray-900" />
-          </button>
-          
-          <div className="absolute top-4 left-4 flex space-x-2 z-10">
-            <button
-              onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
-              className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <ZoomIn className="w-6 h-6 text-gray-900" />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
-              className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
-            >
-              <ZoomOut className="w-6 h-6 text-gray-900" />
-            </button>
-            <div className="px-3 py-2 bg-white rounded-full text-sm font-medium text-gray-900">
-              {Math.round(zoomLevel * 100)}%
-            </div>
-          </div>
-
-          <div className="overflow-auto max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={property.image_url}
-              alt="Floor Plan - Full Size"
-              style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.2s' }}
-              className="max-w-none"
-            />
-          </div>
-        </div>
-      )}
+      <FloorPlanZoomModal 
+        showFloorPlanModal={showFloorPlanModal}
+        closeFloorPlanModal={closeFloorPlanModal}
+        imageUrl={property.image_url}
+        zoomLevel={zoomLevel}
+        handleZoomIn={handleZoomIn}
+        handleZoomOut={handleZoomOut}
+      />
     </div>
   )
 }
