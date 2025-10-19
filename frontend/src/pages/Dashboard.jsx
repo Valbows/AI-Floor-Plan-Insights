@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, Square } from 'lucide-react'
+import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, Square, Building2, Download, MapPin } from 'lucide-react'
 import axios from 'axios'
+import UnitMixChart from '../components/charts/UnitMixChart'
+import { exportPropertiesToCSV } from '../utils/csvExport'
+import { getUniqueNeighborhoods, groupPropertiesByNeighborhood, extractNeighborhood } from '../utils/neighborhoodUtils'
 
 const StatusBadge = ({ status }) => {
   const statusConfig = {
@@ -343,6 +346,12 @@ const Dashboard = () => {
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
   const [listItemsToShow, setListItemsToShow] = useState(10)
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' })
+  const [groupByBuilding, setGroupByBuilding] = useState(false)
+  const [collapsedBuildings, setCollapsedBuildings] = useState(new Set())
+  const [neighborhoodFilter, setNeighborhoodFilter] = useState('all')
+  const [groupByNeighborhood, setGroupByNeighborhood] = useState(false)
+  const [collapsedNeighborhoods, setCollapsedNeighborhoods] = useState(new Set())
+  const [hideEmptyNeighborhoods, setHideEmptyNeighborhoods] = useState(true)
 
   useEffect(() => {
     fetchProperties()
@@ -427,13 +436,20 @@ const Dashboard = () => {
     }
   }
 
+  // Get unique neighborhoods from all properties
+  const availableNeighborhoods = getUniqueNeighborhoods(properties)
+
   // Filter and search properties
   const filteredProperties = properties.filter(property => {
     const extractedData = property.extracted_data || {}
     const address = extractedData.address || property.address || ''
     const matchesSearch = address.toLowerCase().includes(searchTerm.toLowerCase())
     
-    return matchesSearch
+    // Neighborhood filter
+    const neighborhood = extractNeighborhood(address)
+    const matchesNeighborhood = neighborhoodFilter === 'all' || neighborhood === neighborhoodFilter
+    
+    return matchesSearch && matchesNeighborhood
   })
 
   // Sort properties
@@ -488,11 +504,85 @@ const Dashboard = () => {
     return 0
   })
 
+  // Group properties by building
+  const groupPropertiesByBuilding = (properties) => {
+    const grouped = {}
+    
+    properties.forEach(property => {
+      const extractedData = property.extracted_data || {}
+      const fullAddress = extractedData.address || property.address || 'Unknown Address'
+      
+      // Extract building address (remove unit number/apartment info)
+      // Common patterns: "123 Main St, Unit 4A" or "123 Main St, Apt 4A" or "123 Main St #4A"
+      let buildingAddress = fullAddress
+        .replace(/,?\s*(Unit|Apt|Apartment|#)\s*[A-Z0-9-]+/i, '')
+        .replace(/,?\s*Floor\s*\d+/i, '')
+        .trim()
+      
+      // If address has multiple commas, take everything before the last comma
+      const parts = buildingAddress.split(',')
+      if (parts.length > 2) {
+        buildingAddress = parts.slice(0, -1).join(',').trim()
+      }
+      
+      if (!grouped[buildingAddress]) {
+        grouped[buildingAddress] = []
+      }
+      
+      grouped[buildingAddress].push(property)
+    })
+    
+    return grouped
+  }
+
+  const buildingGroups = groupPropertiesByBuilding(sortedProperties)
+  const buildingAddresses = Object.keys(buildingGroups).sort()
+  
+  const neighborhoodGroups = groupPropertiesByNeighborhood(sortedProperties)
+  const neighborhoodNames = Object.keys(neighborhoodGroups).sort()
+
+  const toggleBuildingCollapse = (buildingAddress) => {
+    setCollapsedBuildings(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(buildingAddress)) {
+        newSet.delete(buildingAddress)
+      } else {
+        newSet.add(buildingAddress)
+      }
+      return newSet
+    })
+  }
+
+  const toggleNeighborhoodCollapse = (neighborhood) => {
+    setCollapsedNeighborhoods(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(neighborhood)) {
+        newSet.delete(neighborhood)
+      } else {
+        newSet.add(neighborhood)
+      }
+      return newSet
+    })
+  }
+
   const handleSort = (key) => {
     setSortConfig(prev => ({
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }))
+  }
+
+  const handleExportCSV = () => {
+    // Export filtered/sorted properties that are being displayed
+    const propertiesToExport = viewMode === 'list' 
+      ? sortedProperties.slice(0, listItemsToShow)
+      : sortedProperties;
+    
+    const success = exportPropertiesToCSV(propertiesToExport);
+    if (success) {
+      // Optional: Show success message
+      console.log(`Exported ${propertiesToExport.length} properties to CSV`);
+    }
   }
 
 
@@ -507,26 +597,61 @@ const Dashboard = () => {
           </h1>
           <div className="w-24 h-1.5 mx-auto mb-8" style={{background: '#FF5959'}}></div>
           
-          {/* Search Bar */}
-          <div className="max-w-md mx-auto mb-8">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by address..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{borderColor: '#000000', borderRadius: '4px'}}
-                onFocus={(e) => {e.target.style.borderColor = '#FF5959'; e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)'}}
-                onBlur={(e) => {e.target.style.borderColor = '#000000'; e.target.style.boxShadow = 'none'}}
-              />
+          {/* Search Bar & Neighborhood Filter */}
+          <div className="max-w-2xl mx-auto mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by address..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border-2 focus:outline-none focus:ring-2 focus:border-transparent"
+                  style={{borderColor: '#000000', borderRadius: '4px'}}
+                  onFocus={(e) => {e.target.style.borderColor = '#FF5959'; e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)'}}
+                  onBlur={(e) => {e.target.style.borderColor = '#000000'; e.target.style.boxShadow = 'none'}}
+                />
+              </div>
+
+              {/* Neighborhood Filter */}
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <select
+                  value={neighborhoodFilter}
+                  onChange={(e) => setNeighborhoodFilter(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border-2 focus:outline-none focus:ring-2 focus:border-transparent appearance-none cursor-pointer"
+                  style={{borderColor: '#000000', borderRadius: '4px'}}
+                  onFocus={(e) => {e.target.style.borderColor = '#FF5959'; e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)'}}
+                  onBlur={(e) => {e.target.style.borderColor = '#000000'; e.target.style.boxShadow = 'none'}}
+                >
+                  <option value="all">All Neighborhoods ({properties.length})</option>
+                  {availableNeighborhoods
+                    .filter(hood => !hideEmptyNeighborhoods || properties.filter(p => {
+                      const address = p.extracted_data?.address || p.address || '';
+                      return extractNeighborhood(address) === hood;
+                    }).length > 0)
+                    .map(hood => {
+                      const count = properties.filter(p => {
+                        const address = p.extracted_data?.address || p.address || '';
+                        return extractNeighborhood(address) === hood;
+                      }).length;
+                      return (
+                        <option key={hood} value={hood}>
+                          {hood} ({count})
+                        </option>
+                      );
+                    })}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 
 
           {/* Add Property Button */}
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4">
             <Link 
               to="/properties/new"
               className="inline-flex items-center space-x-2 text-white px-8 py-4 font-bold uppercase tracking-wide transition-all"
@@ -537,9 +662,30 @@ const Dashboard = () => {
               <Plus className="w-4 h-4" />
               <span>Add Property</span>
             </Link>
+            
+            {/* Export CSV Button */}
+            {properties.length > 0 && (
+              <button 
+                onClick={handleExportCSV}
+                className="inline-flex items-center space-x-2 px-8 py-4 font-bold uppercase tracking-wide transition-all"
+                style={{background: 'transparent', color: '#000000', border: '3px solid #000000', borderRadius: '4px'}}
+                onMouseEnter={(e) => {e.currentTarget.style.background = '#000000'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)'}}
+                onMouseLeave={(e) => {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#000000'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'}}
+              >
+                <Download className="w-4 h-4" />
+                <span>Export to CSV</span>
+              </button>
+            )}
           </div>
 
         </div>
+
+        {/* Unit Mix Chart - Show if we have 3+ properties */}
+        {!loading && !error && properties.length >= 3 && (
+          <div className="mb-8">
+            <UnitMixChart properties={properties} />
+          </div>
+        )}
 
         {/* View Toggle */}
         {filteredProperties.length > 0 && (
@@ -549,9 +695,92 @@ const Dashboard = () => {
                 Showing {viewMode === 'list' && sortedProperties.length > listItemsToShow 
                   ? `${listItemsToShow} of ${sortedProperties.length}` 
                   : sortedProperties.length} {sortedProperties.length === 1 ? 'property' : 'properties'}
+                {groupByBuilding && ` • ${buildingAddresses.length} ${buildingAddresses.length === 1 ? 'building' : 'buildings'}`}
+                {groupByNeighborhood && ` • ${neighborhoodNames.length} ${neighborhoodNames.length === 1 ? 'neighborhood' : 'neighborhoods'}`}
+                {neighborhoodFilter !== 'all' && ` • Filtered: ${neighborhoodFilter}`}
               </div>
             </div>
           <div className="flex items-center space-x-2">
+            {/* Export Button (compact version) */}
+            {filteredProperties.length > 0 && (
+              <button 
+                onClick={handleExportCSV}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
+                style={{
+                  background: 'transparent',
+                  color: '#000000',
+                  border: '2px solid #000000',
+                  borderRadius: '4px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#000000';
+                  e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#000000';
+                }}
+                title={`Export ${sortedProperties.length} ${sortedProperties.length === 1 ? 'property' : 'properties'} to CSV`}
+              >
+                <Download className="w-4 h-4" />
+                <span>Export CSV</span>
+              </button>
+            )}
+            
+            {/* Grouping Toggles */}
+            <button 
+              onClick={() => {
+                setGroupByNeighborhood(!groupByNeighborhood);
+                if (!groupByNeighborhood) setGroupByBuilding(false); // Disable building grouping
+              }}
+              className="px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
+              style={{
+                background: groupByNeighborhood ? '#FF5959' : 'transparent',
+                color: groupByNeighborhood ? '#FFFFFF' : '#000000',
+                border: `2px solid ${groupByNeighborhood ? '#FF5959' : '#000000'}`,
+                borderRadius: '4px'
+              }}
+              onMouseEnter={(e) => {
+                if (!groupByNeighborhood) {
+                  e.currentTarget.style.background = '#F6F1EB'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!groupByNeighborhood) {
+                  e.currentTarget.style.background = 'transparent'
+                }
+              }}
+            >
+              <MapPin className="w-4 h-4" />
+              <span>Group by Neighborhood</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                setGroupByBuilding(!groupByBuilding);
+                if (!groupByBuilding) setGroupByNeighborhood(false); // Disable neighborhood grouping
+              }}
+              className="px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
+              style={{
+                background: groupByBuilding ? '#FF5959' : 'transparent',
+                color: groupByBuilding ? '#FFFFFF' : '#000000',
+                border: `2px solid ${groupByBuilding ? '#FF5959' : '#000000'}`,
+                borderRadius: '4px'
+              }}
+              onMouseEnter={(e) => {
+                if (!groupByBuilding) {
+                  e.currentTarget.style.background = '#F6F1EB'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!groupByBuilding) {
+                  e.currentTarget.style.background = 'transparent'
+                }
+              }}
+            >
+              <Building2 className="w-4 h-4" />
+              <span>Group by Building</span>
+            </button>
             <button 
               onClick={() => setViewMode('grid')}
               className="p-2 transition-colors"
@@ -640,7 +869,7 @@ const Dashboard = () => {
 
 
         {/* Properties Grid View */}
-        {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && (
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && !groupByBuilding && !groupByNeighborhood && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
               {sortedProperties.slice(0, listItemsToShow).map((property) => (
@@ -665,8 +894,96 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Properties Grid View - Grouped by Neighborhood */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && groupByNeighborhood && (
+          <div className="space-y-8">
+            {neighborhoodNames.map((neighborhood) => {
+              const neighborhoodProperties = neighborhoodGroups[neighborhood]
+              const isCollapsed = collapsedNeighborhoods.has(neighborhood)
+              
+              return (
+                <div key={neighborhood} className="bg-white rounded-lg overflow-hidden" style={{border: '3px solid #000000'}}>
+                  {/* Neighborhood Header */}
+                  <button
+                    onClick={() => toggleNeighborhoodCollapse(neighborhood)}
+                    className="w-full p-6 flex items-center justify-between transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <MapPin className="w-6 h-6 flex-shrink-0" style={{color: '#FF5959'}} />
+                      <div className="text-left">
+                        <h3 className="text-lg font-black" style={{color: '#000000'}}>{neighborhood}</h3>
+                        <p className="text-sm font-medium mt-1" style={{color: '#666666'}}>
+                          {neighborhoodProperties.length} {neighborhoodProperties.length === 1 ? 'property' : 'properties'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="transition-transform" style={{transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'}}>
+                      <ChevronDown className="w-5 h-5" style={{color: '#000000'}} />
+                    </div>
+                  </button>
+
+                  {/* Neighborhood Properties */}
+                  {!isCollapsed && (
+                    <div className="p-6 pt-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
+                        {neighborhoodProperties.map((property) => (
+                          <PropertyCard key={property.id} property={property} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Properties Grid View - Grouped by Building */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && groupByBuilding && (
+          <div className="space-y-8">
+            {buildingAddresses.map((buildingAddress) => {
+              const buildingProperties = buildingGroups[buildingAddress]
+              const isCollapsed = collapsedBuildings.has(buildingAddress)
+              
+              return (
+                <div key={buildingAddress} className="bg-white rounded-lg overflow-hidden" style={{border: '3px solid #000000'}}>
+                  {/* Building Header */}
+                  <button
+                    onClick={() => toggleBuildingCollapse(buildingAddress)}
+                    className="w-full p-6 flex items-center justify-between transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Building2 className="w-6 h-6 flex-shrink-0" style={{color: '#FF5959'}} />
+                      <div className="text-left">
+                        <h3 className="text-lg font-black" style={{color: '#000000'}}>{buildingAddress}</h3>
+                        <p className="text-sm font-medium mt-1" style={{color: '#666666'}}>
+                          {buildingProperties.length} {buildingProperties.length === 1 ? 'unit' : 'units'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="transition-transform" style={{transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'}}>
+                      <ChevronDown className="w-5 h-5" style={{color: '#000000'}} />
+                    </div>
+                  </button>
+
+                  {/* Building Units */}
+                  {!isCollapsed && (
+                    <div className="p-6 pt-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
+                        {buildingProperties.map((property) => (
+                          <PropertyCard key={property.id} property={property} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {/* Properties Table/List View */}
-        {!loading && !error && sortedProperties.length > 0 && viewMode === 'list' && (
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'list' && !groupByBuilding && !groupByNeighborhood && (
           <div className="space-y-6">
             <PropertyTable 
               properties={sortedProperties.slice(0, listItemsToShow)} 
@@ -691,6 +1008,94 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Properties Table/List View - Grouped by Neighborhood */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'list' && groupByNeighborhood && (
+          <div className="space-y-8">
+            {neighborhoodNames.map((neighborhood) => {
+              const neighborhoodProperties = neighborhoodGroups[neighborhood]
+              const isCollapsed = collapsedNeighborhoods.has(neighborhood)
+              
+              return (
+                <div key={neighborhood} className="bg-white rounded-lg overflow-hidden" style={{border: '3px solid #000000'}}>
+                  {/* Neighborhood Header */}
+                  <button
+                    onClick={() => toggleNeighborhoodCollapse(neighborhood)}
+                    className="w-full p-6 flex items-center justify-between transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <MapPin className="w-6 h-6 flex-shrink-0" style={{color: '#FF5959'}} />
+                      <div className="text-left">
+                        <h3 className="text-lg font-black" style={{color: '#000000'}}>{neighborhood}</h3>
+                        <p className="text-sm font-medium mt-1" style={{color: '#666666'}}>
+                          {neighborhoodProperties.length} {neighborhoodProperties.length === 1 ? 'property' : 'properties'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="transition-transform" style={{transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'}}>
+                      <ChevronDown className="w-5 h-5" style={{color: '#000000'}} />
+                    </div>
+                  </button>
+
+                  {/* Neighborhood Properties Table */}
+                  {!isCollapsed && (
+                    <div className="border-t" style={{borderColor: '#E5E5E5'}}>
+                      <PropertyTable 
+                        properties={neighborhoodProperties} 
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Properties Table/List View - Grouped by Building */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'list' && groupByBuilding && (
+          <div className="space-y-8">
+            {buildingAddresses.map((buildingAddress) => {
+              const buildingProperties = buildingGroups[buildingAddress]
+              const isCollapsed = collapsedBuildings.has(buildingAddress)
+              
+              return (
+                <div key={buildingAddress} className="bg-white rounded-lg overflow-hidden" style={{border: '3px solid #000000'}}>
+                  {/* Building Header */}
+                  <button
+                    onClick={() => toggleBuildingCollapse(buildingAddress)}
+                    className="w-full p-6 flex items-center justify-between transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Building2 className="w-6 h-6 flex-shrink-0" style={{color: '#FF5959'}} />
+                      <div className="text-left">
+                        <h3 className="text-lg font-black" style={{color: '#000000'}}>{buildingAddress}</h3>
+                        <p className="text-sm font-medium mt-1" style={{color: '#666666'}}>
+                          {buildingProperties.length} {buildingProperties.length === 1 ? 'unit' : 'units'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="transition-transform" style={{transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'}}>
+                      <ChevronDown className="w-5 h-5" style={{color: '#000000'}} />
+                    </div>
+                  </button>
+
+                  {/* Building Units Table */}
+                  {!isCollapsed && (
+                    <div className="border-t" style={{borderColor: '#E5E5E5'}}>
+                      <PropertyTable 
+                        properties={buildingProperties} 
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {/* No Search Results */}
         {!loading && !error && properties.length > 0 && filteredProperties.length === 0 && (
           <div className="bg-white rounded-lg p-12 text-center">
@@ -702,7 +1107,7 @@ const Dashboard = () => {
             <button 
               onClick={() => {
                 setSearchTerm('')
-                setFilterType('all')
+                setNeighborhoodFilter('all')
               }}
               className="text-gray-900 hover:text-gray-700 font-medium"
             >
