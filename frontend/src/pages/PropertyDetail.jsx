@@ -54,6 +54,7 @@ const PropertyDetail = () => {
   const showMarketingAndAnalytics = false
 
   useEffect(() => {
+    document.title = 'Property Details | FP AI'
     loadProperty()
   }, [id])
 

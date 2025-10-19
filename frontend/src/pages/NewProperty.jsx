@@ -22,6 +22,10 @@ const NewProperty = () => {
   ]
 
   useEffect(() => {
+    document.title = 'Add Property | FP AI'
+  }, [])
+
+  useEffect(() => {
     if (loading && !success) {
       const interval = setInterval(() => {
         setAnalysisStep(prev => {

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, Square, Building2, Download, MapPin } from 'lucide-react'
+import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, Square, Building2, Download, MapPin, Check, X } from 'lucide-react'
 import axios from 'axios'
-import UnitMixChart from '../components/charts/UnitMixChart'
 import { exportPropertiesToCSV } from '../utils/csvExport'
 import { getUniqueNeighborhoods, groupPropertiesByNeighborhood, extractNeighborhood } from '../utils/neighborhoodUtils'
 
@@ -244,7 +243,7 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
   )
 }
 
-const PropertyCard = ({ property }) => {
+const PropertyCard = ({ property, selectionMode, isSelected, onToggleSelect }) => {
   const navigate = useNavigate()
   const extractedData = property.extracted_data || {}
   const marketData = extractedData.market_insights || {}
@@ -256,14 +255,37 @@ const PropertyCard = ({ property }) => {
   const pricePerSqft = sqft > 0 && price > 0 ? Math.round(price / sqft) : 0
   const investmentScore = marketData.investment_analysis?.investment_score || 0
 
+  const handleCardClick = (e) => {
+    if (selectionMode) {
+      e.stopPropagation()
+      onToggleSelect(property.id)
+    } else {
+      navigate(`/properties/${property.id}`)
+    }
+  }
+
   return (
     <div
-      onClick={() => navigate(`/properties/${property.id}`)}
-      className="bg-white overflow-hidden transition-all duration-300 cursor-pointer group/card relative group-hover/grid:opacity-40 hover:!opacity-100"
-      style={{borderRadius: '12px', border: '2px solid #000000'}}
+      onClick={handleCardClick}
+      className={`bg-white overflow-hidden transition-all duration-300 cursor-pointer group/card relative group-hover/grid:opacity-40 hover:!opacity-100 ${selectionMode && isSelected ? 'ring-4 ring-green-500' : ''}`}
+      style={{borderRadius: '12px', border: selectionMode && isSelected ? '2px solid #10B981' : '2px solid #000000'}}
       onMouseEnter={(e) => {e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; e.currentTarget.style.zIndex = '10'}}
       onMouseLeave={(e) => {e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.zIndex = '1'}}
     >
+      {/* Selection Checkbox */}
+      {selectionMode && (
+        <div className="absolute top-3 right-3 z-20">
+          <div 
+            className={`w-6 h-6 rounded flex items-center justify-center transition-all ${isSelected ? 'bg-green-500' : 'bg-white border-2 border-gray-400'}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleSelect(property.id)
+            }}
+          >
+            {isSelected && <Check className="w-4 h-4 text-white" />}
+          </div>
+        </div>
+      )}
       {/* Floor Plan Image - Full Width */}
       <div className="relative h-48 overflow-hidden flex items-center justify-center p-3" style={{background: '#F6F1EB'}}>
         {property.image_url ? (
@@ -352,8 +374,11 @@ const Dashboard = () => {
   const [groupByNeighborhood, setGroupByNeighborhood] = useState(false)
   const [collapsedNeighborhoods, setCollapsedNeighborhoods] = useState(new Set())
   const [hideEmptyNeighborhoods, setHideEmptyNeighborhoods] = useState(true)
+  const [selectedProperties, setSelectedProperties] = useState(new Set())
+  const [selectionMode, setSelectionMode] = useState(false)
 
   useEffect(() => {
+    document.title = 'Properties | FP AI'
     fetchProperties()
   }, [])
 
@@ -573,15 +598,45 @@ const Dashboard = () => {
   }
 
   const handleExportCSV = () => {
-    // Export filtered/sorted properties that are being displayed
-    const propertiesToExport = viewMode === 'list' 
-      ? sortedProperties.slice(0, listItemsToShow)
-      : sortedProperties;
+    // Export selected properties if in selection mode, otherwise export all displayed
+    const propertiesToExport = selectionMode && selectedProperties.size > 0
+      ? properties.filter(p => selectedProperties.has(p.id))
+      : (viewMode === 'list' 
+          ? sortedProperties.slice(0, listItemsToShow)
+          : sortedProperties);
     
     const success = exportPropertiesToCSV(propertiesToExport);
     if (success) {
-      // Optional: Show success message
       console.log(`Exported ${propertiesToExport.length} properties to CSV`);
+    }
+  }
+
+  const toggleSelectProperty = (propertyId) => {
+    setSelectedProperties(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(propertyId)) {
+        newSet.delete(propertyId)
+      } else {
+        newSet.add(propertyId)
+      }
+      return newSet
+    })
+  }
+
+  const selectAll = () => {
+    const allIds = new Set(sortedProperties.map(p => p.id))
+    setSelectedProperties(allIds)
+  }
+
+  const deselectAll = () => {
+    setSelectedProperties(new Set())
+  }
+
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode)
+    if (selectionMode) {
+      // Exiting selection mode - clear selections
+      setSelectedProperties(new Set())
     }
   }
 
@@ -597,9 +652,9 @@ const Dashboard = () => {
           </h1>
           <div className="w-24 h-1.5 mx-auto mb-8" style={{background: '#FF5959'}}></div>
           
-          {/* Search Bar & Neighborhood Filter */}
-          <div className="max-w-2xl mx-auto mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Search Bar & Filter Controls */}
+          <div className="max-w-3xl mx-auto mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -616,15 +671,39 @@ const Dashboard = () => {
               </div>
 
               {/* Neighborhood Filter */}
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="relative z-50">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{color: '#666666'}} />
                 <select
                   value={neighborhoodFilter}
                   onChange={(e) => setNeighborhoodFilter(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border-2 focus:outline-none focus:ring-2 focus:border-transparent appearance-none cursor-pointer"
-                  style={{borderColor: '#000000', borderRadius: '4px'}}
-                  onFocus={(e) => {e.target.style.borderColor = '#FF5959'; e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)'}}
-                  onBlur={(e) => {e.target.style.borderColor = '#000000'; e.target.style.boxShadow = 'none'}}
+                  className="w-full pl-10 pr-10 py-3 border-2 focus:outline-none appearance-none cursor-pointer font-semibold transition-all"
+                  style={{
+                    borderColor: '#000000', 
+                    borderRadius: '4px',
+                    background: '#FFFFFF',
+                    color: '#000000',
+                    fontSize: '14px',
+                    position: 'relative',
+                    zIndex: 50
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#FF5959';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#000000';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                  onMouseEnter={(e) => {
+                    if (document.activeElement !== e.target) {
+                      e.target.style.background = '#F6F1EB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (document.activeElement !== e.target) {
+                      e.target.style.background = '#FFFFFF';
+                    }
+                  }}
                 >
                   <option value="all">All Neighborhoods ({properties.length})</option>
                   {availableNeighborhoods
@@ -644,14 +723,73 @@ const Dashboard = () => {
                       );
                     })}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none" style={{color: '#000000', zIndex: 51}} />
+              </div>
+
+              {/* Group By Dropdown */}
+              <div className="relative z-50">
+                <SlidersHorizontal className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{color: '#666666'}} />
+                <select
+                  value={groupByNeighborhood ? 'neighborhood' : groupByBuilding ? 'building' : 'none'}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === 'neighborhood') {
+                      setGroupByNeighborhood(true);
+                      setGroupByBuilding(false);
+                    } else if (value === 'building') {
+                      setGroupByBuilding(true);
+                      setGroupByNeighborhood(false);
+                    } else {
+                      setGroupByNeighborhood(false);
+                      setGroupByBuilding(false);
+                    }
+                  }}
+                  className="w-full pl-10 pr-10 py-3 border-2 focus:outline-none appearance-none cursor-pointer font-semibold transition-all"
+                  style={{
+                    borderColor: (groupByNeighborhood || groupByBuilding) ? '#FF5959' : '#000000',
+                    borderRadius: '4px',
+                    background: (groupByNeighborhood || groupByBuilding) ? '#FFF5F5' : '#FFFFFF',
+                    color: (groupByNeighborhood || groupByBuilding) ? '#FF5959' : '#000000',
+                    fontSize: '14px',
+                    position: 'relative',
+                    zIndex: 50
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#FF5959';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)';
+                  }}
+                  onBlur={(e) => {
+                    const isActive = groupByNeighborhood || groupByBuilding;
+                    e.target.style.borderColor = isActive ? '#FF5959' : '#000000';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                  onMouseEnter={(e) => {
+                    const isActive = groupByNeighborhood || groupByBuilding;
+                    if (document.activeElement !== e.target && !isActive) {
+                      e.target.style.background = '#F6F1EB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const isActive = groupByNeighborhood || groupByBuilding;
+                    if (document.activeElement !== e.target && !isActive) {
+                      e.target.style.background = '#FFFFFF';
+                    }
+                  }}
+                >
+                  <option value="none">Group By: None</option>
+                  <option value="neighborhood">📍 Neighborhood</option>
+                  <option value="building">🏢 Building</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none" 
+                  style={{color: (groupByNeighborhood || groupByBuilding) ? '#FF5959' : '#000000', zIndex: 51}} 
+                />
               </div>
             </div>
           </div>
 
 
           {/* Add Property Button */}
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 flex-wrap">
             <Link 
               to="/properties/new"
               className="inline-flex items-center space-x-2 text-white px-8 py-4 font-bold uppercase tracking-wide transition-all"
@@ -662,30 +800,9 @@ const Dashboard = () => {
               <Plus className="w-4 h-4" />
               <span>Add Property</span>
             </Link>
-            
-            {/* Export CSV Button */}
-            {properties.length > 0 && (
-              <button 
-                onClick={handleExportCSV}
-                className="inline-flex items-center space-x-2 px-8 py-4 font-bold uppercase tracking-wide transition-all"
-                style={{background: 'transparent', color: '#000000', border: '3px solid #000000', borderRadius: '4px'}}
-                onMouseEnter={(e) => {e.currentTarget.style.background = '#000000'; e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)'}}
-                onMouseLeave={(e) => {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#000000'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'}}
-              >
-                <Download className="w-4 h-4" />
-                <span>Export to CSV</span>
-              </button>
-            )}
           </div>
 
         </div>
-
-        {/* Unit Mix Chart - Show if we have 3+ properties */}
-        {!loading && !error && properties.length >= 3 && (
-          <div className="mb-8">
-            <UnitMixChart properties={properties} />
-          </div>
-        )}
 
         {/* View Toggle */}
         {filteredProperties.length > 0 && (
@@ -727,60 +844,34 @@ const Dashboard = () => {
               </button>
             )}
             
-            {/* Grouping Toggles */}
-            <button 
-              onClick={() => {
-                setGroupByNeighborhood(!groupByNeighborhood);
-                if (!groupByNeighborhood) setGroupByBuilding(false); // Disable building grouping
-              }}
-              className="px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
-              style={{
-                background: groupByNeighborhood ? '#FF5959' : 'transparent',
-                color: groupByNeighborhood ? '#FFFFFF' : '#000000',
-                border: `2px solid ${groupByNeighborhood ? '#FF5959' : '#000000'}`,
-                borderRadius: '4px'
-              }}
-              onMouseEnter={(e) => {
-                if (!groupByNeighborhood) {
-                  e.currentTarget.style.background = '#F6F1EB'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!groupByNeighborhood) {
-                  e.currentTarget.style.background = 'transparent'
-                }
-              }}
-            >
-              <MapPin className="w-4 h-4" />
-              <span>Group by Neighborhood</span>
-            </button>
+            {/* Bulk Selection Toggle */}
+            {filteredProperties.length > 0 && (
+              <button 
+                onClick={toggleSelectionMode}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
+                style={{
+                  background: selectionMode ? '#10B981' : 'transparent',
+                  color: selectionMode ? '#FFFFFF' : '#000000',
+                  border: `2px solid ${selectionMode ? '#10B981' : '#000000'}`,
+                  borderRadius: '4px'
+                }}
+                onMouseEnter={(e) => {
+                  if (!selectionMode) {
+                    e.currentTarget.style.background = '#F6F1EB'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!selectionMode) {
+                    e.currentTarget.style.background = 'transparent'
+                  }
+                }}
+                title={selectionMode ? 'Cancel selection mode' : 'Select multiple properties'}
+              >
+                {selectionMode ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                <span>{selectionMode ? 'Cancel' : 'Select'}</span>
+              </button>
+            )}
             
-            <button 
-              onClick={() => {
-                setGroupByBuilding(!groupByBuilding);
-                if (!groupByBuilding) setGroupByNeighborhood(false); // Disable neighborhood grouping
-              }}
-              className="px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
-              style={{
-                background: groupByBuilding ? '#FF5959' : 'transparent',
-                color: groupByBuilding ? '#FFFFFF' : '#000000',
-                border: `2px solid ${groupByBuilding ? '#FF5959' : '#000000'}`,
-                borderRadius: '4px'
-              }}
-              onMouseEnter={(e) => {
-                if (!groupByBuilding) {
-                  e.currentTarget.style.background = '#F6F1EB'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!groupByBuilding) {
-                  e.currentTarget.style.background = 'transparent'
-                }
-              }}
-            >
-              <Building2 className="w-4 h-4" />
-              <span>Group by Building</span>
-            </button>
             <button 
               onClick={() => setViewMode('grid')}
               className="p-2 transition-colors"
@@ -871,9 +962,47 @@ const Dashboard = () => {
         {/* Properties Grid View */}
         {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && !groupByBuilding && !groupByNeighborhood && (
           <div className="space-y-6">
+            {/* Select All Bar */}
+            {selectionMode && (
+              <div className="flex items-center justify-between p-4 rounded-lg" style={{background: '#FFFFFF', border: '2px solid #10B981'}}>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-bold">
+                    {selectedProperties.size} of {sortedProperties.length} selected
+                  </span>
+                  {selectedProperties.size === sortedProperties.length ? (
+                    <button
+                      onClick={deselectAll}
+                      className="text-sm font-bold px-4 py-2 rounded transition-all"
+                      style={{background: '#FEE2E2', color: '#DC2626'}}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#FECACA'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#FEE2E2'}
+                    >
+                      Deselect All
+                    </button>
+                  ) : (
+                    <button
+                      onClick={selectAll}
+                      className="text-sm font-bold px-4 py-2 rounded transition-all"
+                      style={{background: '#D1FAE5', color: '#059669'}}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#A7F3D0'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#D1FAE5'}
+                    >
+                      Select All
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
               {sortedProperties.slice(0, listItemsToShow).map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard 
+                  key={property.id} 
+                  property={property}
+                  selectionMode={selectionMode}
+                  isSelected={selectedProperties.has(property.id)}
+                  onToggleSelect={toggleSelectProperty}
+                />
               ))}
             </div>
             
@@ -927,7 +1056,13 @@ const Dashboard = () => {
                     <div className="p-6 pt-0">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
                         {neighborhoodProperties.map((property) => (
-                          <PropertyCard key={property.id} property={property} />
+                          <PropertyCard 
+                            key={property.id} 
+                            property={property}
+                            selectionMode={selectionMode}
+                            isSelected={selectedProperties.has(property.id)}
+                            onToggleSelect={toggleSelectProperty}
+                          />
                         ))}
                       </div>
                     </div>
@@ -971,7 +1106,13 @@ const Dashboard = () => {
                     <div className="p-6 pt-0">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
                         {buildingProperties.map((property) => (
-                          <PropertyCard key={property.id} property={property} />
+                          <PropertyCard 
+                            key={property.id} 
+                            property={property}
+                            selectionMode={selectionMode}
+                            isSelected={selectedProperties.has(property.id)}
+                            onToggleSelect={toggleSelectProperty}
+                          />
                         ))}
                       </div>
                     </div>
@@ -1117,6 +1258,57 @@ const Dashboard = () => {
         )}
 
       </main>
+      
+      {/* Floating Action Bar - Shown when properties are selected */}
+      {selectionMode && selectedProperties.size > 0 && (
+        <div 
+          className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 shadow-2xl rounded-lg"
+          style={{background: '#FFFFFF', border: '3px solid #10B981', minWidth: '600px'}}
+        >
+          <div className="p-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{background: '#10B981'}}>
+                <Check className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-black" style={{color: '#000000'}}>
+                  {selectedProperties.size} {selectedProperties.size === 1 ? 'Property' : 'Properties'} Selected
+                </p>
+                <p className="text-xs" style={{color: '#666666'}}>
+                  Ready to export or compare
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  const selectedProps = properties.filter(p => selectedProperties.has(p.id))
+                  exportPropertiesToCSV(selectedProps)
+                }}
+                className="px-6 py-3 rounded font-bold uppercase text-sm flex items-center gap-2 transition-all"
+                style={{background: '#10B981', color: '#FFFFFF'}}
+                onMouseEnter={(e) => {e.currentTarget.style.background = '#059669'; e.currentTarget.style.transform = 'translateY(-2px)'}}
+                onMouseLeave={(e) => {e.currentTarget.style.background = '#10B981'; e.currentTarget.style.transform = 'translateY(0)'}}
+              >
+                <Download className="w-4 h-4" />
+                <span>Export Selected</span>
+              </button>
+              
+              <button
+                onClick={deselectAll}
+                className="px-6 py-3 rounded font-bold uppercase text-sm flex items-center gap-2 transition-all"
+                style={{background: 'transparent', color: '#000000', border: '2px solid #000000'}}
+                onMouseEnter={(e) => {e.currentTarget.style.background = '#F6F1EB'}}
+                onMouseLeave={(e) => {e.currentTarget.style.background = 'transparent'}}
+              >
+                <X className="w-4 h-4" />
+                <span>Clear</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Footer */}
       <footer className="mt-20 py-8 bg-black w-full">

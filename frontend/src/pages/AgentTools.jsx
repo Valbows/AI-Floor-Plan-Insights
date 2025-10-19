@@ -27,9 +27,12 @@ const AgentTools = () => {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
+    // Set page title
     if (id) {
+      document.title = 'Agent Tools - Property | FP AI'
       fetchProperty()
     } else {
+      document.title = 'Agent Tools | FP AI'
       fetchProperties()
     }
   }, [id])

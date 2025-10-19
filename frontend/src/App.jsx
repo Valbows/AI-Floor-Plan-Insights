@@ -13,6 +13,7 @@ import NewProperty from './pages/NewProperty'
 import PublicReport from './pages/PublicReport'
 import Analytics from './pages/Analytics'
 import AgentTools from './pages/AgentTools'
+import DataStudio from './pages/DataStudio'
 
 function App() {
   return (
@@ -81,6 +82,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Analytics />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/data-studio"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <DataStudio />
                 </Layout>
               </ProtectedRoute>
             }
