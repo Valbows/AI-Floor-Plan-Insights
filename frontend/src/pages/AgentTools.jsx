@@ -795,7 +795,7 @@ const AgentTools = () => {
             )}
           </div>
 
-          {/* RIGHT COLUMN - Tabbed Content (Marketing & Analytics) */}
+          {/* RIGHT COLUMN - Tabbed Content (Marketing & Client Engagement) */}
           <div className="space-y-6">
             {/* Tab Navigation */}
             <div className="sticky top-0 z-40">
@@ -846,7 +846,7 @@ const AgentTools = () => {
                     }
                   }}
                 >
-                  Analytics
+                  Client Engagement
                 </button>
               </div>
             </div>
