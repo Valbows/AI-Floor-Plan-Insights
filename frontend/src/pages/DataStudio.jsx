@@ -5,6 +5,8 @@ import axios from 'axios'
 import UnitMixChart from '../components/charts/UnitMixChart'
 import LivingRoomPPSFChart_Option3 from '../components/charts/LivingRoomPPSFChart_Option3'
 import LivingRoomPPSFChart_Option4 from '../components/charts/LivingRoomPPSFChart_Option4'
+import BedroomPPSFChart_Trend from '../components/charts/BedroomPPSFChart_Trend'
+import BedroomPPSFChart_Grid from '../components/charts/BedroomPPSFChart_Grid'
 import { getUniqueNeighborhoods, extractNeighborhood } from '../utils/neighborhoodUtils'
 
 const DataStudio = () => {
@@ -135,59 +137,60 @@ const DataStudio = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto pt-16">
-      {/* Hero Header - Matching MY PROPERTIES style */}
-      <div className="text-center mb-16">
-        <h1 className="text-6xl font-black uppercase tracking-tight mb-2" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
-          DATA <span style={{color: '#FF5959'}}>STUDIO</span>
-        </h1>
-        <div className="w-24 h-1.5 mx-auto mb-4" style={{background: '#FF5959'}}></div>
-        <p className="text-lg font-medium" style={{color: '#666666'}}>
-          Interactive analysis of your property portfolio
-        </p>
-      </div>
+    <div className="min-h-screen" style={{background: '#F6F1EB'}}>
+      <div className="p-6 max-w-7xl mx-auto pt-16">
+        {/* Hero Header - Matching MY PROPERTIES style */}
+        <div className="text-center mb-16">
+          <h1 className="text-6xl font-black uppercase tracking-tight mb-2" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
+            DATA <span style={{color: '#FF5959'}}>STUDIO</span>
+          </h1>
+          <div className="w-24 h-1.5 mx-auto mb-4" style={{background: '#FF5959'}}></div>
+          <p className="text-lg font-medium" style={{color: '#666666'}}>
+            Interactive analysis of your property portfolio
+          </p>
+        </div>
 
-      {/* Advanced Filter Panel */}
-      {properties.length > 0 && (
-        <div className="mb-8">
-          <div className="bg-white rounded-lg border-2 p-6" style={{borderColor: '#000000'}}>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-black uppercase mb-1" style={{color: '#000000'}}>
-                  Comp Set Filters
-                </h3>
-                <p className="text-sm" style={{color: '#666666'}}>
-                  Narrow down your comparison set from {properties.length} total properties
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-sm font-bold" style={{color: hasActiveFilters ? '#FF5959' : '#666666'}}>
-                  <SlidersHorizontal className="w-4 h-4" />
-                  <span>{filteredProperties.length} properties selected</span>
+        {/* Advanced Filter Panel */}
+        {properties.length > 0 && (
+          <div className="mb-8">
+            <div className="rounded-lg border-2 p-6" style={{borderColor: '#000000', background: 'transparent'}}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-black uppercase mb-1" style={{color: '#000000'}}>
+                    Comp Set Filters
+                  </h3>
+                  <p className="text-sm" style={{color: '#666666'}}>
+                    Narrow down your comparison set from {properties.length} total properties
+                  </p>
                 </div>
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="px-4 py-2 font-bold uppercase tracking-wide transition-all text-xs flex items-center gap-2"
-                    style={{
-                      background: 'transparent',
-                      color: '#FF5959',
-                      border: '2px solid #FF5959',
-                      borderRadius: '4px'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#FFF5F5'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent'
-                    }}
-                  >
-                    <X className="w-3 h-3" />
-                    Clear All
-                  </button>
-                )}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 text-sm font-bold" style={{color: hasActiveFilters ? '#FF5959' : '#666666'}}>
+                    <SlidersHorizontal className="w-4 h-4" />
+                    <span>{filteredProperties.length} properties selected</span>
+                  </div>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={clearFilters}
+                      className="px-4 py-2 font-bold uppercase tracking-wide transition-all text-xs flex items-center gap-2"
+                      style={{
+                        background: 'transparent',
+                        color: '#FF5959',
+                        border: '2px solid #FF5959',
+                        borderRadius: '4px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#FFF5F5'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent'
+                      }}
+                    >
+                      <X className="w-3 h-3" />
+                      Clear All
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
             <div className="space-y-4">
               {/* First Row: Search + Building (if multi-unit buildings exist) */}
@@ -391,20 +394,75 @@ const DataStudio = () => {
 
       {/* Charts */}
       {filteredProperties.length > 0 ? (
-        <div className="space-y-8">
-          {/* Unit Mix Analysis */}
+        <div className="space-y-12">
+          {/* Section 1: Portfolio Overview */}
           <div>
+            <div className="mb-6">
+              <h2 className="text-2xl font-black uppercase tracking-tight mb-2" style={{color: '#000000', letterSpacing: '1px'}}>
+                Portfolio Overview
+              </h2>
+              <div className="w-16 h-1" style={{background: '#FF5959'}}></div>
+              <p className="text-sm mt-2" style={{color: '#666666'}}>
+                Distribution of unit types across your properties
+              </p>
+            </div>
             <UnitMixChart properties={filteredProperties} />
           </div>
 
-          {/* Living Room Analysis */}
+          {/* Divider */}
+          <div className="border-t-2" style={{borderColor: '#E5E5E5'}}></div>
+
+          {/* Section 2: Living Room Analysis */}
           <div>
-            <LivingRoomPPSFChart_Option3 properties={filteredProperties} />
+            <div className="mb-6">
+              <h2 className="text-2xl font-black uppercase tracking-tight mb-2" style={{color: '#FF5959', letterSpacing: '1px'}}>
+                Living Room Analysis
+              </h2>
+              <div className="w-16 h-1" style={{background: '#FF5959'}}></div>
+              <p className="text-sm mt-2" style={{color: '#666666'}}>
+                Correlation between living room dimensions and price per square foot
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Trend Chart */}
+              <div>
+                <LivingRoomPPSFChart_Option3 properties={filteredProperties} />
+              </div>
+
+              {/* Comparison Table */}
+              <div>
+                <LivingRoomPPSFChart_Option4 properties={filteredProperties} />
+              </div>
+            </div>
           </div>
 
-          {/* Property Comparison Grid */}
+          {/* Divider */}
+          <div className="border-t-2" style={{borderColor: '#E5E5E5'}}></div>
+
+          {/* Section 3: Bedroom Analysis */}
           <div>
-            <LivingRoomPPSFChart_Option4 properties={filteredProperties} />
+            <div className="mb-6">
+              <h2 className="text-2xl font-black uppercase tracking-tight mb-2" style={{color: '#6366F1', letterSpacing: '1px'}}>
+                Bedroom Analysis
+              </h2>
+              <div className="w-16 h-1" style={{background: '#6366F1'}}></div>
+              <p className="text-sm mt-2" style={{color: '#666666'}}>
+                Correlation between bedroom dimensions and price per square foot
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Trend Chart */}
+              <div>
+                <BedroomPPSFChart_Trend properties={filteredProperties} />
+              </div>
+
+              {/* Comparison Table */}
+              <div>
+                <BedroomPPSFChart_Grid properties={filteredProperties} />
+              </div>
+            </div>
           </div>
         </div>
       ) : (
@@ -426,7 +484,8 @@ const DataStudio = () => {
             Add Property
           </button>
         </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

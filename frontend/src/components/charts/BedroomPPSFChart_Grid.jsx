@@ -1,7 +1,7 @@
 import React from 'react';
 import { Grid3x3, TrendingUp } from 'lucide-react';
 
-const LivingRoomPPSFChart_Option4 = ({ properties }) => {
+const BedroomPPSFChart_Grid = ({ properties }) => {
   if (!properties || properties.length === 0) {
     return null;
   }
@@ -18,22 +18,25 @@ const LivingRoomPPSFChart_Option4 = ({ properties }) => {
 
     if (ppsf === 0 || rooms.length === 0) return;
 
-    const livingRoom = rooms.find(r => {
+    // Find bedroom (prioritize primary/master bedroom)
+    const bedroom = rooms.find(r => {
       const roomType = (r.type || r.room_type || '').toLowerCase();
       return roomType && (
-        roomType.includes('living') ||
-        roomType.includes('l.r.') ||
-        roomType.includes('lr') ||
-        roomType.includes('living/dining')
+        roomType.includes('bedroom') ||
+        roomType.includes('bed') ||
+        roomType.includes('br') ||
+        roomType.includes('master') ||
+        roomType.includes('primary')
       );
     });
 
-    if (!livingRoom) return;
+    if (!bedroom) return;
 
-    const dimensionsStr = livingRoom.dimensions || '';
+    const dimensionsStr = bedroom.dimensions || '';
     if (!dimensionsStr || 
         dimensionsStr.toLowerCase().includes('irregular') ||
-        dimensionsStr.toLowerCase().includes('n/a')) return;
+        dimensionsStr.toLowerCase().includes('n/a') ||
+        dimensionsStr.toLowerCase().includes('varies')) return;
 
     const match = dimensionsStr.match(/(\d+)['\-].*?\s*x\s*(\d+)['\-]/i);
     if (!match) return;
@@ -42,7 +45,7 @@ const LivingRoomPPSFChart_Option4 = ({ properties }) => {
     const width = parseInt(match[2]);
     const roomSize = length * width;
 
-    if (roomSize > 0 && roomSize < 1000) {
+    if (roomSize > 0 && roomSize < 800) {
       chartData.push({
         size: Math.round(roomSize),
         ppsf: ppsf,
@@ -62,7 +65,7 @@ const LivingRoomPPSFChart_Option4 = ({ properties }) => {
 
   return (
     <div className="rounded-lg" style={{border: '3px solid #000000', background: 'transparent'}}>
-      <div className="p-4 pb-3 rounded-t-lg" style={{background: '#000000'}}>
+      <div className="p-4 pb-3 rounded-t-lg" style={{background: '#6366F1'}}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Grid3x3 className="w-5 h-5" style={{color: '#FFFFFF'}} />
@@ -70,7 +73,7 @@ const LivingRoomPPSFChart_Option4 = ({ properties }) => {
               Property Details
             </h3>
           </div>
-          <p className="text-xs" style={{color: '#CCCCCC'}}>
+          <p className="text-xs" style={{color: '#E0E7FF'}}>
             {sortedData.length} Properties
           </p>
         </div>
@@ -147,5 +150,5 @@ const LivingRoomPPSFChart_Option4 = ({ properties }) => {
   );
 };
 
-export default LivingRoomPPSFChart_Option4;
+export default BedroomPPSFChart_Grid;
 

@@ -79,18 +79,18 @@ const UnitMixChart = ({ properties }) => {
   const total = chartData.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <div className="bg-white p-6 rounded-lg" style={{border: '3px solid #000000'}}>
+    <div className="p-6 rounded-lg" style={{border: '3px solid #000000', background: 'transparent'}}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-black uppercase tracking-wider" style={{color: '#000000', letterSpacing: '1.5px'}}>
           Unit Mix Analysis
         </h3>
         <div className="flex items-center gap-2">
           {analyzingCount > 0 && (
-            <div className="text-xs font-bold px-3 py-1 rounded" style={{background: '#FFF5F5', color: '#FF5959', border: '1px solid #FF5959'}}>
+            <div className="text-xs font-bold px-3 py-1 rounded" style={{background: '#FFFFFF', color: '#FF5959', border: '1px solid #FF5959'}}>
               +{analyzingCount} analyzing
             </div>
           )}
-          <div className="text-xs font-bold px-3 py-1 rounded" style={{background: '#F6F1EB', color: '#666666'}}>
+          <div className="text-xs font-bold px-3 py-1 rounded" style={{background: '#FFFFFF', color: '#666666'}}>
             {total} {total === 1 ? 'Unit' : 'Units'}
           </div>
         </div>
@@ -124,7 +124,7 @@ const UnitMixChart = ({ properties }) => {
       {/* Legend with counts */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         {chartData.map((item) => (
-          <div key={item.name} className="flex items-center justify-between p-3 rounded" style={{background: '#F6F1EB'}}>
+          <div key={item.name} className="flex items-center justify-between p-3 rounded" style={{background: '#FFFFFF'}}>
             <div className="flex items-center gap-2">
               <div 
                 className="w-3 h-3 rounded-full flex-shrink-0" 

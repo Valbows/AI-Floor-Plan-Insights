@@ -1,8 +1,8 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Scatter, ComposedChart } from 'recharts';
-import { Activity } from 'lucide-react';
+import { Moon } from 'lucide-react';
 
-const LivingRoomPPSFChart_Option3 = ({ properties }) => {
+const BedroomPPSFChart_Trend = ({ properties }) => {
   if (!properties || properties.length === 0) {
     return null;
   }
@@ -19,22 +19,25 @@ const LivingRoomPPSFChart_Option3 = ({ properties }) => {
 
     if (ppsf === 0 || rooms.length === 0) return;
 
-    const livingRoom = rooms.find(r => {
+    // Find bedroom (prioritize primary/master bedroom)
+    const bedroom = rooms.find(r => {
       const roomType = (r.type || r.room_type || '').toLowerCase();
       return roomType && (
-        roomType.includes('living') ||
-        roomType.includes('l.r.') ||
-        roomType.includes('lr') ||
-        roomType.includes('living/dining')
+        roomType.includes('bedroom') ||
+        roomType.includes('bed') ||
+        roomType.includes('br') ||
+        roomType.includes('master') ||
+        roomType.includes('primary')
       );
     });
 
-    if (!livingRoom) return;
+    if (!bedroom) return;
 
-    const dimensionsStr = livingRoom.dimensions || '';
+    const dimensionsStr = bedroom.dimensions || '';
     if (!dimensionsStr || 
         dimensionsStr.toLowerCase().includes('irregular') ||
-        dimensionsStr.toLowerCase().includes('n/a')) return;
+        dimensionsStr.toLowerCase().includes('n/a') ||
+        dimensionsStr.toLowerCase().includes('varies')) return;
 
     const match = dimensionsStr.match(/(\d+)['\-].*?\s*x\s*(\d+)['\-]/i);
     if (!match) return;
@@ -43,7 +46,7 @@ const LivingRoomPPSFChart_Option3 = ({ properties }) => {
     const width = parseInt(match[2]);
     const roomSize = length * width;
 
-    if (roomSize > 0 && roomSize < 1000) {
+    if (roomSize > 0 && roomSize < 800) { // Bedrooms typically smaller than living rooms
       chartData.push({
         size: Math.round(roomSize),
         ppsf: ppsf,
@@ -69,7 +72,7 @@ const LivingRoomPPSFChart_Option3 = ({ properties }) => {
           </p>
           <div className="space-y-1 text-xs">
             <p><span className="font-semibold">Size:</span> {data.size} sq ft</p>
-            <p><span className="font-semibold" style={{color: '#FF5959'}}>PPSF: ${data.ppsf.toLocaleString()}</span></p>
+            <p><span className="font-semibold" style={{color: '#6366F1'}}>PPSF: ${data.ppsf.toLocaleString()}</span></p>
           </div>
         </div>
       );
@@ -78,18 +81,18 @@ const LivingRoomPPSFChart_Option3 = ({ properties }) => {
   };
 
   return (
-    <div className="rounded-lg p-6" style={{border: '3px solid #FF5959', background: 'transparent'}}>
+    <div className="rounded-lg p-6" style={{border: '3px solid #6366F1', background: 'transparent'}}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Activity className="w-5 h-5" style={{color: '#FF5959'}} />
+          <Moon className="w-5 h-5" style={{color: '#6366F1'}} />
           <div>
             <h3 className="text-sm font-black uppercase tracking-wider" style={{color: '#000000', letterSpacing: '1.5px'}}>
               Trend Analysis
             </h3>
           </div>
         </div>
-        <div className="px-3 py-1.5 rounded-lg" style={{background: '#FFFFFF', border: '2px solid #FF5959'}}>
-          <p className="text-xs font-bold" style={{color: '#FF5959'}}>${avgPPSF} avg</p>
+        <div className="px-3 py-1.5 rounded-lg" style={{background: '#FFFFFF', border: '2px solid #6366F1'}}>
+          <p className="text-xs font-bold" style={{color: '#6366F1'}}>${avgPPSF} avg</p>
         </div>
       </div>
 
@@ -110,10 +113,10 @@ const LivingRoomPPSFChart_Option3 = ({ properties }) => {
           <Line 
             type="monotone" 
             dataKey="ppsf" 
-            stroke="#FF5959" 
+            stroke="#6366F1" 
             strokeWidth={3}
-            dot={{ fill: '#FF5959', stroke: '#000000', strokeWidth: 2, r: 5 }}
-            activeDot={{ r: 7, stroke: '#FF5959', strokeWidth: 3 }}
+            dot={{ fill: '#6366F1', stroke: '#000000', strokeWidth: 2, r: 5 }}
+            activeDot={{ r: 7, stroke: '#6366F1', strokeWidth: 3 }}
           />
         </ComposedChart>
       </ResponsiveContainer>
@@ -125,9 +128,9 @@ const LivingRoomPPSFChart_Option3 = ({ properties }) => {
             {Math.min(...sortedData.map(d => d.size))} sf
           </p>
         </div>
-        <div className="p-2 rounded text-center" style={{background: '#FFFFFF', border: '1px solid #FF5959'}}>
-          <p className="text-xs font-bold mb-1" style={{color: '#FF5959'}}>Total</p>
-          <p className="text-sm font-black" style={{color: '#FF5959'}}>
+        <div className="p-2 rounded text-center" style={{background: '#FFFFFF', border: '1px solid #6366F1'}}>
+          <p className="text-xs font-bold mb-1" style={{color: '#6366F1'}}>Total</p>
+          <p className="text-sm font-black" style={{color: '#6366F1'}}>
             {sortedData.length}
           </p>
         </div>
@@ -142,5 +145,5 @@ const LivingRoomPPSFChart_Option3 = ({ properties }) => {
   );
 };
 
-export default LivingRoomPPSFChart_Option3;
+export default BedroomPPSFChart_Trend;
 
