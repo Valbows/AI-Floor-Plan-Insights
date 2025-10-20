@@ -263,21 +263,21 @@ const Analytics = () => {
             <div className="p-8 rounded-lg text-center" style={{background: '#F0FDF4', border: '3px solid #22C55E'}}>
               <p className="text-xs font-bold uppercase mb-3" style={{color: '#999999'}}>Average PPSF</p>
               <p className="text-6xl font-black mb-3" style={{color: '#22C55E'}}>
-                ${sqftImpact.price_per_sqft.toFixed(0)}
+                ${Number(sqftImpact?.price_per_sqft ?? 0).toFixed(0)}
               </p>
               <p className="text-sm font-bold" style={{color: '#666666'}}>Per Square Foot</p>
             </div>
             <div className="p-8 rounded-lg text-center" style={{background: '#FFF5F5', border: '3px solid #FF5959'}}>
               <p className="text-xs font-bold uppercase mb-3" style={{color: '#999999'}}>Value Per Extra Sq Ft</p>
               <p className="text-6xl font-black mb-3" style={{color: '#FF5959'}}>
-                ${sqftImpact.impact_per_sqft.toFixed(0)}
+                ${Number(sqftImpact?.impact_per_sqft ?? sqftImpact?.price_per_sqft ?? 0).toFixed(0)}
               </p>
               <p className="text-sm font-bold" style={{color: '#666666'}}>Added Property Value</p>
             </div>
           </div>
 
           <div className="mt-6 space-y-3">
-            {sqftImpact.examples.map((example, idx) => (
+            {(Array.isArray(sqftImpact?.examples) ? sqftImpact.examples : []).map((example, idx) => (
               <div key={idx} className="flex items-center justify-between p-4 rounded-lg" 
                    style={{background: '#F6F1EB', border: '2px solid #E5E5E5'}}>
                 <span className="text-sm font-bold" style={{color: '#000000'}}>

@@ -182,31 +182,36 @@ class PropertyRegressionModel:
                     fpm.quality_score,
                     fpm.total_square_feet_confidence,
                     fpm.rooms,
-                    fpm.detected_features,
-                    mi.suggested_price_range,
-                    mi.comparables
+                    fpm.detected_features
                 FROM properties p
                 LEFT JOIN floor_plan_measurements fpm ON p.id = fpm.property_id
-                LEFT JOIN market_insights mi ON p.id = mi.property_id
                 WHERE p.status IN ('complete', 'enrichment_complete')
-                AND fpm.total_square_feet IS NOT NULL
             """
             
             result = self.db.rpc('execute_sql', {'query': query}).execute()
-            
-            if not result.data or len(result.data) < min_properties:
-                logger.warning(f"Insufficient data: {len(result.data) if result.data else 0} properties found, need {min_properties}")
-                return []
-            
-            logger.info(f"Found {len(result.data)} properties with measurements")
-            
+            rows = result.data or []
+            # Unwrap RPC jsonb column (execute_sql/to_jsonb)
+            unwrapped = []
+            for r in rows:
+                if isinstance(r, dict):
+                    payload = r.get('execute_sql') or r.get('to_jsonb') or r
+                else:
+                    payload = r
+                unwrapped.append(payload)
+
+            logger.info(f"Found {len(unwrapped)} candidate properties")
+
             # Convert to PropertyFeatures objects
             features_list = []
-            for row in result.data:
+            for row in unwrapped:
                 features = self._parse_property_row(row)
                 if features:
                     features_list.append(features)
-            
+
+            if len(features_list) < min_properties:
+                logger.warning(f"Insufficient data after parsing: {len(features_list)} features, need {min_properties}")
+                return []
+
             logger.info(f"Extracted features for {len(features_list)} properties")
             return features_list
         
@@ -224,7 +229,27 @@ class PropertyRegressionModel:
             # Basic features
             bedrooms = extracted_data.get('bedrooms', 0)
             bathrooms = extracted_data.get('bathrooms', 0.0)
-            total_sqft = row.get('total_square_feet', 0)
+            # total_sqft: fallback to extracted_data.square_footage/square_feet if FPM missing
+            total_sqft = row.get('total_square_feet')
+            if not total_sqft:
+                # Coerce string numbers like "1,234"
+                import re as _re
+                def _to_int(v):
+                    if v is None:
+                        return 0
+                    if isinstance(v, (int, float)):
+                        return int(v)
+                    if isinstance(v, str):
+                        s = _re.sub(r'[^0-9]', '', v)
+                        return int(s) if s else 0
+                    return 0
+                total_sqft = _to_int(extracted_data.get('total_square_feet'))
+                if not total_sqft:
+                    total_sqft = _to_int(extracted_data.get('square_footage'))
+                if not total_sqft:
+                    total_sqft = _to_int(extracted_data.get('square_feet'))
+            if not total_sqft or total_sqft <= 0:
+                return None
             
             # Room statistics
             room_sqfts = [r.get('sqft', 0) for r in rooms if isinstance(r, dict) and r.get('sqft')]
@@ -248,11 +273,47 @@ class PropertyRegressionModel:
             # Price data (from comparables if available)
             sale_price = None
             comparables = row.get('comparables', []) or []
+            # Also check properties JSON path: extracted_data.market_insights.comparable_properties
+            if not comparables:
+                mi = (extracted_data.get('market_insights') or {}) if isinstance(extracted_data, dict) else {}
+                comparables = (mi.get('comparable_properties') or []) if isinstance(mi, dict) else []
             if comparables and len(comparables) > 0:
                 # Use median of comparable prices as proxy
-                comp_prices = [c.get('sale_price') for c in comparables if isinstance(c, dict) and c.get('sale_price')]
+                comp_prices = []
+                for c in comparables:
+                    if not isinstance(c, dict):
+                        continue
+                    val = c.get('sale_price')
+                    if val is None:
+                        val = c.get('last_sale_price')
+                    if val is None:
+                        val = c.get('price')
+                    # Coerce numbers if strings with $/commas
+                    try:
+                        if isinstance(val, str):
+                            import re as _re
+                            s = _re.sub(r'[^0-9\.-]', '', val)
+                            if s:
+                                val = float(s)
+                        if isinstance(val, (int, float)) and val > 0:
+                            comp_prices.append(float(val))
+                    except Exception:
+                        continue
                 if comp_prices:
                     sale_price = float(np.median(comp_prices))
+            # As last resort, use price estimate from extracted data
+            if sale_price is None:
+                try:
+                    pe = ((extracted_data.get('market_insights') or {}).get('price_estimate') or {})
+                    ev = pe.get('estimated_value')
+                    if isinstance(ev, str):
+                        import re as _re
+                        s = _re.sub(r'[^0-9\.-]', '', ev)
+                        ev = float(s) if s else None
+                    if isinstance(ev, (int, float)) and ev > 0:
+                        sale_price = float(ev)
+                except Exception:
+                    pass
             
             # Create PropertyFeatures object
             features = PropertyFeatures(
@@ -302,14 +363,14 @@ class PropertyRegressionModel:
         """
         logger.info(f"Building {model_type} regression model for room dimensions...")
         
-        if len(features_list) < 10:
-            logger.error(f"Insufficient data: {len(features_list)} properties, need at least 10")
+        if len(features_list) < 5:
+            logger.error(f"Insufficient data: {len(features_list)} properties, need at least 5")
             return None
         
         # Filter properties with sale prices
         data_with_prices = [f for f in features_list if f.sale_price is not None and f.sale_price > 0]
         
-        if len(data_with_prices) < 5:
+        if len(data_with_prices) < 3:
             logger.warning(f"Insufficient price data: {len(data_with_prices)} properties with prices")
             return None
         

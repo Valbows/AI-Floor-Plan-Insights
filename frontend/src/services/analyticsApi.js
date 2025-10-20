@@ -38,7 +38,12 @@ export const analyticsApi = {
       model_type: modelType,
       min_properties: minProperties
     });
-    return response.data;
+    const data = response.data || {};
+    // Normalize to expected UI shape
+    return {
+      ...data,
+      properties_used: data.properties_used ?? data.num_properties ?? 0,
+    };
   },
 
   /**
@@ -75,7 +80,20 @@ export const analyticsApi = {
     const response = await api.get('/sqft-impact', {
       params: { sqft_change: sqftChange, train_model: true }
     });
-    return response.data;
+    const data = response.data || {};
+    const pricePerSqft = Number(data.price_per_sqft) || 0;
+    const ex = data.examples || {};
+    const examples = [
+      { description: 'Add 100 sqft', price_impact: Math.round((ex['100_sqft'] ?? pricePerSqft * 100) || 0) },
+      { description: 'Add 500 sqft', price_impact: Math.round((ex['500_sqft'] ?? pricePerSqft * 500) || 0) },
+      { description: 'Add 1000 sqft', price_impact: Math.round((ex['1000_sqft'] ?? pricePerSqft * 1000) || 0) },
+    ];
+    return {
+      ...data,
+      price_per_sqft: pricePerSqft,
+      impact_per_sqft: pricePerSqft,
+      examples,
+    };
   },
 
   /**
