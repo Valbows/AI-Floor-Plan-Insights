@@ -29,6 +29,7 @@ const AgentTools = () => {
   const [activeTab, setActiveTab] = useState('marketing')
   const [reEnriching, setReEnriching] = useState(false)
   const [showAllFeatures, setShowAllFeatures] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0) // Add refresh trigger
   
   // Share states
   const [showShareModal, setShowShareModal] = useState(false)
@@ -37,7 +38,7 @@ const AgentTools = () => {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    // Set page title
+    // Set page title and fetch data
     if (id) {
       document.title = 'Agent Tools - Property | FP AI'
       fetchProperty()
@@ -45,7 +46,7 @@ const AgentTools = () => {
       document.title = 'Agent Tools | FP AI'
       fetchProperties()
     }
-  }, [id])
+  }, [id, refreshKey]) // Re-run when id OR refreshKey changes
 
   const fetchProperties = async () => {
     try {
@@ -205,10 +206,18 @@ const AgentTools = () => {
 
   // Property Selector View (when no ID is provided)
   if (!id) {
+    // Filter properties by search term
     const filteredProperties = properties.filter(property => {
       const extractedData = property.extracted_data || {}
       const address = extractedData.address || property.address || ''
       return address.toLowerCase().includes(searchTerm.toLowerCase())
+    })
+
+    // Sort by date (newest first) to match Dashboard
+    const sortedProperties = [...filteredProperties].sort((a, b) => {
+      const aDate = new Date(a.created_at || 0)
+      const bDate = new Date(b.created_at || 0)
+      return bDate - aDate // Descending order (newest first)
     })
 
     return (
@@ -216,16 +225,45 @@ const AgentTools = () => {
         {/* Header */}
         <div className="border-b-4" style={{background: '#FFFFFF', borderBottomColor: '#000000'}}>
           <div className="max-w-[1400px] mx-auto px-6 py-8">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-3 rounded" style={{background: '#FF5959'}}>
-                <Wrench className="w-8 h-8 text-white" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 rounded" style={{background: '#FF5959'}}>
+                  <Wrench className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-black uppercase tracking-tight" style={{color: '#000000', letterSpacing: '-2px'}}>
+                    Agent <span style={{color: '#FF5959'}}>Tools</span>
+                  </h1>
+                  <p className="text-sm mt-1" style={{color: '#666666'}}>Select a property to view professional management interface</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-black uppercase tracking-tight" style={{color: '#000000', letterSpacing: '-2px'}}>
-                  Agent <span style={{color: '#FF5959'}}>Tools</span>
-                </h1>
-                <p className="text-sm mt-1" style={{color: '#666666'}}>Select a property to view professional management interface</p>
-              </div>
+              
+              {/* Refresh Button */}
+              <button
+                onClick={() => setRefreshKey(prev => prev + 1)}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 rounded transition-all"
+                style={{
+                  background: loading ? '#CCCCCC' : '#000000',
+                  color: '#FFFFFF',
+                  border: '2px solid #000000'
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.background = '#333333'
+                    e.currentTarget.style.transform = 'translateY(-1px)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.currentTarget.style.background = '#000000'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }
+                }}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="font-bold text-sm uppercase">Refresh</span>
+              </button>
             </div>
           </div>
         </div>
@@ -256,9 +294,9 @@ const AgentTools = () => {
               </div>
 
               {/* Property Grid */}
-              {filteredProperties.length > 0 ? (
+              {sortedProperties.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProperties.map((prop) => {
+                  {sortedProperties.map((prop) => {
                     const extractedData = prop.extracted_data || {}
                     const marketData = extractedData.market_insights || {}
                     const address = extractedData.address || prop.address || 'Property Address'

@@ -46,7 +46,7 @@ const PropertyDetail = () => {
   const [shareableLink, setShareableLink] = useState(null)
   const [generatingLink, setGeneratingLink] = useState(false)
   const [copied, setCopied] = useState(false)
-  
+
   // Features expand state
   const [showAllFeatures, setShowAllFeatures] = useState(false)
 
@@ -426,6 +426,52 @@ const PropertyDetail = () => {
             )}
           </div>
         </div>
+
+        {/* KEY METRICS ROW - Top Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Metric Card: Bedrooms */}
+          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #E5E5E5'}}>
+            <div className="flex items-center gap-2 mb-2">
+              <Bed className="w-5 h-5" style={{color: '#666666'}} />
+              <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Bedrooms</h3>
+            </div>
+            <p className="text-4xl font-black" style={{color: '#000000'}}>{extracted.bedrooms || '—'}</p>
+          </div>
+
+          {/* Metric Card: Bathrooms */}
+          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #E5E5E5'}}>
+            <div className="flex items-center gap-2 mb-2">
+              <Bath className="w-5 h-5" style={{color: '#666666'}} />
+              <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Bathrooms</h3>
+            </div>
+            <p className="text-4xl font-black" style={{color: '#000000'}}>{extracted.bathrooms || '—'}</p>
+          </div>
+
+          {/* Metric Card: Square Footage */}
+          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #E5E5E5'}}>
+            <div className="flex items-center gap-2 mb-2">
+              <Maximize className="w-5 h-5" style={{color: '#666666'}} />
+              <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Square Feet</h3>
+            </div>
+            <p className="text-4xl font-black" style={{color: '#000000'}}>
+              {extracted.square_footage ? extracted.square_footage.toLocaleString() : '—'}
+            </p>
+          </div>
+
+          {/* Metric Card: Price Estimate */}
+          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #E5E5E5'}}>
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="w-5 h-5" style={{color: '#666666'}} />
+              <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Est. Price</h3>
+            </div>
+            <p className="text-4xl font-black" style={{color: '#FF5959'}}>
+              {extracted.market_insights?.price_estimate?.estimated_value
+                ? `$${extracted.market_insights.price_estimate.estimated_value.toLocaleString()}`
+                : '—'}
+            </p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* LEFT COLUMN - Floor Plan + Property Details (Scrollable) */}
           <div className="space-y-4">
@@ -822,82 +868,82 @@ const PropertyDetail = () => {
           <div className="space-y-6">
             {/* Tab Navigation - HIDDEN since only showing Market Insights */}
             {false && (
-              <div className="sticky top-0 z-40 pb-4" style={{background: '#F6F1EB'}}>
-                <div className="flex space-x-2 p-1" style={{background: '#F6F1EB', borderRadius: '8px'}}>
-                <button
-                  onClick={() => setActiveTab('market')}
-                  className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
-                  style={{
-                    background: activeTab === 'market' ? '#FF5959' : 'transparent',
-                    color: activeTab === 'market' ? '#FFFFFF' : '#666666',
-                    borderRadius: '6px',
-                    letterSpacing: '1px'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (activeTab !== 'market') {
-                      e.currentTarget.style.background = '#FFFFFF'
-                      e.currentTarget.style.color = '#000000'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (activeTab !== 'market') {
-                      e.currentTarget.style.background = 'transparent'
-                      e.currentTarget.style.color = '#666666'
-                    }
-                  }}
-                >
-                  Market Insights
-                </button>
+            <div className="sticky top-0 z-40 pb-4" style={{background: '#F6F1EB'}}>
+              <div className="flex space-x-2 p-1" style={{background: '#F6F1EB', borderRadius: '8px'}}>
+              <button
+                onClick={() => setActiveTab('market')}
+                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                style={{
+                  background: activeTab === 'market' ? '#FF5959' : 'transparent',
+                  color: activeTab === 'market' ? '#FFFFFF' : '#666666',
+                  borderRadius: '6px',
+                  letterSpacing: '1px'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== 'market') {
+                    e.currentTarget.style.background = '#FFFFFF'
+                    e.currentTarget.style.color = '#000000'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'market') {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#666666'
+                  }
+                }}
+              >
+                Market Insights
+              </button>
                 {showMarketingAndAnalytics && (
                 <>
-                  <button
-                    onClick={() => setActiveTab('marketing')}
-                    className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
-                    style={{
-                      background: activeTab === 'marketing' ? '#FF5959' : 'transparent',
-                      color: activeTab === 'marketing' ? '#FFFFFF' : '#666666',
-                      borderRadius: '6px',
-                      letterSpacing: '1px'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (activeTab !== 'marketing') {
-                        e.currentTarget.style.background = '#FFFFFF'
-                        e.currentTarget.style.color = '#000000'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (activeTab !== 'marketing') {
-                        e.currentTarget.style.background = 'transparent'
-                        e.currentTarget.style.color = '#666666'
-                      }
-                    }}
-                  >
-                    Marketing Content
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('analytics')}
-                    className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
-                    style={{
-                      background: activeTab === 'analytics' ? '#FF5959' : 'transparent',
-                      color: activeTab === 'analytics' ? '#FFFFFF' : '#666666',
-                      borderRadius: '6px',
-                      letterSpacing: '1px'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (activeTab !== 'analytics') {
-                        e.currentTarget.style.background = '#FFFFFF'
-                        e.currentTarget.style.color = '#000000'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (activeTab !== 'analytics') {
-                        e.currentTarget.style.background = 'transparent'
-                        e.currentTarget.style.color = '#666666'
-                      }
-                    }}
-                  >
-                    Analytics
-                  </button>
+              <button
+                onClick={() => setActiveTab('marketing')}
+                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                style={{
+                  background: activeTab === 'marketing' ? '#FF5959' : 'transparent',
+                  color: activeTab === 'marketing' ? '#FFFFFF' : '#666666',
+                  borderRadius: '6px',
+                  letterSpacing: '1px'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== 'marketing') {
+                    e.currentTarget.style.background = '#FFFFFF'
+                    e.currentTarget.style.color = '#000000'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'marketing') {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#666666'
+                  }
+                }}
+              >
+                Marketing Content
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className="flex-1 px-4 py-3 font-bold uppercase text-xs transition-all"
+                style={{
+                  background: activeTab === 'analytics' ? '#FF5959' : 'transparent',
+                  color: activeTab === 'analytics' ? '#FFFFFF' : '#666666',
+                  borderRadius: '6px',
+                  letterSpacing: '1px'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== 'analytics') {
+                    e.currentTarget.style.background = '#FFFFFF'
+                    e.currentTarget.style.color = '#000000'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== 'analytics') {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#666666'
+                  }
+                }}
+              >
+                Analytics
+              </button>
                 </>
               )}
               </div>
@@ -1562,33 +1608,33 @@ const PropertyDetail = () => {
       
       {/* Share Button - only visible when showMarketingAndAnalytics is true */}
       {showMarketingAndAnalytics && (
-        <button
-          onClick={openShareModal}
-          className="fixed text-white shadow-lg transition-all duration-200 z-40 flex flex-col items-center justify-center space-y-2"
-          style={{
-            background: '#FF5959',
-            width: '80px',
-            height: '100px',
-            top: '50%',
-            right: '0',
-            transform: 'translateY(-50%)',
-            borderTopLeftRadius: '12px',
-            borderBottomLeftRadius: '12px',
-            borderRight: 'none'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#E54545'
-            e.currentTarget.style.width = '90px'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#FF5959'
-            e.currentTarget.style.width = '80px'
-          }}
-          title="Share Property"
-        >
-          <Share2 className="w-8 h-8" />
-          <span className="text-xs font-black uppercase" style={{letterSpacing: '1px'}}>Share</span>
-        </button>
+      <button
+        onClick={openShareModal}
+        className="fixed text-white shadow-lg transition-all duration-200 z-40 flex flex-col items-center justify-center space-y-2"
+        style={{
+          background: '#FF5959',
+          width: '80px',
+          height: '100px',
+          top: '50%',
+          right: '0',
+          transform: 'translateY(-50%)',
+          borderTopLeftRadius: '12px',
+          borderBottomLeftRadius: '12px',
+          borderRight: 'none'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#E54545'
+          e.currentTarget.style.width = '90px'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = '#FF5959'
+          e.currentTarget.style.width = '80px'
+        }}
+        title="Share Property"
+      >
+        <Share2 className="w-8 h-8" />
+        <span className="text-xs font-black uppercase" style={{letterSpacing: '1px'}}>Share</span>
+      </button>
       )}
 
       {/* Floor Plan Zoom Modal */}
