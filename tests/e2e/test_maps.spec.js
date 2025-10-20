@@ -6,8 +6,8 @@
 
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = 'http://localhost:5173';
-const API_URL = 'http://localhost:5000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
+const API_URL = process.env.API_URL || 'http://localhost:5000';
 
 test.describe('Google Maps Integration - Phase 4.4', () => {
   let authToken;
@@ -214,30 +214,17 @@ test.describe('Google Maps Integration - Phase 4.4', () => {
     }
   });
 
-  test('should handle missing address gracefully', async ({ page, request }) => {
+  test('should handle missing address gracefully', async ({ page }) => {
     console.log('✅ Testing missing address handling');
 
-    // This test verifies the component doesn't crash without an address
-    // We can't easily create a property without an address, so we'll just verify
-    // that the map section only shows when address exists
-
+    // This test verifies the component doesn't crash without an address.
+    // We simply check whether the Location section appears; if not, that's fine.
     await page.goto(`${BASE_URL}/report/${shareableToken}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    // If Location section exists, address should be present
-    const locationSection = page.locator('h2:has-text("Location")');
-    const hasLocation = await locationSection.isVisible().catch(() => false);
-
+    const hasLocation = await page.locator('h2:has-text("Location")').isVisible().catch(() => false);
     if (hasLocation) {
       console.log('   ✅ Location section displayed (address exists)');
-      
-      // Verify address is shown
-      const coordsText = page.locator('text=/Coordinates:/i');
-      const addressShown = await coordsText.locator('..').textContent().catch(() => '');
-      
-      if (addressShown && addressShown.length > 20) {
-        console.log('   ✅ Address displayed below map');
-      }
     } else {
       console.log('   ✅ Location section hidden (no address) - correct behavior');
     }

@@ -35,14 +35,22 @@ class StreetEasyScraper(BaseScraper):
             self.log_scraping_result(True, f"Searching StreetEasy for {address}, {city}, {state}")
             
             if not self.client:
-                raise Exception("Bright Data client not initialized")
+                raise Exception("Scraping client not initialized")
             
-            html = await self.client.scrape_page(
+            # Tolerant fetch to handle non-2xx with body; transparent to pass target status
+            resp = await self.client.fetch(
                 search_url,
                 wait_for='div[class*="listingCard"]',
-                wait_timeout=5000  # Reduced from 30s to 5s for fast failure
+                wait_timeout=30000,
+                extra_params={
+                    'transparent_status_code': 'true',
+                    'stealth_proxy': 'true',
+                    'premium_proxy': None,
+                    'block_resources': 'false'
+                },
+                allow_failure=True
             )
-            
+            html = (resp.text or '')
             soup = self.parse_html(html)
             property_data = self._parse_search_results(soup)
             
@@ -62,14 +70,21 @@ class StreetEasyScraper(BaseScraper):
             self.log_scraping_result(True, f"Fetching details from {property_url}")
             
             if not self.client:
-                raise Exception("Bright Data client not initialized")
+                raise Exception("Scraping client not initialized")
             
-            html = await self.client.scrape_page(
+            resp = await self.client.fetch(
                 property_url,
                 wait_for='div[class*="DetailsPage"]',
-                wait_timeout=5000  # Reduced from 30s to 5s for fast failure
+                wait_timeout=30000,
+                extra_params={
+                    'transparent_status_code': 'true',
+                    'stealth_proxy': 'true',
+                    'premium_proxy': None,
+                    'block_resources': 'false'
+                },
+                allow_failure=True
             )
-            
+            html = (resp.text or '')
             soup = self.parse_html(html)
             property_data = self._parse_property_details(soup)
             property_data['listing_url'] = property_url

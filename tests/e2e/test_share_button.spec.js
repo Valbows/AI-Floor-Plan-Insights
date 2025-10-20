@@ -7,8 +7,8 @@
 
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = 'http://localhost:5173';
-const API_URL = 'http://localhost:5000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
+const API_URL = process.env.API_URL || 'http://localhost:5000';
 
 test.describe('Share Button Functionality', () => {
   let authToken;
@@ -55,13 +55,15 @@ test.describe('Share Button Functionality', () => {
       localStorage.setItem('token', token);
     }, authToken);
 
-    // Navigate to property detail page
-    await page.goto(`${BASE_URL}/property/${testPropertyId}`);
-    await page.waitForLoadState('networkidle');
+    // Navigate to Agent Tools page where Share FAB lives in new UI
+    await page.goto(`${BASE_URL}/agent-tools/${testPropertyId}`);
+    await page.waitForLoadState('domcontentloaded');
+    // Wait for page content that indicates property view loaded
+    await page.waitForSelector('text=/Property Information/i', { timeout: 15000 }).catch(() => {});
     await page.waitForTimeout(2000);
 
-    // Find and click Share button
-    const shareButton = page.locator('button').filter({ hasText: /share/i }).first();
+    // Find and click Share button (FAB)
+    const shareButton = page.locator('[data-testid="share-fab"]');
     await expect(shareButton).toBeVisible({ timeout: 10000 });
     console.log('   ✅ Share button found');
 
@@ -122,7 +124,7 @@ test.describe('Share Button Functionality', () => {
     }
 
     // Close modal
-    const closeButton = page.locator('button').filter({ has: page.locator('svg') }).first();
+    const closeButton = page.locator('[data-testid="close-share-modal"]');
     await closeButton.click();
     await page.waitForTimeout(300);
     console.log('   ✅ Modal closed');
@@ -151,12 +153,14 @@ test.describe('Share Button Functionality', () => {
     console.log(`   ✅ Pre-generated link: ${linkData.shareable_url}`);
 
     // Now test that the UI retrieves it
-    await page.goto(`${BASE_URL}/property/${testPropertyId}`);
+    await page.goto(`${BASE_URL}/agent-tools/${testPropertyId}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
     // Click Share button
-    const shareButton = page.locator('button').filter({ hasText: /share/i }).first();
+    const shareButton = page.locator('[data-testid="share-fab"]');
+    await page.waitForSelector('[data-testid="share-fab"]', { timeout: 15000 });
+    await expect(shareButton).toBeVisible({ timeout: 15000 });
     await shareButton.click();
     await page.waitForTimeout(2000);
 
@@ -174,7 +178,7 @@ test.describe('Share Button Functionality', () => {
     }
 
     // Close modal
-    const closeButton = page.locator('button').filter({ has: page.locator('svg') }).first();
+    const closeButton = page.locator('[data-testid="close-share-modal"]');
     await closeButton.click();
   });
 
@@ -186,11 +190,11 @@ test.describe('Share Button Functionality', () => {
       localStorage.setItem('token', token);
     }, authToken);
 
-    await page.goto(`${BASE_URL}/property/${testPropertyId}`);
+    await page.goto(`${BASE_URL}/agent-tools/${testPropertyId}`);
     await page.waitForLoadState('networkidle');
 
     // Click Share button
-    const shareButton = page.locator('button').filter({ hasText: /share/i }).first();
+    const shareButton = page.locator('[data-testid="share-fab"]');
     await shareButton.click();
     await page.waitForTimeout(200);
 
@@ -208,7 +212,7 @@ test.describe('Share Button Functionality', () => {
     await page.waitForTimeout(3000);
 
     // Close modal
-    const closeButton = page.locator('button').filter({ has: page.locator('svg') }).first();
+    const closeButton = page.locator('[data-testid="close-share-modal"]');
     await closeButton.click();
   });
 
@@ -225,11 +229,11 @@ test.describe('Share Button Functionality', () => {
       route.abort('failed');
     });
 
-    await page.goto(`${BASE_URL}/property/${testPropertyId}`);
+    await page.goto(`${BASE_URL}/agent-tools/${testPropertyId}`);
     await page.waitForLoadState('networkidle');
 
     // Click Share button
-    const shareButton = page.locator('button').filter({ hasText: /share/i }).first();
+    const shareButton = page.locator('[data-testid="share-fab"]');
     await shareButton.click();
     await page.waitForTimeout(2000);
 
@@ -252,7 +256,7 @@ test.describe('Share Button Functionality', () => {
     }
 
     // Close modal
-    const closeButton = page.locator('button').filter({ has: page.locator('svg') }).first();
+    const closeButton = page.locator('[data-testid="close-share-modal"]');
     await closeButton.click();
   });
 
@@ -284,7 +288,7 @@ test.describe('Share Button Functionality', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify page loaded successfully
-    const reportHeading = page.locator('text=/Property Report/i');
+    const reportHeading = page.getByRole('heading', { name: /Property Report/i });
     await expect(reportHeading).toBeVisible({ timeout: 10000 });
     console.log('   ✅ Shareable link is accessible');
 

@@ -10,8 +10,8 @@
 
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = 'http://localhost:5173';
-const API_URL = 'http://localhost:5000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
+const API_URL = process.env.API_URL || 'http://localhost:5000';
 
 test.describe('Public Report Feature', () => {
   let authToken;
@@ -54,7 +54,7 @@ test.describe('Public Report Feature', () => {
     console.log(`✅ Found test property: ${testPropertyId}`);
   });
 
-  test.skip('should generate shareable link from PropertyDetail page', async ({ page }) => {
+    test('should generate shareable link from Agent Tools page', async ({ page }) => {
     console.log('✅ Testing shareable link generation');
 
     // Set auth token
@@ -63,15 +63,15 @@ test.describe('Public Report Feature', () => {
       localStorage.setItem('token', token);
     }, authToken);
 
-    // Navigate to property detail page
-    await page.goto(`${BASE_URL}/property/${testPropertyId}`);
+    // Navigate to Agent Tools page (Ariel UI)
+    await page.goto(`${BASE_URL}/agent-tools/${testPropertyId}`);
     await page.waitForLoadState('networkidle');
 
     // Wait for page to fully load
     await page.waitForTimeout(2000);
 
-    // Click Share button (green button with Share icon)
-    const shareButton = page.locator('button:has-text("Share")').first();
+    // Click Share button (FAB)
+    const shareButton = page.locator('[data-testid="share-fab"]');
     await expect(shareButton).toBeVisible({ timeout: 10000 });
     await shareButton.click();
 
@@ -96,7 +96,7 @@ test.describe('Public Report Feature', () => {
     await expect(page.locator('text=/Expires/i')).toBeVisible();
 
     // Close modal by clicking X button
-    const closeButton = page.locator('button').filter({ has: page.locator('svg') }).first();
+    const closeButton = page.locator('[data-testid="close-share-modal"]');
     await closeButton.click();
     console.log('   ✅ Modal closed');
   });
@@ -121,10 +121,11 @@ test.describe('Public Report Feature', () => {
 
     // Open public report page (no authentication)
     await page.goto(`${BASE_URL}/report/${token}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('header', { timeout: 10000 });
 
     // Verify header
-    await expect(page.getByRole('heading', { name: 'Property Report' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Property Report/i })).toBeVisible({ timeout: 10000 });
     console.log('   ✅ Header displayed');
 
     // Verify property address is shown (look for any text with comma, typical of addresses)
@@ -291,7 +292,8 @@ test.describe('Public Report Feature', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify page loads on mobile by checking for the heading (use getByRole to be specific)
-    await expect(page.getByRole('heading', { name: 'Property Report' })).toBeVisible({ timeout: 10000 });
+    await page.waitForSelector('header', { timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /Property Report/i })).toBeVisible({ timeout: 10000 });
     console.log('   ✅ Page loads on mobile viewport');
 
     // Verify key elements are visible (price)

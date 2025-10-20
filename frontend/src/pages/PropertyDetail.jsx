@@ -822,6 +822,11 @@ const PropertyDetail = () => {
                         Range: ${(extracted.market_insights.price_estimate?.value_range_low || 0).toLocaleString()} - 
                         ${(extracted.market_insights.price_estimate?.value_range_high || 0).toLocaleString()}
                       </p>
+                      {extracted.market_insights.price_estimate?.price_per_sqft != null && (
+                        <p className="text-sm text-gray-600 mb-3">
+                          Price/SqFt: ${Number(extracted.market_insights.price_estimate.price_per_sqft).toLocaleString()}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-600 italic">
                         {extracted.market_insights.price_estimate?.reasoning}
                       </p>

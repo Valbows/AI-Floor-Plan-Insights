@@ -7,8 +7,8 @@
 
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = 'http://localhost:5173';
-const API_URL = 'http://localhost:5000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
+const API_URL = process.env.API_URL || 'http://localhost:5000';
 
 test.describe('Dashboard Authentication Flow', () => {
   test('should successfully load dashboard after login', async ({ page }) => {

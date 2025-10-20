@@ -11,6 +11,7 @@ from app.clients.attom_client import AttomAPIClient
 from app.utils.geocoding import normalize_address
 import re
 import os
+import asyncio
 
 
 @celery.task(name='process_floor_plan', bind=True, max_retries=3)
@@ -383,10 +384,45 @@ def enrich_property_data_task(self, property_id: str):
                 'comparables': comps
             }
             current_data = property_record.get('extracted_data', {}) or {}
-            current_data['attom'] = attom_bundle
+            ed = current_data
+            if not ed.get('square_footage'):
+                try:
+                    ed['square_footage'] = (
+                        (prop_core or {}).get('square_feet')
+                        or (((details or {}).get('building') or {}).get('size') or {}).get('universalsize')
+                        or ed.get('square_footage')
+                    )
+                except Exception:
+                    pass
+            if not ed.get('bedrooms') and (prop_core or {}).get('bedrooms'):
+                ed['bedrooms'] = (prop_core or {}).get('bedrooms')
+            if not ed.get('bathrooms') and (prop_core or {}).get('bathrooms'):
+                ed['bathrooms'] = (prop_core or {}).get('bathrooms')
+            if not ed.get('year_built') and (prop_core or {}).get('year_built'):
+                ed['year_built'] = (prop_core or {}).get('year_built')
+            ed['attom'] = attom_bundle
+
+            # Attempt Multi-Source web scraping (Zillow/Redfin/StreetEasy) and persist aggregated result
+            try:
+                from app.scrapers.multi_source_scraper import MultiSourceScraper
+                ms_result = None
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                async def run_ms():
+                    async with MultiSourceScraper() as ms:
+                        return await ms.scrape_property(street, city_norm or (prop_core or {}).get('city') or '', state_norm or (prop_core or {}).get('state') or '')
+                ms_result = loop.run_until_complete(run_ms())
+                loop.close()
+                if ms_result:
+                    ed['multi_source'] = ms_result
+            except Exception as e:
+                print(f"[SCRAPE] MultiSource failed: {e}")
+
             db.table('properties').update({
-                'extracted_data': current_data
+                'extracted_data': ed
             }).eq('id', property_id).execute()
+            # ensure local view reflects latest enriched extracted_data
+            extracted_data = ed
         except Exception:
             pass
 
@@ -410,6 +446,31 @@ def enrich_property_data_task(self, property_id: str):
                 market_insights['comparable_properties'] = current_data['attom']['comparables']
         except Exception:
             pass
+        # If still no comps, attach simple comps derived from MultiSource results (as best-effort)
+        try:
+            if not market_insights.get('comparable_properties'):
+                ms = (current_data.get('multi_source') or {})
+                srcs = (ms.get('sources') or {})
+                comps = []
+                for key in ['zillow','redfin','streeteasy']:
+                    s = srcs.get(key) or {}
+                    if not s:
+                        continue
+                    comp = {
+                        'address': s.get('address') or s.get('listing_url') or key,
+                        'bedrooms': s.get('bedrooms'),
+                        'bathrooms': s.get('bathrooms'),
+                        'square_feet': s.get('square_feet'),
+                        'last_sale_price': s.get('price'),
+                        'listing_url': s.get('listing_url'),
+                        'source': key
+                    }
+                    if any(v is not None for v in comp.values()):
+                        comps.append(comp)
+                if comps:
+                    market_insights['comparable_properties'] = comps
+        except Exception:
+            pass
         current_data['market_insights'] = market_insights
 
         # Compute data sources used for UI badge
@@ -423,7 +484,7 @@ def enrich_property_data_task(self, property_id: str):
                 # Best-effort flags for fallbacks
                 'fallback': False,
                 'tavily': False,
-                'scraping': False,
+                'scraping': bool((current_data.get('multi_source') or {}).get('sources_count')),
             }
             # Detect fallback by reasoning text
             pe = market_insights.get('price_estimate', {}) or {}

@@ -5,11 +5,14 @@
 
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+// In development, use the Vite proxy via a relative base to avoid port drift
+const apiBase = import.meta.env.DEV
+  ? '/api/analytics'
+  : `${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')}/api/analytics`;
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: `${API_BASE}/api/analytics`,
+  baseURL: apiBase,
   headers: {
     'Content-Type': 'application/json'
   }

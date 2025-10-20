@@ -9,7 +9,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
-from app.clients.brightdata_client import BrightDataClient
+from app.clients.scrapingbee_client import ScrapingBeeClient
 from .zillow_scraper import ZillowScraper
 from .redfin_scraper import RedfinScraper
 from .streeteasy_scraper import StreetEasyScraper
@@ -54,12 +54,20 @@ class MultiSourceScraper:
         await self.disconnect()
     
     async def connect(self):
-        """Connect to Bright Data and initialize scrapers"""
+        """Connect to scraping client and initialize scrapers"""
         try:
             logger.info("Initializing Multi-Source Scraper...")
             
-            # Initialize Bright Data client
-            self.client = BrightDataClient(api_key=self.api_key)
+            # Initialize ScrapingBee client (US geolocation). Prefer stealth by disabling premium_proxy.
+            self.client = ScrapingBeeClient(
+                api_key=self.api_key,
+                country_code='us',
+                premium_proxy=False,
+                stealth_proxy_fallback=True,
+                render_js=True,
+                default_timeout_ms=60000,
+                device='desktop',
+            )
             await self.client.connect()
             
             # Initialize scrapers with shared client
@@ -150,11 +158,13 @@ class MultiSourceScraper:
             Aggregated property data with consensus values
         """
         sources = []
-        if zillow and zillow.get('price'):
+        def has_signal(s: Dict[str, Any]) -> bool:
+            return bool(s.get('price') or s.get('listing_url') or s.get('address'))
+        if zillow and has_signal(zillow):
             sources.append(zillow)
-        if redfin and redfin.get('price'):
+        if redfin and has_signal(redfin):
             sources.append(redfin)
-        if streeteasy and streeteasy.get('price'):
+        if streeteasy and has_signal(streeteasy):
             sources.append(streeteasy)
         
         if not sources:

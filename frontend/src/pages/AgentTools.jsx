@@ -6,6 +6,16 @@ import {
   UtensilsCrossed, Wrench, Search, Copy, Star, Share2, Edit2, Save, X, Check, RefreshCw
 } from 'lucide-react'
 import axios from 'axios'
+// Local axios instance to avoid global baseURL issues; use Vite proxy in dev
+const api = axios.create({ baseURL: import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || '') })
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers = config.headers || {}
+    config.headers['Authorization'] = `Bearer ${token}`
+  }
+  return config
+})
 import Analytics from '../components/Analytics'
 
 const AgentTools = () => {
@@ -44,13 +54,17 @@ const AgentTools = () => {
         return
       }
 
-      const response = await axios.get('/api/properties', {
+      const response = await api.get('/api/properties', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
       setProperties(response.data.properties || [])
     } catch (err) {
       console.error('Error fetching properties:', err)
+      if (err?.response?.status === 401) {
+        setError('Session expired or unauthorized')
+        return
+      }
       setError('Failed to load properties')
     } finally {
       setLoading(false)
@@ -69,7 +83,7 @@ const AgentTools = () => {
         return
       }
 
-      const response = await axios.get(`/api/properties/${id}`, {
+      const response = await api.get(`/api/properties/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
@@ -85,6 +99,10 @@ const AgentTools = () => {
       setProperty(propertyData)
     } catch (err) {
       console.error('Error fetching property:', err)
+      if (err?.response?.status === 401) {
+        setError('Session expired or unauthorized')
+        return
+      }
       setError(err.response?.data?.error || 'Failed to load property')
     } finally {
       setLoading(false)
@@ -116,14 +134,14 @@ const AgentTools = () => {
       
       // First try to get existing link
       try {
-        const response = await axios.get(`/api/properties/${id}/shareable-link`, {
+        const response = await api.get(`/api/properties/${id}/shareable-link`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         setShareableLink(response.data)
       } catch (err) {
         // If no link exists, generate new one
         if (err.response?.status === 404) {
-          const response = await axios.post(`/api/properties/${id}/generate-link`, {}, {
+          const response = await api.post(`/api/properties/${id}/generate-link`, {}, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -164,7 +182,7 @@ const AgentTools = () => {
         return
       }
 
-      await axios.post(`/api/properties/${id}/re-enrich`, {}, {
+      await api.post(`/api/properties/${id}/re-enrich`, {}, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
@@ -1051,6 +1069,7 @@ const AgentTools = () => {
       {/* Floating Share Button - Sticky Side Box */}
       <button
         onClick={openShareModal}
+        data-testid="share-fab"
         className="fixed text-white shadow-lg transition-all duration-200 z-40 flex flex-col items-center justify-center space-y-2"
         style={{
           background: '#FF5959',
@@ -1092,6 +1111,7 @@ const AgentTools = () => {
                   setCopied(false)
                 }}
                 className="transition-colors p-1"
+                data-testid="close-share-modal"
                 style={{color: '#FF5959'}}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,89,89,0.1)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -1116,11 +1136,13 @@ const AgentTools = () => {
                       type="text"
                       value={shareableLink.shareable_url}
                       readOnly
+                      data-testid="share-link-input"
                       className="flex-1 px-4 py-2 text-sm focus:outline-none"
                       style={{border: '2px solid #000000', borderRadius: '4px', background: '#F6F1EB', color: '#000000'}}
                     />
                     <button
                       onClick={handleCopyLink}
+                      data-testid="copy-link-btn"
                       className="px-4 py-2 transition-all flex items-center space-x-2 font-bold uppercase text-sm"
                       style={{
                         background: copied ? '#F0FDF4' : '#FF5959',

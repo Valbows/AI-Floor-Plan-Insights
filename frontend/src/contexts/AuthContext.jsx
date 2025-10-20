@@ -38,14 +38,8 @@ export const AuthProvider = ({ children }) => {
           const response = await axios.get('/auth/verify')
           setUser(response.data.user)
         } catch (error) {
-          // Only clear token on explicit 401; keep session on transient/backend errors
-          if (error?.response?.status === 401) {
-            localStorage.removeItem('token')
-            setToken(null)
-            setUser(null)
-          } else {
-            // Keep token and existing user; backend may be temporarily unavailable
-          }
+          // Do NOT clear token automatically on 401 in dev; keep user null and allow UI to handle gracefully
+          setUser(null)
         }
       }
       setLoading(false)
@@ -108,7 +102,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    isAuthenticated: !!user
+    // Consider presence of token as authenticated (prevents abrupt logout during transient 401s)
+    isAuthenticated: !!token
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

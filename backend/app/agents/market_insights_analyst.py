@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew
 from crewai.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
+from tavily import TavilyClient
 from app.clients.attom_client import AttomAPIClient
 import asyncio
 import logging
@@ -35,6 +36,7 @@ class PriceEstimate(BaseModel):
     value_range_low: int = Field(description="Lower bound of value range")
     value_range_high: int = Field(description="Upper bound of value range")
     reasoning: str = Field(description="Explanation of valuation reasoning")
+    price_per_sqft: Optional[float] = Field(default=None, description="Estimated price per square foot")
 
 
 class MarketTrend(BaseModel):
@@ -363,6 +365,32 @@ class MarketInsightsAnalyst:
             Exception: If CorewAI execution fails
         """
         try:
+            # Summarize pre-fetched ATTOM bundle when available (reduces need to refetch via tools)
+            attom = property_data.get('attom', {}) or {}
+            attom_prop = attom.get('property') or {}
+            attom_avm = attom.get('avm') or {}
+            attom_area = attom.get('area_stats') or {}
+            attom_trends_v4 = attom.get('sales_trends_v4') or {}
+            attom_trends_zip = attom.get('sales_trends') or {}
+            attom_comps = attom.get('comparables') or []
+            attom_lines = []
+            try:
+                if attom_prop:
+                    attom_lines.append(f"ATTOM Core: {attom_prop.get('address','N/A')} {attom_prop.get('city','')}, {attom_prop.get('state','')} {attom_prop.get('zip','')}")
+                    attom_lines.append(f"Beds/Baths/Sqft: {attom_prop.get('bedrooms','?')}/{attom_prop.get('bathrooms','?')}/{attom_prop.get('square_feet','?')}")
+                if attom_avm:
+                    attom_lines.append(f"AVM: ${attom_avm.get('estimated_value',0):,} (range ${attom_avm.get('value_range_low',0):,}-${attom_avm.get('value_range_high',0):,})")
+                if attom_area:
+                    mv = attom_area.get('median_home_value')
+                    attom_lines.append(f"Area Median Home Value: ${mv:,}" if mv else "Area stats present")
+                if (attom_trends_v4 or attom_trends_zip):
+                    attom_lines.append("Sales Trends: available (v4 or ZIP)")
+                if attom_comps:
+                    attom_lines.append(f"Comparables: {len(attom_comps)} candidates")
+            except Exception:
+                pass
+            attom_summary = "\n".join(attom_lines) if attom_lines else "No ATTOM bundle pre-fetched"
+
             # Create simplified task for CrewAI (faster execution)
             task_description = f"""
 Analyze property at: {address}
@@ -375,6 +403,9 @@ INSTRUCTIONS:
 3. If both fail, use Tavily Web Search for general market info
 4. DO NOT retry failed tools - move to next option immediately
 5. Stop after getting ANY useful data - don't over-analyze
+
+Pre-Fetched Data (use directly; avoid refetching unless missing):
+{attom_summary}
 
 Return JSON with:
 - price_estimate: {{estimated_value, confidence, value_range_low, value_range_high, reasoning}}
@@ -451,9 +482,115 @@ Be concise. If data is unavailable, estimate based on property characteristics a
             
             # Validate against schema
             validated = MarketInsights(**insights_data)
+
+            # Compute price_per_sqft deterministically when sqft is available and field missing
+            try:
+                if (validated.price_estimate.price_per_sqft is None):
+                    sqft = property_data.get('square_footage') or 0
+                    if not sqft:
+                        # Fallback to ATTOM property/details sizes when present
+                        attom = property_data.get('attom', {}) or {}
+                        sqft = (
+                            (attom.get('property') or {}).get('square_feet')
+                            or (((attom.get('details') or {}).get('building') or {}).get('size') or {}).get('universalsize')
+                            or 0
+                        )
+                    est = validated.price_estimate.estimated_value or 0
+                    if isinstance(sqft, (int, float)) and sqft > 0 and isinstance(est, (int, float)) and est > 0:
+                        ppsf = float(est) / float(sqft)
+                        validated.price_estimate.price_per_sqft = round(ppsf, 2)
+            except Exception:
+                pass
             
             print(f"[DEBUG] Validation successful!")
             
+            try:
+                if len(validated.comparable_properties) < 3:
+                    attom = property_data.get('attom', {}) or {}
+                    attom_prop = attom.get('property') or {}
+                    city = attom_prop.get('city') or ''
+                    state = attom_prop.get('state') or ''
+                    zip_code = attom_prop.get('zip') or ''
+                    # Build a tavily-only agent to force usage of web search tool
+                    tavily_agent = Agent(
+                        role="Tavily Web Researcher",
+                        goal="Find 3-5 recent comparable sales and return strict JSON",
+                        backstory=(
+                            "You specialize in using the Tavily search tool to find recent residential comparable sales. "
+                            "Return only structured JSON suitable for downstream regression."
+                        ),
+                        tools=[tavily_search_tool],
+                        llm=self.llm,
+                        verbose=True,
+                        allow_delegation=False,
+                        max_iter=2,
+                        max_rpm=6,
+                    )
+                    tf_desc = (
+                        f"Using Tavily, find 3-5 RECENT comparable residential sales within ~1 mile of: {address} {city} {state} {zip_code}. "
+                        "Prefer last 6-12 months and similar bed/bath/sqft to the subject. "
+                        "For each comp, include: address, bedrooms, bathrooms, square_feet, last_sale_price, last_sale_date, listing_url. "
+                        "Respond with ONLY a JSON array (no prose, no markdown)."
+                    )
+                    task2 = Task(
+                        description=tf_desc,
+                        agent=tavily_agent,
+                        expected_output="JSON array of comparable properties"
+                    )
+                    crew2 = Crew(agents=[tavily_agent], tasks=[task2], verbose=True)
+                    try:
+                        print("[DEBUG] Tavily Stage A: kickoff")
+                        res2 = crew2.kickoff(inputs={'address': address})
+                        res2_text = str(res2).strip()
+                        res2_raw = res2_text
+                        print(f"[DEBUG] Tavily Stage A raw result length: {len(res2_text)}")
+                        print(f"[DEBUG] Tavily Stage A raw (first 600): {res2_text[:600]}")
+                        import re as _re
+                        jm = _re.search(r'```(?:json)?\s*\n?(.*?)\n?```', res2_text, _re.DOTALL)
+                        if jm:
+                            print("[DEBUG] Tavily Stage A: JSON code block detected")
+                            res2_text = jm.group(1).strip()
+                        else:
+                            jm = _re.search(r'\[.*\]', res2_text, _re.DOTALL)
+                            if jm:
+                                print("[DEBUG] Tavily Stage A: JSON array detected without markdown")
+                                res2_text = jm.group(0).strip()
+                        comp_list = json.loads(res2_text)
+                        if isinstance(comp_list, list) and comp_list:
+                            print(f"[DEBUG] Tavily Stage A: parsed comps count {len(comp_list)}")
+                            validated.comparable_properties = comp_list[:5]
+                        # If JSON parse produced nothing, try text-based extraction from raw
+                        if len(validated.comparable_properties) < 3:
+                            text_comps = self._extract_comps_from_text(res2_raw)
+                            if text_comps:
+                                need = max(0, 5 - len(validated.comparable_properties))
+                                validated.comparable_properties = (validated.comparable_properties or []) + text_comps[:need]
+                                print(f"[DEBUG] Tavily Stage A (text fallback): merged {min(len(text_comps), need)} comps; total now {len(validated.comparable_properties)}")
+                    except Exception:
+                        print("[DEBUG] Tavily Stage A: exception during kickoff/parse, continuing to Stage B if needed")
+                        pass
+                    # If still fewer than 3 comps, try direct Tavily+LLM extraction
+                    try:
+                        if len(validated.comparable_properties) < 3:
+                            subject = {
+                                'bedrooms': property_data.get('bedrooms') or (attom_prop.get('bedrooms') if attom_prop else None),
+                                'bathrooms': property_data.get('bathrooms') or (attom_prop.get('bathrooms') if attom_prop else None),
+                                'square_footage': property_data.get('square_footage') or (attom_prop.get('square_feet') if attom_prop else None),
+                            }
+                            extra = self._tavily_llm_extract_comps(address, city, state, zip_code, subject)
+                            if isinstance(extra, list) and extra:
+                                # Merge up to 5 total
+                                need = max(0, 5 - len(validated.comparable_properties))
+                                validated.comparable_properties = (validated.comparable_properties or []) + extra[:need]
+                                print(f"[DEBUG] Tavily Stage B: merged {min(len(extra), need)} comps; total now {len(validated.comparable_properties)}")
+                            else:
+                                print("[DEBUG] Tavily Stage B: no comps extracted by direct path")
+                    except Exception:
+                        print("[DEBUG] Tavily Stage B: exception during direct extraction")
+                        pass
+            except Exception:
+                pass
+
             return validated.model_dump()
             
         except Exception as e:
@@ -489,15 +626,22 @@ Be concise. If data is unavailable, estimate based on property characteristics a
                         pass
             return None
         
-        # Sanitize price_estimate
+        # Sanitize price_estimate (coerce $ strings to ints)
         if 'price_estimate' in data and data['price_estimate']:
             pe = data['price_estimate']
-            if pe.get('estimated_value') is None:
-                pe['estimated_value'] = 0
-            if pe.get('value_range_low') is None:
-                pe['value_range_low'] = 0
-            if pe.get('value_range_high') is None:
-                pe['value_range_high'] = 0
+            # Coerce numeric fields via parse_number
+            ev = parse_number(pe.get('estimated_value'))
+            vlow = parse_number(pe.get('value_range_low'))
+            vhigh = parse_number(pe.get('value_range_high'))
+            ppsf = parse_number(pe.get('price_per_sqft'))
+            pe['estimated_value'] = int(ev or 0)
+            pe['value_range_low'] = int(vlow or 0)
+            pe['value_range_high'] = int(vhigh or 0)
+            if ppsf is not None:
+                try:
+                    pe['price_per_sqft'] = float(ppsf)
+                except Exception:
+                    pe['price_per_sqft'] = None
         
         # Sanitize market_trend
         if 'market_trend' in data and data['market_trend']:
@@ -505,13 +649,219 @@ Be concise. If data is unavailable, estimate based on property characteristics a
             mt['appreciation_rate'] = parse_number(mt.get('appreciation_rate'))
             mt['days_on_market_avg'] = parse_number(mt.get('days_on_market_avg'))
         
-        # Sanitize investment_analysis
+        # Sanitize investment_analysis (coerce numeric-like strings)
         if 'investment_analysis' in data and data['investment_analysis']:
             ia = data['investment_analysis']
+            # Score may be given as string labels; map to numeric
+            score = ia.get('investment_score')
+            if isinstance(score, str):
+                m = score.strip().lower()
+                mapping = {
+                    'very low': 20,
+                    'low': 35,
+                    'moderate': 60,
+                    'good': 75,
+                    'excellent': 90,
+                }
+                ia['investment_score'] = mapping.get(m, 60)
+            elif isinstance(score, (int, float)):
+                ia['investment_score'] = int(score)
+            else:
+                ia['investment_score'] = 60
             ia['estimated_rental_income'] = parse_number(ia.get('estimated_rental_income'))
             ia['cap_rate'] = parse_number(ia.get('cap_rate'))
         
         return data
+    
+    def _tavily_llm_extract_comps(self, address: str, city: str, state: str, zip_code: str, subject: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Fallback: Use Tavily search + Gemini LLM to extract 3-5 comps as JSON."""
+        try:
+            tv_key = os.getenv('TAVILY_API_KEY')
+            gm_key = os.getenv('GEMINI_API_KEY')
+            if not tv_key or not gm_key:
+                return []
+            client = TavilyClient(api_key=tv_key)
+            subj_beds = subject.get('bedrooms')
+            subj_baths = subject.get('bathrooms')
+            subj_sqft = subject.get('square_footage') or subject.get('square_feet')
+            # Focused queries to increase precision
+            queries = [
+                f"recently sold single family homes within 1 mile of {address} {city} {state} {zip_code} last 12 months",
+                f"recent sold homes {city} {state} {zip_code} similar beds baths sqft",
+                f"site:redfin.com recently-sold {zip_code}",
+                f"site:redfin.com 'Recently Sold' {city} {zip_code}",
+                f"site:realtor.com realestateandhomes-search/{zip_code}/show-recently-sold",
+                f"site:movoto.com/{state.lower()}/{zip_code}/sold/",
+                f"site:zillow.com/homes/for_sale/{zip_code}_rb/ 'sold'"
+            ]
+            snippets = []
+            for q in queries:
+                try:
+                    r = client.search(q, max_results=10)
+                    for it in r.get('results', [])[:5]:
+                        snippets.append(
+                            f"Title: {it.get('title','')}\nURL: {it.get('url','')}\nContent: {it.get('content','')}\n"
+                        )
+                except Exception:
+                    continue
+            if not snippets:
+                return []
+            ctx = ("\n---\n".join(snippets))[:16000]
+            try:
+                print(f"[DEBUG] Tavily Stage B ctx length: {len(ctx)}")
+                print(f"[DEBUG] Tavily Stage B ctx (first 600): {ctx[:600]}")
+            except Exception:
+                pass
+            llm = ChatGoogleGenerativeAI(model='gemini-2.5-flash', google_api_key=gm_key, temperature=0.1)
+            prompt = (
+                "You are an expert real estate analyst. From the CONTEXT, extract 3-5 recent comparable residential sales near the subject address.\n\n"
+                f"Subject address: {address} {city} {state} {zip_code}\n"
+                f"Subject features: beds={subj_beds}, baths={subj_baths}, sqft={subj_sqft}\n\n"
+                "CONTEXT:\n" + ctx + "\n\n"
+                "Return ONLY a JSON array of objects with keys: "
+                "address, bedrooms, bathrooms, square_feet, last_sale_price, last_sale_date, listing_url."
+            )
+            res = llm.invoke(prompt)
+            text = getattr(res, 'content', str(res))
+            import re as _re
+            jm = _re.search(r"\[.*\]", text, _re.DOTALL)
+            if not jm:
+                # Fallback: parse from the Tavily context snippets directly
+                fb = self._extract_comps_from_text(ctx)
+                return fb[:5] if fb else []
+            arr = json.loads(jm.group(0))
+            if isinstance(arr, list):
+                return arr[:5]
+            return []
+        except Exception:
+            return []
+
+    def _extract_comps_from_text(self, text: str) -> List[Dict[str, Any]]:
+        """Best-effort regex extraction of comparable properties from unstructured text.
+
+        Looks for segments containing Title/URL/Content as produced by Tavily tool output and
+        extracts address, bedrooms, bathrooms, square_feet, last_sale_price, last_sale_date, listing_url.
+        """
+        results: List[Dict[str, Any]] = []
+        try:
+            import re
+            if not text or not isinstance(text, str):
+                return results
+            # Split into chunks by separators used in Tavily output
+            chunks = re.split(r"\n\-\-\-\n|\n\s*\-\-\-\s*\n|\n\-\-\-\s*$", text)
+            # Helper to coerce numbers
+            def to_int(num_str: str):
+                if not num_str:
+                    return None
+                s = re.sub(r"[^0-9]", "", str(num_str))
+                if not s:
+                    return None
+                try:
+                    return int(s)
+                except Exception:
+                    return None
+            def to_float(num_str: str):
+                if not num_str:
+                    return None
+                s = re.sub(r"[^0-9\.]", "", str(num_str))
+                if not s:
+                    return None
+                try:
+                    return float(s)
+                except Exception:
+                    return None
+            # Address patterns:
+            # 1) number + street + city + state + optional zip
+            addr_pat_full = re.compile(r"(\d{1,6}[^\n,]*?,\s*[A-Za-z .\-]+,\s*[A-Z]{2}(?:\s*\d{5})?)")
+            # 2) fallback: number + street only (will rely on city/state context)
+            addr_pat_street = re.compile(r"(\d{1,6}[^\n,]*?\s+[A-Za-z0-9'\-]+\s*(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Ct|Court)\b[^\n,]*)", re.I)
+            for ch in chunks:
+                ch = ch.strip()
+                if len(ch) < 30:
+                    continue
+                # Extract URL
+                url = None
+                m = re.search(r"URL:\s*(\S+)", ch)
+                if m:
+                    url = m.group(1).strip()
+                # Extract address from Title or Content
+                title_line = None
+                mt = re.search(r"Title:\s*(.+)", ch)
+                if mt:
+                    title_line = mt.group(1).strip()
+                address = None
+                for source in [title_line, ch]:
+                    if not source:
+                        continue
+                    ma = addr_pat_full.search(source)
+                    if ma:
+                        address = ma.group(1).strip()
+                        break
+                    # Try street-only fallback
+                    ms = addr_pat_street.search(source)
+                    if ms and (address is None):
+                        address = ms.group(1).strip()
+                # Extract content body (for numeric fields)
+                mc = re.search(r"Content:\s*(.*)", ch, re.S)
+                content = (mc.group(1).strip() if mc else ch)
+                # Beds/Baths/Sqft
+                beds = None
+                mb = re.search(r"(\d+)\s*(?:bed|beds|bedroom|bedrooms)\b", content, re.I)
+                if mb:
+                    beds = to_int(mb.group(1))
+                baths = None
+                mba = re.search(r"(\d+\.?\d*)\s*(?:bath|baths|bathroom|bathrooms)\b", content, re.I)
+                if mba:
+                    baths = to_float(mba.group(1))
+                sqft = None
+                msq = re.search(r"([\d,]+)\s*(?:sq\s*ft|sqft|square\s*foot|square\s*feet)\b", content, re.I)
+                if msq:
+                    sqft = to_int(msq.group(1))
+                # Last sale price (multiple heuristics)
+                price = None
+                mp = re.search(r"last\s+sold\s+for\s*\$([\d,]+)", content, re.I)
+                if not mp:
+                    mp = re.search(r"sold\s+for\s*\$([\d,]+)", content, re.I)
+                if not mp:
+                    mp = re.search(r"list\s*price\s*(?:of)?\s*\$([\d,]+)", content, re.I)
+                if not mp:
+                    # Any dollar amount as a fallback (e.g., aggregator bullets)
+                    mp = re.search(r"\$\s*([\d,]+)", content)
+                if mp:
+                    price = to_int(mp.group(1))
+                # Sale date (also support 'SOLD <Mon DD, YYYY>' or 'SOLD <Mon YYYY>')
+                sale_date = None
+                md = re.search(r"(?:on|in)\s*([A-Za-z]{3,9}\s+\d{1,2},\s*\d{4}|[A-Za-z]{3,9}\s+\d{4})", content, re.I)
+                if not md:
+                    md = re.search(r"SOLD\s+([A-Za-z]{3,9}\s+\d{1,2},\s*\d{4}|[A-Za-z]{3,9}\s+\d{4})", content, re.I)
+                if md:
+                    sale_date = md.group(1).strip()
+                # Aggregator bullet pattern for sqft between price and address: '... $1,998,000 · 3,430 · 4224 164th St, ...'
+                if sqft is None:
+                    magg = re.search(r"\$\s*[\d,]+\s*[•·]\s*([\d,]+)\s*[•·]\s*\d{1,6}", content)
+                    if magg:
+                        cand_sqft = to_int(magg.group(1))
+                        # Reasonable sqft bounds
+                        if cand_sqft and 400 <= cand_sqft <= 10000:
+                            sqft = cand_sqft
+                # Build comp
+                comp = {
+                    'address': address,
+                    'bedrooms': beds,
+                    'bathrooms': baths,
+                    'square_feet': sqft,
+                    'last_sale_price': price,
+                    'last_sale_date': sale_date,
+                    'listing_url': url,
+                }
+                # Include if we at least have an address and one strong signal (price/date/url/sqft)
+                if address and any([price, sale_date, url, sqft]):
+                    results.append(comp)
+                if len(results) >= 5:
+                    break
+        except Exception:
+            return results
+        return results
     
     def _generate_insights(self, property_data: Dict, corelogic_data: Dict, 
                           comps: List[Dict], avm: Optional[Dict]) -> Dict[str, Any]:
@@ -654,7 +1004,8 @@ Comp #{i}:
                 'confidence': 'low',
                 'value_range_low': int(estimated_value * 0.85),
                 'value_range_high': int(estimated_value * 1.15),
-                'reasoning': f'Estimate based on square footage only. {safe_error}'
+                'reasoning': f'Estimate based on square footage only. {safe_error}',
+                'price_per_sqft': round(float(estimated_value) / float(sqft), 2) if isinstance(sqft, (int, float)) and sqft > 0 else None
             },
             'market_trend': {
                 'trend_direction': 'unknown',

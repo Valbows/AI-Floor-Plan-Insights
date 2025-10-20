@@ -9,8 +9,8 @@
 
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = 'http://localhost:5173';
-const API_URL = 'http://localhost:5000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
+const API_URL = process.env.API_URL || 'http://localhost:5000';
 
 test.describe('Interactive Features - Phase 4.3', () => {
   let authToken;

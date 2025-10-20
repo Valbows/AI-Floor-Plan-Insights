@@ -11,8 +11,8 @@
 
 const { test, expect } = require('@playwright/test');
 
-const BASE_URL = 'http://localhost:5173';
-const API_URL = 'http://localhost:5000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
+const API_URL = process.env.API_URL || 'http://localhost:5000';
 
 test.describe('Dashboard Price Display', () => {
   let authToken;
@@ -83,10 +83,30 @@ test.describe('Dashboard Price Display', () => {
     console.log('✅ Card view price display verified');
   });
 
-  test.skip('should display prices in table view for completed properties', async ({ page }) => {
-    // Skipped: Table view toggle is optional UI feature
-    // Core price display is validated in card view test
-    console.log('⏭️  Skipped: Table view test (optional UI feature)');
+  test('should display prices in table view for completed properties (if available)', async ({ page }) => {
+    console.log('✅ Testing price display in Table View (if available)');
+    
+    // Wait for dashboard content
+    await page.waitForSelector('text=/Property|properties/i', { timeout: 10000 });
+    await page.waitForTimeout(500);
+    
+    // Try to find a table/list view toggle
+    const tableToggle = page.getByRole('button', { name: /Table|List/i });
+    const hasToggle = await tableToggle.isVisible().catch(() => false);
+    
+    if (hasToggle) {
+      await tableToggle.click();
+      await page.waitForTimeout(500);
+      // Expect a price visible somewhere in the table view
+      const priceElement = page.locator('text=/\\$[0-9,]+/').first();
+      await expect(priceElement).toBeVisible();
+      console.log('   ✅ Price visible in table view');
+    } else {
+      console.log('   ℹ️  No table view toggle present; verifying card view price instead');
+      const priceElement = page.locator('text=/\\$[0-9,]+/').first();
+      await expect(priceElement).toBeVisible();
+      console.log('   ✅ Price visible in current view');
+    }
   });
 
   test('should NOT show "Analyzing price..." for properties with complete market insights', async ({ page }) => {
@@ -154,9 +174,39 @@ test.describe('Dashboard Price Display', () => {
     }
   });
 
-  test.skip('should show prices correctly after switching between card and table views', async ({ page }) => {
-    // Skipped: Depends on table view toggle (optional UI feature)
-    // Core price display persistence is validated by card view test
-    console.log('⏭️  Skipped: View switching test (depends on table view)');
+  test('should show prices correctly after switching between views (if available)', async ({ page }) => {
+    console.log('✅ Testing price persistence across view switches (if available)');
+    
+    // Wait for dashboard content
+    await page.waitForSelector('text=/Property|properties/i', { timeout: 10000 });
+    await page.waitForTimeout(500);
+    
+    const priceMatcher = page.locator('text=/\\$[0-9,]+/').first();
+    
+    // Try to find a table/list view toggle
+    const tableToggle = page.getByRole('button', { name: /Table|List/i });
+    const hasToggle = await tableToggle.isVisible().catch(() => false);
+    
+    if (hasToggle) {
+      // Ensure price is visible in current view
+      await expect(priceMatcher).toBeVisible();
+      // Switch to table/list
+      await tableToggle.click();
+      await page.waitForTimeout(500);
+      await expect(priceMatcher).toBeVisible();
+      // Switch back if a card/grid toggle exists
+      const cardToggle = page.getByRole('button', { name: /Card|Grid/i });
+      const hasCardToggle = await cardToggle.isVisible().catch(() => false);
+      if (hasCardToggle) {
+        await cardToggle.click();
+        await page.waitForTimeout(500);
+        await expect(priceMatcher).toBeVisible();
+      }
+      console.log('   ✅ Price visible across view switches');
+    } else {
+      console.log('   ℹ️  No view toggles present; verifying price in current view only');
+      await expect(priceMatcher).toBeVisible();
+      console.log('   ✅ Price visible in current view');
+    }
   });
 });
