@@ -464,24 +464,70 @@ def get_sqft_impact():
         db = get_admin_db()
         model = PropertyRegressionModel(db_client=db)
         
-        # Train model if requested
+        # Train model if requested (use lower threshold in dev)
         if train_first:
-            all_features = model.extract_property_features(min_properties=5)
-            if len(all_features) >= 5:
+            all_features = model.extract_property_features(min_properties=3)
+            if len(all_features) >= 3:
                 results = model.build_room_dimension_model(all_features)
-                if not results:
-                    return jsonify({
-                        'error': 'Model training failed',
-                        'message': 'Could not train model with available data'
-                    }), 500
+                # If results is None, continue to fallback below
         
         # Calculate sqft impact
         sqft_impact = model.calculate_sqft_impact()
         
         if sqft_impact is None:
+            # Fallback: compute median PPSF from saved comparable_properties across all properties
+            try:
+                db = get_admin_db()
+                props = db.table('properties').select('extracted_data,status').in_('status', ['complete','enrichment_complete']).limit(1000).execute()
+                ppsf_values = []
+                import re as _re
+                def to_num(v):
+                    if v is None:
+                        return None
+                    if isinstance(v, (int, float)):
+                        return float(v)
+                    if isinstance(v, str):
+                        s = _re.sub(r'[^0-9\.-]', '', v)
+                        return float(s) if s else None
+                    return None
+                for row in (props.data or []):
+                    ed = row.get('extracted_data') or {}
+                    mi = (ed.get('market_insights') or {}) if isinstance(ed, dict) else {}
+                    comps = (mi.get('comparable_properties') or []) if isinstance(mi, dict) else []
+                    for c in comps:
+                        if not isinstance(c, dict):
+                            continue
+                        price = c.get('last_sale_price') or c.get('sale_price') or c.get('price')
+                        sqft = c.get('square_feet') or c.get('sqft')
+                        price = to_num(price)
+                        sqft = to_num(sqft)
+                        if price and sqft and sqft > 0:
+                            ppsf_values.append(price / sqft)
+                if ppsf_values:
+                    # Basic outlier trim: 5th-95th percentile
+                    import numpy as _np
+                    arr = _np.array(sorted(ppsf_values))
+                    if len(arr) >= 10:
+                        lower = _np.percentile(arr, 5)
+                        upper = _np.percentile(arr, 95)
+                        arr = arr[(arr >= lower) & (arr <= upper)]
+                    median_ppsf = float(_np.median(arr)) if len(arr) else None
+                    if median_ppsf and median_ppsf > 0:
+                        return jsonify({
+                            'price_per_sqft': round(median_ppsf, 2),
+                            'examples': {
+                                '100_sqft': round(median_ppsf * 100, 0),
+                                '500_sqft': round(median_ppsf * 500, 0),
+                                '1000_sqft': round(median_ppsf * 1000, 0)
+                            },
+                            'model_trained': False,
+                            'fallback': 'comps_median'
+                        }), 200
+            except Exception as fe:
+                logger.warning(f"PPSF fallback failed: {fe}")
             return jsonify({
                 'error': 'Calculation failed',
-                'message': 'Model not trained. Set train_model=true to train first'
+                'message': 'Model not trained and no fallback PPSF available'
             }), 400
         
         return jsonify({
