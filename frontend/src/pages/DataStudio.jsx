@@ -138,7 +138,7 @@ const DataStudio = () => {
 
   return (
     <div className="min-h-screen" style={{background: '#F6F1EB'}}>
-      <div className="p-6 max-w-7xl mx-auto pt-16">
+      <div className="max-w-[1400px] mx-auto px-4 py-16">
         {/* Hero Header - Matching MY PROPERTIES style */}
         <div className="text-center mb-16">
           <h1 className="text-6xl font-black uppercase tracking-tight mb-2" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>

@@ -96,45 +96,49 @@ const UnitMixChart = ({ properties }) => {
         </div>
       </div>
       
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-            outerRadius={90}
-            fill="#8884d8"
-            dataKey="value"
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#CCCCCC'} />
-            ))}
-          </Pie>
-          <Tooltip 
-            formatter={(value, name, props) => [
-              `${value} units (${((value / total) * 100).toFixed(1)}%)`,
-              props.payload.name
-            ]}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+      {/* Pie Chart and Legend Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+        {/* Pie Chart */}
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              outerRadius={90}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#CCCCCC'} />
+              ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value, name, props) => [
+                `${value} units (${((value / total) * 100).toFixed(1)}%)`,
+                props.payload.name
+              ]}
+            />
+          </PieChart>
+        </ResponsiveContainer>
 
-      {/* Legend with counts */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        {chartData.map((item) => (
-          <div key={item.name} className="flex items-center justify-between p-3 rounded" style={{background: '#FFFFFF'}}>
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full flex-shrink-0" 
-                style={{background: COLORS[item.name]}}
-              />
-              <span className="text-xs font-bold" style={{color: '#000000'}}>{item.name}</span>
+        {/* Legend with counts */}
+        <div className="space-y-3">
+          {chartData.map((item) => (
+            <div key={item.name} className="flex items-center justify-between p-3 rounded" style={{background: '#FFFFFF'}}>
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full flex-shrink-0" 
+                  style={{background: COLORS[item.name]}}
+                />
+                <span className="text-xs font-bold" style={{color: '#000000'}}>{item.name}</span>
+              </div>
+              <span className="text-sm font-black" style={{color: '#FF5959'}}>{item.value}</span>
             </div>
-            <span className="text-sm font-black" style={{color: '#FF5959'}}>{item.value}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
