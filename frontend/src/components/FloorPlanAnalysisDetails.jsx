@@ -3,10 +3,26 @@
  * Shows room-by-room breakdown with dimensions and OCR/Vision comparison
  */
 
-import React from 'react';
-import { Ruler, Eye, Maximize2, CheckCircle, AlertCircle, Bed, Bath, UtensilsCrossed, Home, Maximize, ArrowUpDown, Shirt, Archive, Briefcase, Armchair, Trash2, DoorOpen, TreePine, Info } from 'lucide-react';
+import React, { useState } from 'react';
+import { Ruler, Eye, Maximize2, CheckCircle, AlertCircle, Bed, Bath, UtensilsCrossed, Home, Maximize, ArrowUpDown, Shirt, Archive, Briefcase, Armchair, Trash2, DoorOpen, TreePine, Info, Star } from 'lucide-react';
 
 const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFeatures }) => {
+  const [expandedRows, setExpandedRows] = useState(new Set())
+  const [expandAll, setExpandAll] = useState(false)
+  
+  const toggleRowExpanded = (index) => {
+    const newExpanded = new Set(expandedRows)
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index)
+    } else {
+      newExpanded.add(index)
+    }
+    setExpandedRows(newExpanded)
+  }
+  
+  const toggleExpandAll = () => {
+    setExpandAll(!expandAll)
+  }
   if (!extractedData) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -47,14 +63,64 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
     return <Maximize className="w-4 h-4" />
   }
 
+  // Helper function to get key features for a specific room based on property features
+  const getRoomKeyFeatures = (roomType) => {
+    const lowerRoomType = roomType.toLowerCase()
+    const propertyFeatures = extractedData.features || []
+    const keyFeatures = []
+
+    propertyFeatures.forEach(feature => {
+      const lowerFeature = feature.toLowerCase()
+      
+      // Map features to specific room types
+      if (lowerRoomType.includes('bedroom') || lowerRoomType.includes('bed')) {
+        if (lowerFeature.includes('walk-in closet') || lowerFeature.includes('walk in closet')) {
+          keyFeatures.push('Premium Storage')
+        }
+        if (lowerFeature.includes('skylights') || lowerFeature.includes('skylight')) {
+          keyFeatures.push('Natural Light')
+        }
+        if (lowerFeature.includes('dormer') || lowerFeature.includes('window')) {
+          keyFeatures.push('Architectural Detail')
+        }
+      }
+      
+      if (lowerRoomType.includes('stairs') || lowerRoomType.includes('stair')) {
+        if (lowerFeature.includes('lower level') || lowerFeature.includes('stairs to')) {
+          keyFeatures.push('Multi-Level Access')
+        }
+      }
+      
+      if (lowerRoomType.includes('closet')) {
+        if (lowerFeature.includes('linen') || lowerFeature.includes('walk-in')) {
+          keyFeatures.push('Storage Feature')
+        }
+      }
+      
+      if (lowerRoomType.includes('balcony')) {
+        if (lowerFeature.includes('outdoor') || lowerFeature.includes('balcony')) {
+          keyFeatures.push('Outdoor Space')
+        }
+      }
+      
+      // General features that could apply to any room
+      if (lowerFeature.includes('skylights') && (lowerRoomType.includes('living') || lowerRoomType.includes('dining'))) {
+        keyFeatures.push('Natural Light')
+      }
+    })
+
+    return keyFeatures
+  }
+
   return (
     <div className="space-y-6">
-      {/* Property Overview - Combined Section */}
-      <div className="rounded-lg p-6" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
-        <div className="flex items-center justify-between mb-6">
+
+      {/* Room-by-Room Breakdown */}
+      <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+        <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-bold uppercase flex items-center gap-2" style={{color: '#666666', letterSpacing: '1px'}}>
-            <Maximize2 className="w-4 h-4" />
-            Property Overview
+            <Ruler className="w-4 h-4" />
+            Room-by-Room Measurements
           </h3>
           
           {/* Analysis Method Tooltip */}
@@ -83,84 +149,6 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
             </div>
           </div>
         </div>
-        
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="rounded-lg p-3" style={{background: '#FFFFFF'}}>
-            <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>Total Rooms</p>
-            <p className="text-2xl font-bold" style={{color: '#000000'}}>{rooms.length}</p>
-          </div>
-          <div className="rounded-lg p-3" style={{background: '#FFFFFF'}}>
-            <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>Square Footage</p>
-            <p className="text-2xl font-bold" style={{color: '#000000'}}>{square_footage?.toLocaleString() || 'N/A'}</p>
-          </div>
-          <div className="rounded-lg p-3" style={{background: '#FFFFFF'}}>
-            <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>With Dimensions</p>
-            <p className="text-2xl font-bold" style={{color: '#000000'}}>
-              {rooms.filter(r => r.dimensions).length}
-            </p>
-          </div>
-        </div>
-
-        {/* Layout Type & Features Side by Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Layout Type */}
-          {extractedData.layout_type && (
-            <div className="rounded-lg p-4" style={{background: '#FFFFFF'}}>
-              <h4 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Layout Type</h4>
-              <p className="text-sm leading-relaxed" style={{color: '#000000'}}>{extractedData.layout_type}</p>
-            </div>
-          )}
-
-          {/* Features */}
-          {extractedData.features && extractedData.features.length > 0 && (
-            <div className="rounded-lg p-4" style={{background: '#FFFFFF'}}>
-              <h4 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Key Features</h4>
-              <ul className="space-y-1">
-                {extractedData.features.slice(0, showAllFeatures ? extractedData.features.length : 4).map((feature, index) => (
-                  <li key={index} className="flex items-start text-sm">
-                    <span className="mr-2 mt-0.5" style={{color: '#FF5959'}}>•</span>
-                    <span style={{color: '#000000'}}>{feature}</span>
-                  </li>
-                ))}
-                {extractedData.features.length > 4 && !showAllFeatures && (
-                  <li>
-                    <button
-                      onClick={() => setShowAllFeatures(true)}
-                      className="text-xs font-medium transition-all hover:underline cursor-pointer"
-                      style={{color: '#FF5959'}}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#E54545'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#FF5959'}
-                    >
-                      +{extractedData.features.length - 4} more features
-                    </button>
-                  </li>
-                )}
-                {showAllFeatures && extractedData.features.length > 4 && (
-                  <li>
-                    <button
-                      onClick={() => setShowAllFeatures(false)}
-                      className="text-xs font-medium transition-all hover:underline cursor-pointer"
-                      style={{color: '#666666'}}
-                      onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
-                      onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}
-                    >
-                      Show less
-                    </button>
-                  </li>
-                )}
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Room-by-Room Breakdown */}
-      <div className="rounded-lg p-4" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
-        <h3 className="text-xs font-bold uppercase mb-4 flex items-center gap-2" style={{color: '#666666', letterSpacing: '1px'}}>
-          <Ruler className="w-4 h-4" />
-          Room-by-Room Measurements
-        </h3>
 
         {rooms.length === 0 ? (
           <p className="text-sm" style={{color: '#666666'}}>No rooms identified</p>
@@ -169,16 +157,26 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
             <table className="w-full" style={{borderCollapse: 'separate', borderSpacing: '0 4px'}}>
               <thead>
                 <tr>
-                  <th className="text-left text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent'}}>
+                  <th className="text-left text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '35%'}}>
                     Room
                   </th>
-                  <th className="text-center text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent'}}>
+                  <th className="text-center text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '30%'}}>
                     Dimensions
                   </th>
-                  <th className="text-left text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent'}}>
-                    Features
+                  <th className="text-left text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '25%'}}>
+                    <div className="flex items-center justify-between">
+                      <span>Features</span>
+                      <button
+                        onClick={toggleExpandAll}
+                        className="text-xs px-2 py-1 rounded hover:bg-gray-100 transition-colors normal-case"
+                        style={{color: '#999999', fontWeight: '500', letterSpacing: 'normal'}}
+                        title={expandAll ? 'Collapse all features' : 'Expand all features'}
+                      >
+                        {expandAll ? 'Collapse All' : 'Expand All'}
+                      </button>
+                    </div>
                   </th>
-                  <th className="text-center text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '60px'}}>
+                  <th className="text-center text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '10%'}}>
                     Status
                   </th>
                 </tr>
@@ -187,7 +185,7 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                 {rooms.map((room, index) => (
                   <tr
                     key={index}
-                    className="transition-colors"
+                    className="transition-colors relative"
                     style={{background: '#FFFFFF'}}
                     onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'}
                     onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
@@ -212,28 +210,107 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                         <span className="text-xs" style={{color: '#CCCCCC'}}>—</span>
                       )}
                     </td>
-                    <td className="px-3 py-3" style={{borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
-                      {room.features && room.features.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {room.features.slice(0, 3).map((feature, idx) => (
-                            <span
-                              key={idx}
-                              className="text-xs px-2 py-0.5 rounded"
-                              style={{color: '#666666', background: '#F6F1EB'}}
+                    <td className="px-3 py-2" style={{borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
+                      {(() => {
+                        const roomFeatures = room.features || []
+                        const keyFeatures = getRoomKeyFeatures(room.type || 'Unknown Room')
+                        const allFeatures = [...roomFeatures]
+                        
+                        // Add key features that aren't already in room features
+                        keyFeatures.forEach(keyFeature => {
+                          if (!roomFeatures.some(rf => rf.toLowerCase().includes(keyFeature.toLowerCase().split(' ')[0]))) {
+                            allFeatures.push(keyFeature)
+                          }
+                        })
+                        
+                        if (allFeatures.length === 0) {
+                          return <span className="text-xs" style={{color: '#CCCCCC'}}>—</span>
+                        }
+                        
+                        const isExpanded = expandAll || expandedRows.has(index)
+                        
+                        // Sort features: premium first
+                        const sortedFeatures = allFeatures.sort((a, b) => {
+                          const aIsKey = keyFeatures.some(kf => 
+                            a.toLowerCase().includes(kf.toLowerCase().split(' ')[0]) ||
+                            kf.toLowerCase().includes(a.toLowerCase().split(' ')[0])
+                          )
+                          const bIsKey = keyFeatures.some(kf => 
+                            b.toLowerCase().includes(kf.toLowerCase().split(' ')[0]) ||
+                            kf.toLowerCase().includes(b.toLowerCase().split(' ')[0])
+                          )
+                          return bIsKey - aIsKey
+                        })
+                        
+                        // When expanded, show all features inline
+                        if (isExpanded) {
+                          return (
+                            <div className="space-y-1">
+                              {sortedFeatures.map((feature, idx) => {
+                                const isKey = keyFeatures.some(kf => 
+                                  feature.toLowerCase().includes(kf.toLowerCase().split(' ')[0]) ||
+                                  kf.toLowerCase().includes(feature.toLowerCase().split(' ')[0])
+                                )
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="text-xs px-2 py-0.5 rounded flex items-center gap-1"
+                                    style={{
+                                      color: '#666666', 
+                                      background: isKey ? '#FFF5F5' : '#F6F1EB',
+                                      border: isKey ? '1px solid #FFE5E5' : 'none'
+                                    }}
+                                  >
+                                    {isKey && <Star className="w-2.5 h-2.5 flex-shrink-0" style={{color: '#FFD700'}} fill="#FFD700" />}
+                                    <span>{feature}</span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )
+                        }
+                        
+                        // When collapsed, show only primary feature
+                        const primaryFeature = sortedFeatures[0]
+                        const isKeyFeature = keyFeatures.some(kf => 
+                          primaryFeature.toLowerCase().includes(kf.toLowerCase().split(' ')[0]) ||
+                          kf.toLowerCase().includes(primaryFeature.toLowerCase().split(' ')[0])
+                        )
+                        
+                        return (
+                          <div className="flex items-center gap-2">
+                            {/* Primary feature badge */}
+                            <div
+                              className="text-xs px-2 py-0.5 rounded flex items-center gap-1 flex-1 min-w-0"
+                              style={{
+                                color: '#666666', 
+                                background: isKeyFeature ? '#FFF5F5' : '#F6F1EB',
+                                border: isKeyFeature ? '1px solid #FFE5E5' : 'none'
+                              }}
                             >
-                              {feature}
-                            </span>
-                          ))}
-                          {room.features.length > 3 && (
-                            <span className="text-xs font-medium" style={{color: '#666666'}}>
-                              +{room.features.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs" style={{color: '#CCCCCC'}}>—</span>
-                      )}
+                              {isKeyFeature && <Star className="w-2.5 h-2.5 flex-shrink-0" style={{color: '#FFD700'}} fill="#FFD700" />}
+                              <span className="truncate">{primaryFeature}</span>
+                            </div>
+                            
+                            {/* Expand button if more features exist */}
+                            {allFeatures.length > 1 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  toggleRowExpanded(index)
+                                }}
+                                className="text-xs px-1.5 py-0.5 rounded hover:bg-gray-200 transition-colors flex-shrink-0"
+                                style={{color: '#999999', fontWeight: '500'}}
+                                title={`View all ${allFeatures.length} features`}
+                              >
+                                +{allFeatures.length - 1}
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </td>
+                    
                     <td className="px-3 py-3 text-center rounded-r-lg" style={{borderRight: '1px solid #E5E5E5', borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
                       {room.dimensions ? (
                         <CheckCircle className="w-4 h-4 inline-block" style={{color: '#22C55E'}} />
@@ -244,6 +321,32 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                   </tr>
                 ))}
               </tbody>
+              
+              {/* Summary Footer */}
+              <tfoot>
+                <tr>
+                  <td colSpan="4" className="px-3 py-4">
+                    <div className="border-t border-gray-200 pt-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center">
+                          <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>TOTAL ROOMS</p>
+                          <p className="text-lg font-bold" style={{color: '#000000'}}>{rooms.length}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>SQUARE FOOTAGE</p>
+                          <p className="text-lg font-bold" style={{color: '#000000'}}>{square_footage?.toLocaleString() || 'N/A'}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>WITH DIMENSIONS</p>
+                          <p className="text-lg font-bold" style={{color: '#000000'}}>
+                            {rooms.filter(r => r.dimensions).length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}

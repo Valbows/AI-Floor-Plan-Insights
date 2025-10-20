@@ -4,7 +4,7 @@ import {
   Home, ArrowLeft, Bed, Bath, Maximize, Clock, CheckCircle, XCircle, Loader,
   DollarSign, TrendingUp, Building2, Copy, Share2, Mail, MessageCircle,
   FileText, Star, AlertCircle, BarChart3, Info, LineChart, Megaphone, Check,
-  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2, RefreshCw, Wrench
+  Wifi, Tv, Wind, Coffee, Car, UtensilsCrossed, Dumbbell, Shield, Upload, Eye, Edit2, Save, X, Trash2, ZoomIn, ZoomOut, Maximize2, RefreshCw, Wrench, MapPin, ChevronDown, ChevronUp
 } from 'lucide-react'
 import axios from 'axios'
 import Analytics from '../components/Analytics'
@@ -49,6 +49,9 @@ const PropertyDetail = () => {
 
   // Features expand state
   const [showAllFeatures, setShowAllFeatures] = useState(false)
+  
+  // Property details collapse state
+  const [showPropertyDetails, setShowPropertyDetails] = useState(false)
 
   // Hide marketing/analytics tabs and share button (now only in Agent Tools)
   const showMarketingAndAnalytics = false
@@ -429,26 +432,37 @@ const PropertyDetail = () => {
 
         {/* KEY METRICS ROW - Top Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* Metric Card: Bedrooms */}
-          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #E5E5E5'}}>
+          {/* Metric Card: Address */}
+          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
             <div className="flex items-center gap-2 mb-2">
-              <Bed className="w-5 h-5" style={{color: '#666666'}} />
-              <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Bedrooms</h3>
+              <MapPin className="w-5 h-5" style={{color: '#666666'}} />
+              <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Address</h3>
               </div>
-            <p className="text-4xl font-black" style={{color: '#000000'}}>{extracted.bedrooms || '—'}</p>
+            <p className="text-lg font-bold leading-tight" style={{color: '#000000'}}>
+              {extracted.address || property.address || 'Not specified'}
+            </p>
                 </div>
 
-          {/* Metric Card: Bathrooms */}
-          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #E5E5E5'}}>
+          {/* Metric Card: Bed & Bath */}
+          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
             <div className="flex items-center gap-2 mb-2">
-              <Bath className="w-5 h-5" style={{color: '#666666'}} />
-              <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Bathrooms</h3>
+              <Home className="w-5 h-5" style={{color: '#666666'}} />
+              <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Bed & Bath</h3>
                 </div>
-            <p className="text-4xl font-black" style={{color: '#000000'}}>{extracted.bathrooms || '—'}</p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <Bed className="w-4 h-4" style={{color: '#666666'}} />
+                <span className="text-2xl font-black" style={{color: '#000000'}}>{extracted.bedrooms || '—'}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Bath className="w-4 h-4" style={{color: '#666666'}} />
+                <span className="text-2xl font-black" style={{color: '#000000'}}>{extracted.bathrooms || '—'}</span>
+              </div>
+            </div>
             </div>
 
           {/* Metric Card: Square Footage */}
-          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #E5E5E5'}}>
+          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
             <div className="flex items-center gap-2 mb-2">
               <Maximize className="w-5 h-5" style={{color: '#666666'}} />
               <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Square Feet</h3>
@@ -459,7 +473,7 @@ const PropertyDetail = () => {
           </div>
 
           {/* Metric Card: Price Estimate */}
-          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #E5E5E5'}}>
+          <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="w-5 h-5" style={{color: '#666666'}} />
               <h3 className="text-xs font-bold uppercase tracking-wider" style={{color: '#666666'}}>Est. Price</h3>
@@ -479,54 +493,6 @@ const PropertyDetail = () => {
           <div className="space-y-6">
             {/* Property Details Section */}
             <div className="space-y-4">
-            {/* Address */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Address</h3>
-                {editMode && (editingField === 'address' ? (
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => saveEdit('address')}
-                      disabled={saving}
-                      className="p-1 bg-green-600 text-white hover:bg-green-700 rounded transition text-xs flex items-center space-x-1"
-                    >
-                      <Save className="w-3 h-3" />
-                      <span>Save</span>
-                    </button>
-                    <button
-                      onClick={cancelEditing}
-                      className="p-1 bg-gray-500 text-white hover:bg-gray-600 rounded transition"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => startEditing('address', extracted.address || property.address || '')}
-                    className="p-1 hover:bg-gray-100 rounded transition"
-                    title="Edit address"
-                  >
-                    <Edit2 className="w-3 h-3 text-gray-600" />
-                  </button>
-                ))}
-              </div>
-              {editMode ? (
-                <input
-                  type="text"
-                  value={editingField === 'address' ? editedContent.address : (extracted.address || property.address || '')}
-                  onChange={(e) => {
-                    setEditingField('address')
-                    setEditedContent({ ...editedContent, address: e.target.value })
-                  }}
-                  className="w-full text-sm text-gray-900 bg-white border-2 border-blue-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter property address"
-                />
-              ) : (
-                <p className="text-sm text-gray-900">
-                  {extracted.address || property.address || 'Not specified'}
-                </p>
-              )}
-            </div>
 
             {/* PROPERTY VALUATION - Combined Analysis */}
             {extracted.square_footage > 0 && extracted.market_insights?.price_estimate?.estimated_value && (
@@ -567,7 +533,7 @@ const PropertyDetail = () => {
                         <h3 className="text-sm font-black uppercase tracking-wider" style={{color: '#000000', letterSpacing: '1.5px'}}>
                           Property Valuation
                         </h3>
-                      </div>
+                  </div>
                       
                       {/* Confidence Badge */}
                       <span className="px-3 py-1 text-xs font-bold uppercase" style={{
@@ -578,7 +544,7 @@ const PropertyDetail = () => {
                       }}>
                         {priceEstimate?.confidence || 'low'} confidence
                       </span>
-                    </div>
+              </div>
                     
                     <div className="space-y-4">
                       {/* Main Price Display */}
@@ -599,8 +565,8 @@ const PropertyDetail = () => {
                             ({sqft.toLocaleString()} sq ft)
                           </span>
                         </div>
-                      </div>
-                      
+            </div>
+
                       {/* Market Comparison */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="rounded-lg p-3" style={{background: '#F6F1EB'}}>
@@ -610,7 +576,7 @@ const PropertyDetail = () => {
                           <p className="text-lg font-bold" style={{color: '#000000'}}>
                             ${marketAvgPPSF.toLocaleString()}/sqft
                           </p>
-                        </div>
+              </div>
                         <div className="rounded-lg p-3" style={{
                           background: isAboveMarket ? '#F0FDF4' : '#FEF2F2',
                           border: `1px solid ${isAboveMarket ? '#86EFAC' : '#FECACA'}`
@@ -621,8 +587,8 @@ const PropertyDetail = () => {
                           <p className="text-sm font-bold" style={{color: isAboveMarket ? '#16A34A' : '#DC2626'}}>
                             {isAboveMarket ? '▲' : '▼'} {Math.abs(percentDiff)}% {isAboveMarket ? 'Above' : 'Below'}
                           </p>
-                        </div>
-                      </div>
+                </div>
+                </div>
                       
                       {/* Data Source & Insights */}
                       <div className="text-xs pt-2" style={{color: '#666666', borderTop: '1px solid #E5E5E5'}}>
@@ -633,20 +599,113 @@ const PropertyDetail = () => {
                           📊 Higher PPSF typically correlates with better layouts and larger living spaces
                           {compCount > 0 && ` • Based on ${compCount} comparable sales`}
                         </p>
-                      </div>
-                    </div>
-                  </div>
+                </div>
+              </div>
+            </div>
                 )
               })()
             )}
 
-            {/* PPSF Comparison Chart */}
-            <div className="mt-6">
-              <PPSFComparisonChart 
-                property={property} 
-                comparables={extracted.market_insights?.comparable_properties || []}
-              />
-            </div>
+            {/* Market Trend */}
+            {extracted.market_insights?.market_trend && (
+              <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
+                  <TrendingUp className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
+                  Market Trend
+                </h2>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-600">Direction</p>
+                    <p className="font-semibold text-gray-900 capitalize">
+                      {extracted.market_insights.market_trend?.trend_direction || 'Unknown'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Buyer Demand</p>
+                    <p className="font-semibold text-gray-900 capitalize">
+                      {extracted.market_insights.market_trend?.buyer_demand || 'Unknown'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Inventory</p>
+                    <p className="font-semibold text-gray-900 capitalize">
+                      {extracted.market_insights.market_trend?.inventory_level || 'Unknown'}
+                    </p>
+                  </div>
+                  {extracted.market_insights.market_trend?.appreciation_rate && (
+                    <div>
+                      <p className="text-gray-600">Appreciation</p>
+                      <p className="font-semibold text-gray-900">
+                        {extracted.market_insights.market_trend.appreciation_rate}%
+                      </p>
+              </div>
+            )}
+                </div>
+                {extracted.market_insights.market_trend?.insights && (
+                  <p className="text-xs text-gray-600 mt-3 pt-3 border-t">
+                    {extracted.market_insights.market_trend.insights}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Investment Analysis */}
+            {extracted.market_insights?.investment_analysis && (
+              <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
+                  <Building2 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
+                  Investment Analysis
+                </h2>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium" style={{color: '#666666'}}>Investment Score</span>
+                    <span className="text-3xl font-black" style={{color: '#000000'}}>
+                      {extracted.market_insights.investment_analysis?.investment_score || 0}<span className="text-lg" style={{color: '#666666'}}>/100</span>
+                    </span>
+                      </div>
+                  <div className="w-full rounded-full h-3" style={{background: '#E5E5E5'}}>
+                    <div 
+                      className="h-3 rounded-full transition-all" 
+                      style={{ width: `${extracted.market_insights.investment_analysis?.investment_score || 0}%`, background: '#FF5959' }}
+                    ></div>
+                    </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Rental Potential:</span>
+                    <span className="font-semibold text-gray-900 capitalize">
+                      {extracted.market_insights.investment_analysis?.rental_potential || 'N/A'}
+                    </span>
+                  </div>
+                  {extracted.market_insights.investment_analysis?.estimated_rental_income && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Est. Rental Income:</span>
+                      <span className="font-semibold text-gray-900">
+                        ${extracted.market_insights.investment_analysis.estimated_rental_income.toLocaleString()}/mo
+                      </span>
+                    </div>
+                  )}
+                  {extracted.market_insights.investment_analysis?.cap_rate && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Cap Rate:</span>
+                      <span className="font-semibold text-gray-900">
+                        {extracted.market_insights.investment_analysis.cap_rate}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {extracted.market_insights.investment_analysis?.opportunities?.length > 0 && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">Opportunities:</p>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      {extracted.market_insights.investment_analysis.opportunities.map((opp, idx) => (
+                        <li key={idx}>• {opp}</li>
+                      ))}
+                    </ul>
+                </div>
+                )}
+              </div>
+            )}
 
             </div>
           </div>
@@ -745,122 +804,100 @@ const PropertyDetail = () => {
                 {extracted.market_insights ? (
                   <>
 
-                    {/* Market Trend */}
-                    <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
-                      <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
-                        <TrendingUp className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
-                        Market Trend
-                      </h2>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <p className="text-gray-600">Direction</p>
-                          <p className="font-semibold text-gray-900 capitalize">
-                            {extracted.market_insights.market_trend?.trend_direction || 'Unknown'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Buyer Demand</p>
-                          <p className="font-semibold text-gray-900 capitalize">
-                            {extracted.market_insights.market_trend?.buyer_demand || 'Unknown'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Inventory</p>
-                          <p className="font-semibold text-gray-900 capitalize">
-                            {extracted.market_insights.market_trend?.inventory_level || 'Unknown'}
-                          </p>
-                        </div>
-                        {extracted.market_insights.market_trend?.appreciation_rate && (
-                          <div>
-                            <p className="text-gray-600">Appreciation</p>
-                            <p className="font-semibold text-gray-900">
-                              {extracted.market_insights.market_trend.appreciation_rate}%
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      {extracted.market_insights.market_trend?.insights && (
-                        <p className="text-xs text-gray-600 mt-3 pt-3 border-t">
-                          {extracted.market_insights.market_trend.insights}
-                        </p>
-                      )}
-                    </div>
 
-                    {/* Investment Analysis */}
-                    <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
-                      <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
-                        <Building2 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
-                        Investment Analysis
-                      </h2>
-                      <div className="mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-medium" style={{color: '#666666'}}>Investment Score</span>
-                          <span className="text-3xl font-black" style={{color: '#000000'}}>
-                            {extracted.market_insights.investment_analysis?.investment_score || 0}<span className="text-lg" style={{color: '#666666'}}>/100</span>
-                          </span>
-                        </div>
-                        <div className="w-full rounded-full h-3" style={{background: '#E5E5E5'}}>
-                          <div 
-                            className="h-3 rounded-full transition-all" 
-                            style={{ width: `${extracted.market_insights.investment_analysis?.investment_score || 0}%`, background: '#FF5959' }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Rental Potential:</span>
-                          <span className="font-semibold text-gray-900 capitalize">
-                            {extracted.market_insights.investment_analysis?.rental_potential || 'N/A'}
-                          </span>
-                        </div>
-                        {extracted.market_insights.investment_analysis?.estimated_rental_income && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Est. Rental Income:</span>
-                            <span className="font-semibold text-gray-900">
-                              ${extracted.market_insights.investment_analysis.estimated_rental_income.toLocaleString()}/mo
-                            </span>
-                          </div>
-                        )}
-                        {extracted.market_insights.investment_analysis?.cap_rate && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Cap Rate:</span>
-                            <span className="font-semibold text-gray-900">
-                              {extracted.market_insights.investment_analysis.cap_rate}%
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      {extracted.market_insights.investment_analysis?.opportunities?.length > 0 && (
-                        <div className="mt-3 pt-3 border-t">
-                          <p className="text-xs font-semibold text-gray-700 mb-1">Opportunities:</p>
-                          <ul className="text-xs text-gray-600 space-y-1">
-                            {extracted.market_insights.investment_analysis.opportunities.map((opp, idx) => (
-                              <li key={idx}>• {opp}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Comparable Properties */}
+                    {/* Comparable Properties Analysis - Combined Chart + Details */}
                     {extracted.market_insights.comparable_properties?.length > 0 && (
-                      <div className="border border-gray-200 rounded-lg p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Comparable Properties</h2>
-                        <p className="text-sm text-gray-600 mb-3">
-                          {extracted.market_insights.comparable_properties.length} similar properties found nearby
-                        </p>
-                        <div className="space-y-2">
-                          {extracted.market_insights.comparable_properties.slice(0, 3).map((comp, idx) => (
-                            <div key={idx} className="text-xs p-2 bg-gray-50 rounded">
-                              <p className="font-medium text-gray-900">{comp.address}</p>
-                              <p className="text-gray-600">
-                                {comp.bedrooms}BR / {comp.bathrooms}BA • {comp.square_feet?.toLocaleString()} sqft
-                              </p>
-                              <p className="text-gray-600">
-                                Sold: ${comp.last_sale_price?.toLocaleString()} • {comp.distance_miles} mi away
-                              </p>
-                            </div>
-                          ))}
+                    <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+                        <h2 className="text-lg font-black uppercase mb-6 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
+                          <BarChart3 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
+                          Comparable Properties Analysis
+                      </h2>
+                        
+                        {/* PPSF Comparison Chart */}
+                        <div className="mb-6">
+                          <PPSFComparisonChart 
+                            property={property} 
+                            comparables={extracted.market_insights.comparable_properties || []}
+                          />
+                        </div>
+                        
+                        {/* Divider */}
+                        <div className="border-t border-gray-200 mb-6"></div>
+                        
+                        {/* Property Details - Collapsible */}
+                        <div>
+                          <div className="flex items-center justify-between gap-6 mb-4">
+                        <div className="flex-1">
+                              <h3 className="text-sm font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>
+                                Property Details
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                {extracted.market_insights.comparable_properties.length} similar properties found nearby
+                          </p>
+                        </div>
+                            <button
+                              onClick={() => setShowPropertyDetails(!showPropertyDetails)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase transition-all rounded-lg flex-shrink-0"
+                              style={{
+                                background: showPropertyDetails ? '#000000' : 'transparent',
+                                color: showPropertyDetails ? '#FFFFFF' : '#000000',
+                                border: '2px solid #000000',
+                                letterSpacing: '1px'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!showPropertyDetails) {
+                                  e.currentTarget.style.background = '#000000'
+                                  e.currentTarget.style.color = '#FFFFFF'
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!showPropertyDetails) {
+                                  e.currentTarget.style.background = 'transparent'
+                                  e.currentTarget.style.color = '#000000'
+                                }
+                              }}
+                            >
+                              <span>{showPropertyDetails ? 'Hide Details' : 'Show Details'}</span>
+                              {showPropertyDetails ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                    </div>
+
+                          {/* Collapsible Content */}
+                          {showPropertyDetails && (
+                            <div className="space-y-3 mt-4">
+                              {extracted.market_insights.comparable_properties.slice(0, 5).map((comp, idx) => (
+                                <div key={idx} className="p-4 rounded-lg transition-all" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
+                                  <p className="font-semibold text-gray-900 mb-1">{comp.address}</p>
+                                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                                    <span className="flex items-center gap-1">
+                                      <Bed className="w-3 h-3" />
+                                      {comp.bedrooms}BR
+                          </span>
+                                    <span className="flex items-center gap-1">
+                                      <Bath className="w-3 h-3" />
+                                      {comp.bathrooms}BA
+                          </span>
+                                    <span className="flex items-center gap-1">
+                                      <Maximize className="w-3 h-3" />
+                                      {comp.square_feet?.toLocaleString()} sqft
+                            </span>
+                          </div>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <span className="font-semibold text-green-600">
+                                      Sold: ${comp.last_sale_price?.toLocaleString()}
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                      {comp.distance_miles} mi away
+                            </span>
+                          </div>
+                      </div>
+                              ))}
+                        </div>
+                      )}
                         </div>
                       </div>
                     )}
@@ -1331,26 +1368,26 @@ const PropertyDetail = () => {
                   ) : (
                     <span className="px-2 py-1 text-[10px] font-bold uppercase" style={{border: '1px solid #CCCCCC', borderRadius: '9999px', color: '#666666'}}>Unknown</span>
                   )}
-                </div>
-                <button
+              </div>
+              <button
                   onClick={handleReEnrich}
                   disabled={reEnriching}
-                  className="flex items-center space-x-2 px-3 py-2 text-xs font-bold uppercase"
+                  className="flex items-center space-x-2 px-4 py-2 text-xs font-bold uppercase whitespace-nowrap"
                   style={{border: '2px solid #000000', borderRadius: '6px', color: reEnriching ? '#666666' : '#000000', background: '#FFFFFF', cursor: reEnriching ? 'not-allowed' : 'pointer'}}
                   onMouseEnter={(e) => { if (!reEnriching) { e.currentTarget.style.background = '#000000'; e.currentTarget.style.color = '#FFFFFF' } }}
                   onMouseLeave={(e) => { if (!reEnriching) { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#000000' } }}
                 >
                   {reEnriching ? <Loader className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                  <span>{reEnriching ? 'Re-running...' : 'Re-run Market Insights'}</span>
-                </button>
-              </div>
+                  <span>{reEnriching ? 'Refreshing...' : 'Refresh Data'}</span>
+              </button>
+            </div>
 
               {/* Floor Plan Card */}
-              <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #E5E5E5'}}>
+              <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-black uppercase tracking-wider" style={{color: '#000000', letterSpacing: '1.5px'}}>Floor Plan</h3>
                   {property.image_url && (
-              <button
+                    <button
                       onClick={openFloorPlanModal}
                       className="flex items-center space-x-2 px-3 py-2 text-xs font-bold uppercase transition-all"
                       style={{color: '#FF5959', background: 'transparent', border: '2px solid #FF5959', borderRadius: '4px'}}
@@ -1359,7 +1396,7 @@ const PropertyDetail = () => {
                     >
                       <Maximize2 className="w-4 h-4" />
                       <span>Full Size</span>
-              </button>
+                    </button>
                   )}
                   </div>
                 {property.image_url ? (
