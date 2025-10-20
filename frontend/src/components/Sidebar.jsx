@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, BarChart3, Plus, LogOut, User, ChevronLeft, ChevronRight, Briefcase, Building2 } from 'lucide-react'
+import { Home, BarChart3, Plus, LogOut, User, ChevronLeft, ChevronRight, Briefcase, Building2, LineChart } from 'lucide-react'
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const location = useLocation()
@@ -9,9 +9,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const { user, logout } = useAuth()
 
   const navItems = [
-    { path: '/dashboard', icon: Home, label: 'Properties' },
-    { path: '/analytics', icon: BarChart3, label: 'Analytics' },
     { path: '/properties/new', icon: Plus, label: 'Add Property' },
+    { path: '/dashboard', icon: Home, label: 'Properties' },
+    { path: '/data-studio', icon: LineChart, label: 'Data Studio' },
+    { path: '/analytics', icon: BarChart3, label: 'Price Predictor' },
     { path: '/agent-tools', icon: Briefcase, label: 'Agent Tools', special: true },
   ]
 

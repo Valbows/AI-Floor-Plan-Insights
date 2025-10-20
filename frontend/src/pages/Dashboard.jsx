@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, Square } from 'lucide-react'
+import { Home, Plus, LogOut, Bed, Bath, Maximize, Clock, AlertCircle, CheckCircle, Loader, Search, SlidersHorizontal, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, Square, Building2, Download, MapPin, Check, X } from 'lucide-react'
 import axios from 'axios'
+import { exportPropertiesToCSV } from '../utils/csvExport'
+import { getUniqueNeighborhoods, groupPropertiesByNeighborhood, extractNeighborhood } from '../utils/neighborhoodUtils'
 
 const StatusBadge = ({ status }) => {
   const statusConfig = {
@@ -241,7 +243,7 @@ const PropertyTable = ({ properties, sortConfig, onSort }) => {
   )
 }
 
-const PropertyCard = ({ property }) => {
+const PropertyCard = ({ property, selectionMode, isSelected, onToggleSelect }) => {
   const navigate = useNavigate()
   const extractedData = property.extracted_data || {}
   const marketData = extractedData.market_insights || {}
@@ -253,14 +255,37 @@ const PropertyCard = ({ property }) => {
   const pricePerSqft = sqft > 0 && price > 0 ? Math.round(price / sqft) : 0
   const investmentScore = marketData.investment_analysis?.investment_score || 0
 
+  const handleCardClick = (e) => {
+    if (selectionMode) {
+      e.stopPropagation()
+      onToggleSelect(property.id)
+    } else {
+      navigate(`/properties/${property.id}`)
+    }
+  }
+
   return (
     <div
-      onClick={() => navigate(`/properties/${property.id}`)}
-      className="bg-white overflow-hidden transition-all duration-300 cursor-pointer group/card relative group-hover/grid:opacity-40 hover:!opacity-100"
-      style={{borderRadius: '12px', border: '2px solid #000000'}}
+      onClick={handleCardClick}
+      className={`bg-white overflow-hidden transition-all duration-300 cursor-pointer group/card relative group-hover/grid:opacity-40 hover:!opacity-100 ${selectionMode && isSelected ? 'ring-4 ring-green-500' : ''}`}
+      style={{borderRadius: '12px', border: selectionMode && isSelected ? '2px solid #10B981' : '2px solid #000000'}}
       onMouseEnter={(e) => {e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; e.currentTarget.style.zIndex = '10'}}
       onMouseLeave={(e) => {e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.zIndex = '1'}}
     >
+      {/* Selection Checkbox */}
+      {selectionMode && (
+        <div className="absolute top-3 right-3 z-20">
+          <div 
+            className={`w-6 h-6 rounded flex items-center justify-center transition-all ${isSelected ? 'bg-green-500' : 'bg-white border-2 border-gray-400'}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleSelect(property.id)
+            }}
+          >
+            {isSelected && <Check className="w-4 h-4 text-white" />}
+          </div>
+        </div>
+      )}
       {/* Floor Plan Image - Full Width */}
       <div className="relative h-48 overflow-hidden flex items-center justify-center p-3" style={{background: '#F6F1EB'}}>
         {property.image_url ? (
@@ -343,8 +368,17 @@ const Dashboard = () => {
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
   const [listItemsToShow, setListItemsToShow] = useState(10)
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' })
+  const [groupByBuilding, setGroupByBuilding] = useState(false)
+  const [collapsedBuildings, setCollapsedBuildings] = useState(new Set())
+  const [neighborhoodFilter, setNeighborhoodFilter] = useState('all')
+  const [groupByNeighborhood, setGroupByNeighborhood] = useState(false)
+  const [collapsedNeighborhoods, setCollapsedNeighborhoods] = useState(new Set())
+  const [hideEmptyNeighborhoods, setHideEmptyNeighborhoods] = useState(true)
+  const [selectedProperties, setSelectedProperties] = useState(new Set())
+  const [selectionMode, setSelectionMode] = useState(false)
 
   useEffect(() => {
+    document.title = 'Properties | FP AI'
     fetchProperties()
   }, [])
 
@@ -427,13 +461,20 @@ const Dashboard = () => {
     }
   }
 
+  // Get unique neighborhoods from all properties
+  const availableNeighborhoods = getUniqueNeighborhoods(properties)
+
   // Filter and search properties
   const filteredProperties = properties.filter(property => {
     const extractedData = property.extracted_data || {}
     const address = extractedData.address || property.address || ''
     const matchesSearch = address.toLowerCase().includes(searchTerm.toLowerCase())
     
-    return matchesSearch
+    // Neighborhood filter
+    const neighborhood = extractNeighborhood(address)
+    const matchesNeighborhood = neighborhoodFilter === 'all' || neighborhood === neighborhoodFilter
+    
+    return matchesSearch && matchesNeighborhood
   })
 
   // Sort properties
@@ -488,11 +529,115 @@ const Dashboard = () => {
     return 0
   })
 
+  // Group properties by building
+  const groupPropertiesByBuilding = (properties) => {
+    const grouped = {}
+    
+    properties.forEach(property => {
+      const extractedData = property.extracted_data || {}
+      const fullAddress = extractedData.address || property.address || 'Unknown Address'
+      
+      // Extract building address (remove unit number/apartment info)
+      // Common patterns: "123 Main St, Unit 4A" or "123 Main St, Apt 4A" or "123 Main St #4A"
+      let buildingAddress = fullAddress
+        .replace(/,?\s*(Unit|Apt|Apartment|#)\s*[A-Z0-9-]+/i, '')
+        .replace(/,?\s*Floor\s*\d+/i, '')
+        .trim()
+      
+      // If address has multiple commas, take everything before the last comma
+      const parts = buildingAddress.split(',')
+      if (parts.length > 2) {
+        buildingAddress = parts.slice(0, -1).join(',').trim()
+      }
+      
+      if (!grouped[buildingAddress]) {
+        grouped[buildingAddress] = []
+      }
+      
+      grouped[buildingAddress].push(property)
+    })
+    
+    return grouped
+  }
+
+  const buildingGroups = groupPropertiesByBuilding(sortedProperties)
+  const buildingAddresses = Object.keys(buildingGroups).sort()
+  
+  const neighborhoodGroups = groupPropertiesByNeighborhood(sortedProperties)
+  const neighborhoodNames = Object.keys(neighborhoodGroups).sort()
+
+  const toggleBuildingCollapse = (buildingAddress) => {
+    setCollapsedBuildings(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(buildingAddress)) {
+        newSet.delete(buildingAddress)
+      } else {
+        newSet.add(buildingAddress)
+      }
+      return newSet
+    })
+  }
+
+  const toggleNeighborhoodCollapse = (neighborhood) => {
+    setCollapsedNeighborhoods(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(neighborhood)) {
+        newSet.delete(neighborhood)
+      } else {
+        newSet.add(neighborhood)
+      }
+      return newSet
+    })
+  }
+
   const handleSort = (key) => {
     setSortConfig(prev => ({
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }))
+  }
+
+  const handleExportCSV = () => {
+    // Export selected properties if in selection mode, otherwise export all displayed
+    const propertiesToExport = selectionMode && selectedProperties.size > 0
+      ? properties.filter(p => selectedProperties.has(p.id))
+      : (viewMode === 'list' 
+          ? sortedProperties.slice(0, listItemsToShow)
+          : sortedProperties);
+    
+    const success = exportPropertiesToCSV(propertiesToExport);
+    if (success) {
+      console.log(`Exported ${propertiesToExport.length} properties to CSV`);
+    }
+  }
+
+  const toggleSelectProperty = (propertyId) => {
+    setSelectedProperties(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(propertyId)) {
+        newSet.delete(propertyId)
+      } else {
+        newSet.add(propertyId)
+      }
+      return newSet
+    })
+  }
+
+  const selectAll = () => {
+    const allIds = new Set(sortedProperties.map(p => p.id))
+    setSelectedProperties(allIds)
+  }
+
+  const deselectAll = () => {
+    setSelectedProperties(new Set())
+  }
+
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode)
+    if (selectionMode) {
+      // Exiting selection mode - clear selections
+      setSelectedProperties(new Set())
+    }
   }
 
 
@@ -507,26 +652,144 @@ const Dashboard = () => {
           </h1>
           <div className="w-24 h-1.5 mx-auto mb-8" style={{background: '#FF5959'}}></div>
           
-          {/* Search Bar */}
-          <div className="max-w-md mx-auto mb-8">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by address..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{borderColor: '#000000', borderRadius: '4px'}}
-                onFocus={(e) => {e.target.style.borderColor = '#FF5959'; e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)'}}
-                onBlur={(e) => {e.target.style.borderColor = '#000000'; e.target.style.boxShadow = 'none'}}
-              />
+          {/* Search Bar & Filter Controls */}
+          <div className="max-w-3xl mx-auto mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by address..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border-2 focus:outline-none focus:ring-2 focus:border-transparent"
+                  style={{borderColor: '#000000', borderRadius: '4px'}}
+                  onFocus={(e) => {e.target.style.borderColor = '#FF5959'; e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)'}}
+                  onBlur={(e) => {e.target.style.borderColor = '#000000'; e.target.style.boxShadow = 'none'}}
+                />
+              </div>
+
+              {/* Neighborhood Filter */}
+              <div className="relative z-50">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{color: '#666666'}} />
+                <select
+                  value={neighborhoodFilter}
+                  onChange={(e) => setNeighborhoodFilter(e.target.value)}
+                  className="w-full pl-10 pr-10 py-3 border-2 focus:outline-none appearance-none cursor-pointer font-semibold transition-all"
+                  style={{
+                    borderColor: '#000000', 
+                    borderRadius: '4px',
+                    background: '#FFFFFF',
+                    color: '#000000',
+                    fontSize: '14px',
+                    position: 'relative',
+                    zIndex: 50
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#FF5959';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#000000';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                  onMouseEnter={(e) => {
+                    if (document.activeElement !== e.target) {
+                      e.target.style.background = '#F6F1EB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (document.activeElement !== e.target) {
+                      e.target.style.background = '#FFFFFF';
+                    }
+                  }}
+                >
+                  <option value="all">All Neighborhoods ({properties.length})</option>
+                  {availableNeighborhoods
+                    .filter(hood => !hideEmptyNeighborhoods || properties.filter(p => {
+                      const address = p.extracted_data?.address || p.address || '';
+                      return extractNeighborhood(address) === hood;
+                    }).length > 0)
+                    .map(hood => {
+                      const count = properties.filter(p => {
+                        const address = p.extracted_data?.address || p.address || '';
+                        return extractNeighborhood(address) === hood;
+                      }).length;
+                      return (
+                        <option key={hood} value={hood}>
+                          {hood} ({count})
+                        </option>
+                      );
+                    })}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none" style={{color: '#000000', zIndex: 51}} />
+              </div>
+
+              {/* Group By Dropdown */}
+              <div className="relative z-50">
+                <SlidersHorizontal className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{color: '#666666'}} />
+                <select
+                  value={groupByNeighborhood ? 'neighborhood' : groupByBuilding ? 'building' : 'none'}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === 'neighborhood') {
+                      setGroupByNeighborhood(true);
+                      setGroupByBuilding(false);
+                    } else if (value === 'building') {
+                      setGroupByBuilding(true);
+                      setGroupByNeighborhood(false);
+                    } else {
+                      setGroupByNeighborhood(false);
+                      setGroupByBuilding(false);
+                    }
+                  }}
+                  className="w-full pl-10 pr-10 py-3 border-2 focus:outline-none appearance-none cursor-pointer font-semibold transition-all"
+                  style={{
+                    borderColor: (groupByNeighborhood || groupByBuilding) ? '#FF5959' : '#000000',
+                    borderRadius: '4px',
+                    background: (groupByNeighborhood || groupByBuilding) ? '#FFF5F5' : '#FFFFFF',
+                    color: (groupByNeighborhood || groupByBuilding) ? '#FF5959' : '#000000',
+                    fontSize: '14px',
+                    position: 'relative',
+                    zIndex: 50
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#FF5959';
+                    e.target.style.boxShadow = '0 0 0 2px rgba(255,89,89,0.2)';
+                  }}
+                  onBlur={(e) => {
+                    const isActive = groupByNeighborhood || groupByBuilding;
+                    e.target.style.borderColor = isActive ? '#FF5959' : '#000000';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                  onMouseEnter={(e) => {
+                    const isActive = groupByNeighborhood || groupByBuilding;
+                    if (document.activeElement !== e.target && !isActive) {
+                      e.target.style.background = '#F6F1EB';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const isActive = groupByNeighborhood || groupByBuilding;
+                    if (document.activeElement !== e.target && !isActive) {
+                      e.target.style.background = '#FFFFFF';
+                    }
+                  }}
+                >
+                  <option value="none">Group By: None</option>
+                  <option value="neighborhood">📍 Neighborhood</option>
+                  <option value="building">🏢 Building</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none" 
+                  style={{color: (groupByNeighborhood || groupByBuilding) ? '#FF5959' : '#000000', zIndex: 51}} 
+                />
+              </div>
             </div>
           </div>
 
 
           {/* Add Property Button */}
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4 flex-wrap">
             <Link 
               to="/properties/new"
               className="inline-flex items-center space-x-2 text-white px-8 py-4 font-bold uppercase tracking-wide transition-all"
@@ -549,9 +812,66 @@ const Dashboard = () => {
                 Showing {viewMode === 'list' && sortedProperties.length > listItemsToShow 
                   ? `${listItemsToShow} of ${sortedProperties.length}` 
                   : sortedProperties.length} {sortedProperties.length === 1 ? 'property' : 'properties'}
+                {groupByBuilding && ` • ${buildingAddresses.length} ${buildingAddresses.length === 1 ? 'building' : 'buildings'}`}
+                {groupByNeighborhood && ` • ${neighborhoodNames.length} ${neighborhoodNames.length === 1 ? 'neighborhood' : 'neighborhoods'}`}
+                {neighborhoodFilter !== 'all' && ` • Filtered: ${neighborhoodFilter}`}
               </div>
             </div>
           <div className="flex items-center space-x-2">
+            {/* Export Button (compact version) */}
+            {filteredProperties.length > 0 && (
+              <button 
+                onClick={handleExportCSV}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
+                style={{
+                  background: 'transparent',
+                  color: '#000000',
+                  border: '2px solid #000000',
+                  borderRadius: '4px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#000000';
+                  e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#000000';
+                }}
+                title={`Export ${sortedProperties.length} ${sortedProperties.length === 1 ? 'property' : 'properties'} to CSV`}
+              >
+                <Download className="w-4 h-4" />
+                <span>Export CSV</span>
+              </button>
+            )}
+            
+            {/* Bulk Selection Toggle */}
+            {filteredProperties.length > 0 && (
+              <button 
+                onClick={toggleSelectionMode}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-2"
+                style={{
+                  background: selectionMode ? '#10B981' : 'transparent',
+                  color: selectionMode ? '#FFFFFF' : '#000000',
+                  border: `2px solid ${selectionMode ? '#10B981' : '#000000'}`,
+                  borderRadius: '4px'
+                }}
+                onMouseEnter={(e) => {
+                  if (!selectionMode) {
+                    e.currentTarget.style.background = '#F6F1EB'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!selectionMode) {
+                    e.currentTarget.style.background = 'transparent'
+                  }
+                }}
+                title={selectionMode ? 'Cancel selection mode' : 'Select multiple properties'}
+              >
+                {selectionMode ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                <span>{selectionMode ? 'Cancel' : 'Select'}</span>
+              </button>
+            )}
+            
             <button 
               onClick={() => setViewMode('grid')}
               className="p-2 transition-colors"
@@ -640,11 +960,49 @@ const Dashboard = () => {
 
 
         {/* Properties Grid View */}
-        {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && (
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && !groupByBuilding && !groupByNeighborhood && (
           <div className="space-y-6">
+            {/* Select All Bar */}
+            {selectionMode && (
+              <div className="flex items-center justify-between p-4 rounded-lg" style={{background: '#FFFFFF', border: '2px solid #10B981'}}>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-bold">
+                    {selectedProperties.size} of {sortedProperties.length} selected
+                  </span>
+                  {selectedProperties.size === sortedProperties.length ? (
+                    <button
+                      onClick={deselectAll}
+                      className="text-sm font-bold px-4 py-2 rounded transition-all"
+                      style={{background: '#FEE2E2', color: '#DC2626'}}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#FECACA'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#FEE2E2'}
+                    >
+                      Deselect All
+                    </button>
+                  ) : (
+                    <button
+                      onClick={selectAll}
+                      className="text-sm font-bold px-4 py-2 rounded transition-all"
+                      style={{background: '#D1FAE5', color: '#059669'}}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#A7F3D0'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#D1FAE5'}
+                    >
+                      Select All
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
               {sortedProperties.slice(0, listItemsToShow).map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard 
+                  key={property.id} 
+                  property={property}
+                  selectionMode={selectionMode}
+                  isSelected={selectedProperties.has(property.id)}
+                  onToggleSelect={toggleSelectProperty}
+                />
               ))}
             </div>
             
@@ -665,8 +1023,108 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Properties Grid View - Grouped by Neighborhood */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && groupByNeighborhood && (
+          <div className="space-y-8">
+            {neighborhoodNames.map((neighborhood) => {
+              const neighborhoodProperties = neighborhoodGroups[neighborhood]
+              const isCollapsed = collapsedNeighborhoods.has(neighborhood)
+              
+              return (
+                <div key={neighborhood} className="bg-white rounded-lg overflow-hidden" style={{border: '3px solid #000000'}}>
+                  {/* Neighborhood Header */}
+                  <button
+                    onClick={() => toggleNeighborhoodCollapse(neighborhood)}
+                    className="w-full p-6 flex items-center justify-between transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <MapPin className="w-6 h-6 flex-shrink-0" style={{color: '#FF5959'}} />
+                      <div className="text-left">
+                        <h3 className="text-lg font-black" style={{color: '#000000'}}>{neighborhood}</h3>
+                        <p className="text-sm font-medium mt-1" style={{color: '#666666'}}>
+                          {neighborhoodProperties.length} {neighborhoodProperties.length === 1 ? 'property' : 'properties'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="transition-transform" style={{transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'}}>
+                      <ChevronDown className="w-5 h-5" style={{color: '#000000'}} />
+                    </div>
+                  </button>
+
+                  {/* Neighborhood Properties */}
+                  {!isCollapsed && (
+                    <div className="p-6 pt-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
+                        {neighborhoodProperties.map((property) => (
+                          <PropertyCard 
+                            key={property.id} 
+                            property={property}
+                            selectionMode={selectionMode}
+                            isSelected={selectedProperties.has(property.id)}
+                            onToggleSelect={toggleSelectProperty}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Properties Grid View - Grouped by Building */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'grid' && groupByBuilding && (
+          <div className="space-y-8">
+            {buildingAddresses.map((buildingAddress) => {
+              const buildingProperties = buildingGroups[buildingAddress]
+              const isCollapsed = collapsedBuildings.has(buildingAddress)
+              
+              return (
+                <div key={buildingAddress} className="bg-white rounded-lg overflow-hidden" style={{border: '3px solid #000000'}}>
+                  {/* Building Header */}
+                  <button
+                    onClick={() => toggleBuildingCollapse(buildingAddress)}
+                    className="w-full p-6 flex items-center justify-between transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Building2 className="w-6 h-6 flex-shrink-0" style={{color: '#FF5959'}} />
+                      <div className="text-left">
+                        <h3 className="text-lg font-black" style={{color: '#000000'}}>{buildingAddress}</h3>
+                        <p className="text-sm font-medium mt-1" style={{color: '#666666'}}>
+                          {buildingProperties.length} {buildingProperties.length === 1 ? 'unit' : 'units'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="transition-transform" style={{transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'}}>
+                      <ChevronDown className="w-5 h-5" style={{color: '#000000'}} />
+                    </div>
+                  </button>
+
+                  {/* Building Units */}
+                  {!isCollapsed && (
+                    <div className="p-6 pt-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 group/grid">
+                        {buildingProperties.map((property) => (
+                          <PropertyCard 
+                            key={property.id} 
+                            property={property}
+                            selectionMode={selectionMode}
+                            isSelected={selectedProperties.has(property.id)}
+                            onToggleSelect={toggleSelectProperty}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {/* Properties Table/List View */}
-        {!loading && !error && sortedProperties.length > 0 && viewMode === 'list' && (
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'list' && !groupByBuilding && !groupByNeighborhood && (
           <div className="space-y-6">
             <PropertyTable 
               properties={sortedProperties.slice(0, listItemsToShow)} 
@@ -691,6 +1149,94 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Properties Table/List View - Grouped by Neighborhood */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'list' && groupByNeighborhood && (
+          <div className="space-y-8">
+            {neighborhoodNames.map((neighborhood) => {
+              const neighborhoodProperties = neighborhoodGroups[neighborhood]
+              const isCollapsed = collapsedNeighborhoods.has(neighborhood)
+              
+              return (
+                <div key={neighborhood} className="bg-white rounded-lg overflow-hidden" style={{border: '3px solid #000000'}}>
+                  {/* Neighborhood Header */}
+                  <button
+                    onClick={() => toggleNeighborhoodCollapse(neighborhood)}
+                    className="w-full p-6 flex items-center justify-between transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <MapPin className="w-6 h-6 flex-shrink-0" style={{color: '#FF5959'}} />
+                      <div className="text-left">
+                        <h3 className="text-lg font-black" style={{color: '#000000'}}>{neighborhood}</h3>
+                        <p className="text-sm font-medium mt-1" style={{color: '#666666'}}>
+                          {neighborhoodProperties.length} {neighborhoodProperties.length === 1 ? 'property' : 'properties'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="transition-transform" style={{transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'}}>
+                      <ChevronDown className="w-5 h-5" style={{color: '#000000'}} />
+                    </div>
+                  </button>
+
+                  {/* Neighborhood Properties Table */}
+                  {!isCollapsed && (
+                    <div className="border-t" style={{borderColor: '#E5E5E5'}}>
+                      <PropertyTable 
+                        properties={neighborhoodProperties} 
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Properties Table/List View - Grouped by Building */}
+        {!loading && !error && sortedProperties.length > 0 && viewMode === 'list' && groupByBuilding && (
+          <div className="space-y-8">
+            {buildingAddresses.map((buildingAddress) => {
+              const buildingProperties = buildingGroups[buildingAddress]
+              const isCollapsed = collapsedBuildings.has(buildingAddress)
+              
+              return (
+                <div key={buildingAddress} className="bg-white rounded-lg overflow-hidden" style={{border: '3px solid #000000'}}>
+                  {/* Building Header */}
+                  <button
+                    onClick={() => toggleBuildingCollapse(buildingAddress)}
+                    className="w-full p-6 flex items-center justify-between transition-colors hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Building2 className="w-6 h-6 flex-shrink-0" style={{color: '#FF5959'}} />
+                      <div className="text-left">
+                        <h3 className="text-lg font-black" style={{color: '#000000'}}>{buildingAddress}</h3>
+                        <p className="text-sm font-medium mt-1" style={{color: '#666666'}}>
+                          {buildingProperties.length} {buildingProperties.length === 1 ? 'unit' : 'units'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="transition-transform" style={{transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)'}}>
+                      <ChevronDown className="w-5 h-5" style={{color: '#000000'}} />
+                    </div>
+                  </button>
+
+                  {/* Building Units Table */}
+                  {!isCollapsed && (
+                    <div className="border-t" style={{borderColor: '#E5E5E5'}}>
+                      <PropertyTable 
+                        properties={buildingProperties} 
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {/* No Search Results */}
         {!loading && !error && properties.length > 0 && filteredProperties.length === 0 && (
           <div className="bg-white rounded-lg p-12 text-center">
@@ -702,7 +1248,7 @@ const Dashboard = () => {
             <button 
               onClick={() => {
                 setSearchTerm('')
-                setFilterType('all')
+                setNeighborhoodFilter('all')
               }}
               className="text-gray-900 hover:text-gray-700 font-medium"
             >
@@ -712,6 +1258,57 @@ const Dashboard = () => {
         )}
 
       </main>
+      
+      {/* Floating Action Bar - Shown when properties are selected */}
+      {selectionMode && selectedProperties.size > 0 && (
+        <div 
+          className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 shadow-2xl rounded-lg"
+          style={{background: '#FFFFFF', border: '3px solid #10B981', minWidth: '600px'}}
+        >
+          <div className="p-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{background: '#10B981'}}>
+                <Check className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-black" style={{color: '#000000'}}>
+                  {selectedProperties.size} {selectedProperties.size === 1 ? 'Property' : 'Properties'} Selected
+                </p>
+                <p className="text-xs" style={{color: '#666666'}}>
+                  Ready to export or compare
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  const selectedProps = properties.filter(p => selectedProperties.has(p.id))
+                  exportPropertiesToCSV(selectedProps)
+                }}
+                className="px-6 py-3 rounded font-bold uppercase text-sm flex items-center gap-2 transition-all"
+                style={{background: '#10B981', color: '#FFFFFF'}}
+                onMouseEnter={(e) => {e.currentTarget.style.background = '#059669'; e.currentTarget.style.transform = 'translateY(-2px)'}}
+                onMouseLeave={(e) => {e.currentTarget.style.background = '#10B981'; e.currentTarget.style.transform = 'translateY(0)'}}
+              >
+                <Download className="w-4 h-4" />
+                <span>Export Selected</span>
+              </button>
+              
+              <button
+                onClick={deselectAll}
+                className="px-6 py-3 rounded font-bold uppercase text-sm flex items-center gap-2 transition-all"
+                style={{background: 'transparent', color: '#000000', border: '2px solid #000000'}}
+                onMouseEnter={(e) => {e.currentTarget.style.background = '#F6F1EB'}}
+                onMouseLeave={(e) => {e.currentTarget.style.background = 'transparent'}}
+              >
+                <X className="w-4 h-4" />
+                <span>Clear</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Footer */}
       <footer className="mt-20 py-8 bg-black w-full">

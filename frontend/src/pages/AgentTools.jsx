@@ -37,9 +37,12 @@ const AgentTools = () => {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
+    // Set page title
     if (id) {
+      document.title = 'Agent Tools - Property | FP AI'
       fetchProperty()
     } else {
+      document.title = 'Agent Tools | FP AI'
       fetchProperties()
     }
   }, [id])
@@ -813,7 +816,7 @@ const AgentTools = () => {
             )}
           </div>
 
-          {/* RIGHT COLUMN - Tabbed Content (Marketing & Analytics) */}
+          {/* RIGHT COLUMN - Tabbed Content (Marketing & Client Engagement) */}
           <div className="space-y-6">
             {/* Tab Navigation */}
             <div className="sticky top-0 z-40">
@@ -864,7 +867,7 @@ const AgentTools = () => {
                     }
                   }}
                 >
-                  Analytics
+                  Client Engagement
                 </button>
               </div>
             </div>
