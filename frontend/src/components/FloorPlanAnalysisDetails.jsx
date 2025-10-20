@@ -4,11 +4,12 @@
  */
 
 import React, { useState } from 'react';
-import { Ruler, Eye, Maximize2, CheckCircle, AlertCircle, Bed, Bath, UtensilsCrossed, Home, Maximize, ArrowUpDown, Shirt, Archive, Briefcase, Armchair, Trash2, DoorOpen, TreePine, Info, Star } from 'lucide-react';
+import { Ruler, Eye, Maximize2, CheckCircle, AlertCircle, Bed, Bath, UtensilsCrossed, Home, Maximize, ArrowUpDown, Shirt, Archive, Briefcase, Armchair, Trash2, DoorOpen, TreePine, Info, Star, ChevronDown, ChevronUp } from 'lucide-react';
 
 const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFeatures }) => {
   const [expandedRows, setExpandedRows] = useState(new Set())
   const [expandAll, setExpandAll] = useState(false)
+  const [isTableExpanded, setIsTableExpanded] = useState(false)
   
   const toggleRowExpanded = (index) => {
     const newExpanded = new Set(expandedRows)
@@ -22,6 +23,10 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
   
   const toggleExpandAll = () => {
     setExpandAll(!expandAll)
+  }
+  
+  const toggleTableExpanded = () => {
+    setIsTableExpanded(!isTableExpanded)
   }
   if (!extractedData) {
     return (
@@ -116,67 +121,120 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
     <div className="space-y-6">
 
       {/* Room-by-Room Breakdown */}
-      <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+      <div 
+        className="rounded-lg p-6 cursor-pointer transition-all duration-200 hover:shadow-lg" 
+        style={{
+          background: '#FFFFFF', 
+          border: `2px solid ${isTableExpanded ? '#FF5959' : '#000000'}`,
+          transform: 'translateY(0)',
+        }}
+        onClick={toggleTableExpanded}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = '0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'none'
+        }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-bold uppercase flex items-center gap-2" style={{color: '#666666', letterSpacing: '1px'}}>
-            <Ruler className="w-4 h-4" />
-            Room-by-Room Measurements
-          </h3>
-          
-          {/* Analysis Method Tooltip */}
-          <div className="group relative">
-            <Info 
-              className="w-4 h-4 cursor-help transition-colors" 
-              style={{color: '#666666'}}
-              onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'}
-              onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}
-            />
-            <div className="absolute right-0 top-6 w-72 p-4 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
-                 style={{background: '#000000', border: '2px solid #FF5959'}}>
-              <div className="flex items-center gap-2 mb-3">
-                <Eye className="w-4 h-4" style={{color: '#FF5959'}} />
-                <p className="text-xs font-bold uppercase" style={{color: '#FF5959', letterSpacing: '1px'}}>Analysis Method</p>
-              </div>
-              <div className="space-y-2 text-xs" style={{color: '#FFFFFF'}}>
-                <p>✅ <span className="font-semibold">Google Gemini Vision:</span> Room identification and layout analysis</p>
-                {usedOCR && (
-                  <p>✅ <span className="font-semibold">OCR ({ocrMethod}):</span> Dimension extraction and validation</p>
-                )}
-                {!usedOCR && (
-                  <p>⚠️ <span className="font-semibold">OCR:</span> Not used (no dimensions found or failed)</p>
-                )}
+          <div className="flex items-center gap-3">
+            <h3 className="text-xs font-bold uppercase flex items-center gap-2" style={{color: '#666666', letterSpacing: '1px'}}>
+              <Ruler className="w-4 h-4" />
+              Room-by-Room Measurements
+              {/* Visual indicator that it's clickable */}
+              <span className="text-xs font-normal" style={{color: '#999999'}}>
+                {isTableExpanded ? '(Click to collapse)' : '(Click to expand)'}
+              </span>
+            </h3>
+            
+            {/* Analysis Method Tooltip */}
+            <div className="group relative">
+              <Info 
+                className="w-4 h-4 cursor-help transition-colors" 
+                style={{color: '#666666'}}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}
+                onClick={(e) => e.stopPropagation()} // Prevent container click
+              />
+              <div className="absolute left-0 top-6 w-72 p-4 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+                   style={{background: '#000000', border: '2px solid #FF5959'}}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Eye className="w-4 h-4" style={{color: '#FF5959'}} />
+                  <p className="text-xs font-bold uppercase" style={{color: '#FF5959', letterSpacing: '1px'}}>Analysis Method</p>
+                </div>
+                <div className="space-y-2 text-xs" style={{color: '#FFFFFF'}}>
+                  <p>✅ <span className="font-semibold">Google Gemini Vision:</span> Room identification and layout analysis</p>
+                  {usedOCR && (
+                    <p>✅ <span className="font-semibold">OCR ({ocrMethod}):</span> Dimension extraction and validation</p>
+                  )}
+                  {!usedOCR && (
+                    <p>⚠️ <span className="font-semibold">OCR:</span> Not used (no dimensions found or failed)</p>
+                  )}
+                </div>
               </div>
             </div>
+          </div>
+          
+          {/* Expand/Collapse Indicator - Now just visual, not clickable */}
+          <div className="flex items-center gap-2 pointer-events-none">
+            <span className="text-xs font-medium" style={{color: '#666666'}}>
+              {isTableExpanded ? 'Expanded' : 'Collapsed'}
+            </span>
+            {isTableExpanded ? (
+              <ChevronUp className="w-5 h-5" style={{color: '#FF5959'}} />
+            ) : (
+              <ChevronDown className="w-5 h-5" style={{color: '#666666'}} />
+            )}
           </div>
         </div>
 
         {rooms.length === 0 ? (
           <p className="text-sm" style={{color: '#666666'}}>No rooms identified</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full" style={{borderCollapse: 'separate', borderSpacing: '0 4px'}}>
+        ) : isTableExpanded ? (
+          <div className="overflow-x-auto" onClick={(e) => e.stopPropagation()}>
+            <table className="w-full" style={{borderCollapse: 'separate', borderSpacing: '0'}}>
               <thead>
-                <tr>
-                  <th className="text-left text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '35%'}}>
+                <tr style={{background: '#F8F9FA'}}>
+                  <th className="text-left text-xs font-bold uppercase px-4 py-3 border-b-2" style={{color: '#666666', letterSpacing: '1px', borderColor: '#E5E5E5', width: '35%'}}>
                     Room
                   </th>
-                  <th className="text-center text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '30%'}}>
+                  <th className="text-center text-xs font-bold uppercase px-4 py-3 border-b-2" style={{color: '#666666', letterSpacing: '1px', borderColor: '#E5E5E5', width: '30%'}}>
                     Dimensions
                   </th>
-                  <th className="text-left text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '25%'}}>
+                  <th className="text-left text-xs font-bold uppercase px-4 py-3 border-b-2" style={{color: '#666666', letterSpacing: '1px', borderColor: '#E5E5E5', width: '25%'}}>
                     <div className="flex items-center justify-between">
                       <span>Features</span>
                       <button
-                        onClick={toggleExpandAll}
-                        className="text-xs px-2 py-1 rounded hover:bg-gray-100 transition-colors normal-case"
-                        style={{color: '#999999', fontWeight: '500', letterSpacing: 'normal'}}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleExpandAll()
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
+                        style={{
+                          background: expandAll ? '#000000' : 'transparent',
+                          color: expandAll ? '#FFFFFF' : '#666666',
+                          border: '1px solid #E5E5E5',
+                          letterSpacing: 'normal'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!expandAll) {
+                            e.currentTarget.style.background = '#F0F0F0'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!expandAll) {
+                            e.currentTarget.style.background = 'transparent'
+                          }
+                        }}
                         title={expandAll ? 'Collapse all features' : 'Expand all features'}
                       >
                         {expandAll ? 'Collapse All' : 'Expand All'}
                       </button>
                     </div>
                   </th>
-                  <th className="text-center text-xs font-bold uppercase px-3 py-2" style={{color: '#666666', letterSpacing: '1px', background: 'transparent', width: '10%'}}>
+                  <th className="text-center text-xs font-bold uppercase px-4 py-3 border-b-2" style={{color: '#666666', letterSpacing: '1px', borderColor: '#E5E5E5', width: '10%'}}>
                     Status
                   </th>
                 </tr>
@@ -185,32 +243,35 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                 {rooms.map((room, index) => (
                   <tr
                     key={index}
-                    className="transition-colors relative"
-                    style={{background: '#FFFFFF'}}
+                    className="transition-colors relative border-b"
+                    style={{
+                      background: index % 2 === 0 ? '#FFFFFF' : '#FAFAFA',
+                      borderColor: '#F0F0F0'
+                    }}
                     onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = '#FFFFFF'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? '#FFFFFF' : '#FAFAFA'}
                   >
-                    <td className="px-3 py-3 rounded-l-lg" style={{borderLeft: '1px solid #E5E5E5', borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center" style={{color: '#FF5959'}}>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg" style={{background: '#FFF5F5', color: '#FF5959'}}>
                           {getRoomIcon(room.type || 'Unknown Room')}
                         </div>
-                        <span className="font-medium capitalize text-sm" style={{color: '#000000'}}>
+                        <span className="font-semibold text-sm" style={{color: '#000000'}}>
                           {room.type || 'Unknown Room'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-center" style={{borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
+                    <td className="px-4 py-4 text-center">
                       {room.dimensions ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded" style={{background: '#FFF5F5', color: '#FF5959'}}>
+                        <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg" style={{background: '#F0F9FF', color: '#0369A1', border: '1px solid #E0F2FE'}}>
                           <Ruler className="w-3 h-3" />
                           {room.dimensions}
                         </span>
                       ) : (
-                        <span className="text-xs" style={{color: '#CCCCCC'}}>—</span>
+                        <span className="text-xs font-medium" style={{color: '#CCCCCC'}}>—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2" style={{borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
+                    <td className="px-4 py-4">
                       {(() => {
                         const roomFeatures = room.features || []
                         const keyFeatures = getRoomKeyFeatures(room.type || 'Unknown Room')
@@ -224,7 +285,7 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                         })
                         
                         if (allFeatures.length === 0) {
-                          return <span className="text-xs" style={{color: '#CCCCCC'}}>—</span>
+                          return <span className="text-xs font-medium" style={{color: '#CCCCCC'}}>—</span>
                         }
                         
                         const isExpanded = expandAll || expandedRows.has(index)
@@ -245,7 +306,7 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                         // When expanded, show all features inline
                         if (isExpanded) {
                           return (
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               {sortedFeatures.map((feature, idx) => {
                                 const isKey = keyFeatures.some(kf => 
                                   feature.toLowerCase().includes(kf.toLowerCase().split(' ')[0]) ||
@@ -254,14 +315,14 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                                 return (
                                   <div
                                     key={idx}
-                                    className="text-xs px-2 py-0.5 rounded flex items-center gap-1"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg mr-2 mb-1"
                                     style={{
-                                      color: '#666666', 
-                                      background: isKey ? '#FFF5F5' : '#F6F1EB',
-                                      border: isKey ? '1px solid #FFE5E5' : 'none'
+                                      background: isKey ? '#FEF3C7' : '#F3F4F6',
+                                      color: isKey ? '#92400E' : '#374151',
+                                      border: isKey ? '1px solid #FDE68A' : '1px solid #E5E7EB'
                                     }}
                                   >
-                                    {isKey && <Star className="w-2.5 h-2.5 flex-shrink-0" style={{color: '#FFD700'}} fill="#FFD700" />}
+                                    {isKey && <Star className="w-3 h-3" style={{color: '#F59E0B'}} fill="#F59E0B" />}
                                     <span>{feature}</span>
                                   </div>
                                 )
@@ -281,14 +342,14 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                           <div className="flex items-center gap-2">
                             {/* Primary feature badge */}
                             <div
-                              className="text-xs px-2 py-0.5 rounded flex items-center gap-1 flex-1 min-w-0"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg flex-1 min-w-0"
                               style={{
-                                color: '#666666', 
-                                background: isKeyFeature ? '#FFF5F5' : '#F6F1EB',
-                                border: isKeyFeature ? '1px solid #FFE5E5' : 'none'
+                                background: isKeyFeature ? '#FEF3C7' : '#F3F4F6',
+                                color: isKeyFeature ? '#92400E' : '#374151',
+                                border: isKeyFeature ? '1px solid #FDE68A' : '1px solid #E5E7EB'
                               }}
                             >
-                              {isKeyFeature && <Star className="w-2.5 h-2.5 flex-shrink-0" style={{color: '#FFD700'}} fill="#FFD700" />}
+                              {isKeyFeature && <Star className="w-3 h-3 flex-shrink-0" style={{color: '#F59E0B'}} fill="#F59E0B" />}
                               <span className="truncate">{primaryFeature}</span>
                             </div>
                             
@@ -299,8 +360,18 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                                   e.stopPropagation()
                                   toggleRowExpanded(index)
                                 }}
-                                className="text-xs px-1.5 py-0.5 rounded hover:bg-gray-200 transition-colors flex-shrink-0"
-                                style={{color: '#999999', fontWeight: '500'}}
+                                className="text-xs px-2 py-1 rounded-lg font-medium transition-colors flex-shrink-0"
+                                style={{
+                                  background: '#F3F4F6',
+                                  color: '#6B7280',
+                                  border: '1px solid #E5E7EB'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#E5E7EB'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = '#F3F4F6'
+                                }}
                                 title={`View all ${allFeatures.length} features`}
                               >
                                 +{allFeatures.length - 1}
@@ -311,11 +382,15 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                       })()}
                     </td>
                     
-                    <td className="px-3 py-3 text-center rounded-r-lg" style={{borderRight: '1px solid #E5E5E5', borderTop: '1px solid #E5E5E5', borderBottom: '1px solid #E5E5E5'}}>
+                    <td className="px-4 py-4 text-center">
                       {room.dimensions ? (
-                        <CheckCircle className="w-4 h-4 inline-block" style={{color: '#22C55E'}} />
+                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg" style={{background: '#DCFCE7', color: '#16A34A'}}>
+                          <CheckCircle className="w-4 h-4" />
+                        </div>
                       ) : (
-                        <AlertCircle className="w-4 h-4 inline-block" style={{color: '#CCCCCC'}} title="No dimensions found" />
+                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg" style={{background: '#FEF2F2', color: '#DC2626'}}>
+                          <AlertCircle className="w-4 h-4" />
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -348,6 +423,26 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                 </tr>
               </tfoot>
             </table>
+          </div>
+        ) : (
+          /* Collapsed Summary View */
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>TOTAL ROOMS</p>
+                <p className="text-2xl font-bold" style={{color: '#000000'}}>{rooms.length}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>SQUARE FOOTAGE</p>
+                <p className="text-2xl font-bold" style={{color: '#000000'}}>{square_footage?.toLocaleString() || 'N/A'}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>WITH DIMENSIONS</p>
+                <p className="text-2xl font-bold" style={{color: '#000000'}}>
+                  {rooms.filter(r => r.dimensions).length}
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </div>

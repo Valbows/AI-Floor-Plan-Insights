@@ -6,9 +6,9 @@ const PPSFComparisonChart = ({ property, comparables }) => {
   const prepareChartData = () => {
     const data = []
     
-    // Add current property
-    if (property.extracted_data?.square_footage && property.market_insights?.price_estimate?.estimated_value) {
-      const price = property.market_insights.price_estimate.estimated_value
+    // Add current property - use extracted_data path
+    if (property?.extracted_data?.square_footage && property?.extracted_data?.market_insights?.price_estimate?.estimated_value) {
+      const price = property.extracted_data.market_insights.price_estimate.estimated_value
       const sqft = property.extracted_data.square_footage
       const ppsf = Math.round(price / sqft)
       
@@ -98,7 +98,9 @@ const PPSFComparisonChart = ({ property, comparables }) => {
               value: 'Price per Sq Ft ($)', 
               angle: -90, 
               position: 'insideLeft',
-              style: { fill: '#666666', fontSize: 12 }
+              offset: 10,
+              textAnchor: 'middle',
+              style: { fill: '#666666', fontSize: 11, textAnchor: 'middle' }
             }}
           />
           <Tooltip content={<CustomTooltip />} />
