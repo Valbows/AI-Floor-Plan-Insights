@@ -892,7 +892,7 @@ const PropertyDetail = () => {
                               onClick={() => setShowPropertyDetails(!showPropertyDetails)}
                               className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase transition-all rounded-lg"
                               style={{
-                                background: showPropertyDetails ? '#FF5959' : '#F6F1EB',
+                                background: showPropertyDetails ? '#000000' : '#F6F1EB',
                                 color: showPropertyDetails ? '#FFFFFF' : '#000000',
                                 border: '1px solid #000000',
                                 letterSpacing: '1px'

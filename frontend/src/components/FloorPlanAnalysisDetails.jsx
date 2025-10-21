@@ -168,7 +168,7 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
         className="rounded-lg p-6 cursor-pointer transition-all duration-200 hover:shadow-lg" 
         style={{
           background: '#FFFFFF', 
-          border: `2px solid ${isTableExpanded ? '#FF5959' : '#000000'}`,
+          border: '3px solid #FF5959',
           transform: 'translateY(0)',
         }}
         onClick={toggleTableExpanded}
