@@ -531,9 +531,9 @@ const PropertyDetail = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* COLUMN 1 - Property Details */}
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-6">
             {/* Property Details Section */}
-            <div className="space-y-6 flex flex-col flex-1">
+            <div className="flex flex-col gap-4 flex-1">
 
             {/* PROPERTY VALUATION - Combined Analysis */}
             {extracted.square_footage > 0 && extracted.market_insights?.price_estimate?.estimated_value && (
@@ -567,7 +567,7 @@ const PropertyDetail = () => {
                 const compCount = comparables.length
                 
                 return (
-                  <div className="rounded-lg p-8 flex flex-col flex-1" style={{background: '#FFFFFF', border: '3px solid #FF5959'}}>
+                  <div className="rounded-lg p-6 flex flex-col flex-1" style={{background: '#FFFFFF', border: '3px solid #FF5959'}}>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-5 h-5" style={{color: '#FF5959'}} />
@@ -664,7 +664,7 @@ const PropertyDetail = () => {
 
             {/* Market Trend */}
             {extracted.market_insights?.market_trend && (
-              <div className="rounded-lg p-8 pb-12 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+              <div className="rounded-lg p-6 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                 <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
                   <TrendingUp className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                   Market Trend
@@ -707,7 +707,7 @@ const PropertyDetail = () => {
 
             {/* Investment Analysis */}
             {extracted.market_insights?.investment_analysis && (
-              <div className="rounded-lg p-8 pb-12 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+              <div className="rounded-lg p-6 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                 <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
                   <Building2 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                   Investment Analysis
@@ -767,7 +767,7 @@ const PropertyDetail = () => {
           </div>
 
           {/* COLUMN 2 - Market Insights */}
-          <div className="space-y-6 flex flex-col">
+          <div className="space-y-6">
             {/* Tab Navigation - HIDDEN since only showing Market Insights */}
             {false && (
             <div className="sticky top-0 z-40 pb-4" style={{background: '#F6F1EB'}}>
@@ -853,9 +853,10 @@ const PropertyDetail = () => {
             )}
 
             {/* Tab Content */}
-            <div className="space-y-6 flex-1">
+            <div className="space-y-6">
             {activeTab === 'market' && (
-              <div className="space-y-6 h-full">{/* Market Insights (Agent #2) */}
+              <div className="space-y-6">
+                {/* Market Insights (Agent #2) */}
                 {extracted.market_insights ? (
                   <>
 
@@ -1352,8 +1353,7 @@ const PropertyDetail = () => {
                     <img 
                       src={property.image_url} 
                       alt="Floor Plan" 
-                      className="w-full h-auto rounded-lg object-contain"
-                      style={{maxHeight: '600px'}}
+                      className="w-full rounded-lg"
                     />
               </div>
             ) : (
@@ -1363,10 +1363,10 @@ const PropertyDetail = () => {
             )}
           </div>
 
-              {/* PROPERTY & MARKET DATA - Shows below floor plan */}
+              {/* ATTOM Data (Property, AVM, Parcel, Area) - Inside Floor Plan Container */}
               {extracted.attom && (
                 <div className="rounded-lg p-6 space-y-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
-                  <h3 className="text-sm font-black uppercase tracking-wider" style={{color: '#000000', letterSpacing: '1.5px'}}>Property & Market Data</h3>
+                  <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Property & Market Data</h2>
                   
                   {/* Property Characteristics - Only show if there's actual data */}
                   {extracted.attom.property && (() => {
@@ -1397,12 +1397,12 @@ const PropertyDetail = () => {
                       }}
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-xs font-bold uppercase flex items-center gap-2" style={{color: '#666666', letterSpacing: '1px'}}>
+                        <h3 className="text-xs font-bold uppercase flex items-center gap-2" style={{color: '#666666', letterSpacing: '1px'}}>
                           Property Characteristics
                           <span className="text-xs font-normal" style={{color: '#999999'}}>
                             {showPropertyCharacteristics ? '(Click to collapse)' : '(Click to expand)'}
                           </span>
-                        </h4>
+                        </h3>
                         <div className="flex items-center gap-2 pointer-events-none">
                           <span className="text-xs font-medium" style={{color: '#666666'}}>
                             {showPropertyCharacteristics ? 'Expanded' : 'Collapsed'}
@@ -1432,7 +1432,7 @@ const PropertyDetail = () => {
                   {/* AVM */}
                   {extracted.attom.avm && (
                     <div>
-                      <h4 className="text-xs font-bold uppercase mb-3" style={{color: '#666666', letterSpacing: '1px'}}>ATTOM AVM</h4>
+                      <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>ATTOM AVM</h3>
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div><p className="text-gray-600">Estimated Value</p><p className="font-semibold text-gray-900">${Number(extracted.attom.avm.estimated_value || 0).toLocaleString()}</p></div>
                         <div><p className="text-gray-600">Confidence</p><p className="font-semibold text-gray-900">{extracted.attom.avm.confidence_score ? `${extracted.attom.avm.confidence_score}%` : '—'}</p></div>
@@ -1445,7 +1445,7 @@ const PropertyDetail = () => {
                   {/* Parcel Summary */}
                   {extracted.attom.parcel && (
                     <div>
-                      <h4 className="text-xs font-bold uppercase mb-3" style={{color: '#666666', letterSpacing: '1px'}}>Public Records</h4>
+                      <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Public Records</h3>
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div><p className="text-gray-600">APN</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.apn || '—'}</p></div>
                         <div><p className="text-gray-600">FIPS</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.fips || '—'}</p></div>
@@ -1460,7 +1460,7 @@ const PropertyDetail = () => {
                   {/* Area / Demographics */}
                   {extracted.attom.area_stats && (
                     <div>
-                      <h4 className="text-xs font-bold uppercase mb-3" style={{color: '#666666', letterSpacing: '1px'}}>Area</h4>
+                      <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Area</h3>
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div><p className="text-gray-600">Median Home Value</p><p className="font-semibold text-gray-900">${Number(extracted.attom.area_stats.median_home_value || 0).toLocaleString()}</p></div>
                         <div><p className="text-gray-600">Median Household Income</p><p className="font-semibold text-gray-900">${Number(extracted.attom.area_stats.median_household_income || 0).toLocaleString()}</p></div>
