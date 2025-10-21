@@ -265,7 +265,7 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                     </td>
                     <td className="px-4 py-4 text-center">
                       {room.dimensions ? (
-                        <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded" style={{background: '#000000', color: '#FFFFFF'}}>
+                        <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded" style={{background: '#F6F1EB', color: '#000000', border: '2px solid #000000'}}>
                           <Ruler className="w-4 h-4" />
                           {room.dimensions}
                         </span>
