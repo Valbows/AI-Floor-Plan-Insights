@@ -464,7 +464,7 @@ const AgentTools = () => {
                     src={property.image_url}
                     alt="Floor plan"
                     className="w-full h-auto object-contain"
-                    style={{maxHeight: '400px'}}
+                    style={{maxHeight: '600px'}}
                   />
                 </div>
               ) : (

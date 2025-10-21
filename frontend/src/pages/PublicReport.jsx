@@ -328,7 +328,8 @@ const PublicReport = () => {
               <img
                 src={property.floor_plan_url}
                 alt="Floor Plan"
-                className="w-full h-auto"
+                className="w-full h-auto object-contain"
+                style={{maxHeight: '600px'}}
               />
             </div>
           </div>
