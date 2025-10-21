@@ -531,9 +531,7 @@ const PropertyDetail = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* COLUMN 1 - Property Details */}
-          <div className="space-y-6">
-            {/* Property Details Section */}
-            <div className="space-y-4">
+          <div className="flex flex-col gap-6">
 
             {/* PROPERTY VALUATION - Combined Analysis */}
             {extracted.square_footage > 0 && extracted.market_insights?.price_estimate?.estimated_value && (
@@ -567,7 +565,7 @@ const PropertyDetail = () => {
                 const compCount = comparables.length
                 
                 return (
-                  <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '3px solid #FF5959'}}>
+                  <div className="rounded-lg p-6 flex flex-col flex-1" style={{background: '#FFFFFF', border: '3px solid #FF5959'}}>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-5 h-5" style={{color: '#FF5959'}} />
@@ -664,7 +662,7 @@ const PropertyDetail = () => {
 
             {/* Market Trend */}
             {extracted.market_insights?.market_trend && (
-              <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+              <div className="rounded-lg p-6 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                 <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
                   <TrendingUp className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                   Market Trend
@@ -707,7 +705,7 @@ const PropertyDetail = () => {
 
             {/* Investment Analysis */}
             {extracted.market_insights?.investment_analysis && (
-              <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+              <div className="rounded-lg p-6 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                 <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
                   <Building2 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                   Investment Analysis
@@ -763,7 +761,6 @@ const PropertyDetail = () => {
               </div>
             )}
 
-            </div>
           </div>
 
           {/* COLUMN 2 - Market Insights */}
@@ -918,7 +915,7 @@ const PropertyDetail = () => {
                                   <h4 className="font-bold text-lg mb-2" style={{color: '#000000'}}>
                                     {comp.address}
                                   </h4>
-                                  <div className="text-3xl font-black mb-2" style={{color: '#22C55E'}}>
+                                  <div className="text-xl font-black mb-2" style={{color: '#4ADE80'}}>
                                     ${comp.last_sale_price?.toLocaleString()}
                                   </div>
                                   <div className="text-gray-600">
