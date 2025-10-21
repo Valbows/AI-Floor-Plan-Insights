@@ -462,11 +462,11 @@ const PropertyDetail = () => {
           </div>
         </div>
 
-        {/* MAIN CONTENT GRID - 3 Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* COLUMNS 1 & 2 - Left Content Area */}
-          <div className="lg:col-span-2 space-y-6">
+         {/* MAIN CONTENT GRID - 3 Columns */}
+         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+           
+           {/* COLUMNS 1 & 2 - Left Content Area */}
+           <div className="lg:col-span-9 space-y-6">
             
             {/* KEY METRICS ROW - Top Stats (4 columns in a row) */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -531,9 +531,9 @@ const PropertyDetail = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* COLUMN 1 - Property Details */}
-          <div className="flex flex-col gap-6">
+          <div className="space-y-6">
             {/* Property Details Section */}
-            <div className="flex flex-col gap-4 flex-1">
+            <div className="space-y-4">
 
             {/* PROPERTY VALUATION - Combined Analysis */}
             {extracted.square_footage > 0 && extracted.market_insights?.price_estimate?.estimated_value && (
@@ -567,7 +567,7 @@ const PropertyDetail = () => {
                 const compCount = comparables.length
                 
                 return (
-                  <div className="rounded-lg p-6 flex flex-col flex-1" style={{background: '#FFFFFF', border: '3px solid #FF5959'}}>
+                  <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '3px solid #FF5959'}}>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-5 h-5" style={{color: '#FF5959'}} />
@@ -664,7 +664,7 @@ const PropertyDetail = () => {
 
             {/* Market Trend */}
             {extracted.market_insights?.market_trend && (
-              <div className="rounded-lg p-6 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+              <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                 <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
                   <TrendingUp className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                   Market Trend
@@ -707,7 +707,7 @@ const PropertyDetail = () => {
 
             {/* Investment Analysis */}
             {extracted.market_insights?.investment_analysis && (
-              <div className="rounded-lg p-6 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+              <div className="rounded-lg p-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                 <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
                   <Building2 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                   Investment Analysis
@@ -880,37 +880,25 @@ const PropertyDetail = () => {
                         {/* Divider */}
                         <div className="border-t border-gray-200 mb-6"></div>
                         
-                        {/* Property Details - Collapsible */}
-                        <div>
-                          <div className="flex items-center justify-between gap-6 mb-4">
-                        <div className="flex-1">
-                              <h3 className="text-sm font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>
+                        {/* Property Details - Modern Card Design */}
+                        <div className="rounded-lg border-2 border-black bg-white p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h3 className="text-sm font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>
                                 Property Details
                               </h3>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-xs text-gray-600 mt-1">
                                 {extracted.market_insights.comparable_properties.length} similar properties found nearby
-                          </p>
-                        </div>
+                              </p>
+                            </div>
                             <button
                               onClick={() => setShowPropertyDetails(!showPropertyDetails)}
-                              className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase transition-all rounded-lg flex-shrink-0"
+                              className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase transition-all rounded-lg"
                               style={{
-                                background: showPropertyDetails ? '#000000' : 'transparent',
+                                background: showPropertyDetails ? '#FF5959' : '#F6F1EB',
                                 color: showPropertyDetails ? '#FFFFFF' : '#000000',
-                                border: '2px solid #000000',
+                                border: '1px solid #000000',
                                 letterSpacing: '1px'
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!showPropertyDetails) {
-                                  e.currentTarget.style.background = '#000000'
-                                  e.currentTarget.style.color = '#FFFFFF'
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!showPropertyDetails) {
-                                  e.currentTarget.style.background = 'transparent'
-                                  e.currentTarget.style.color = '#000000'
-                                }
                               }}
                             >
                               <span>{showPropertyDetails ? 'Hide Details' : 'Show Details'}</span>
@@ -920,43 +908,30 @@ const PropertyDetail = () => {
                                 <ChevronDown className="w-4 h-4" />
                               )}
                             </button>
-                    </div>
+                          </div>
 
                           {/* Collapsible Content */}
                           {showPropertyDetails && (
-                            <div className="space-y-3 mt-4">
-                              {extracted.market_insights.comparable_properties.slice(0, 5).map((comp, idx) => (
-                                <div key={idx} className="p-4 rounded-lg transition-all" style={{background: '#F6F1EB', border: '1px solid #E5E5E5'}}>
-                                  <p className="font-semibold text-gray-900 mb-1">{comp.address}</p>
-                                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                                    <span className="flex items-center gap-1">
-                                      <Bed className="w-3 h-3" />
-                                      {comp.bedrooms}BR
-                          </span>
-                                    <span className="flex items-center gap-1">
-                                      <Bath className="w-3 h-3" />
-                                      {comp.bathrooms}BA
-                          </span>
-                                    <span className="flex items-center gap-1">
-                                      <Maximize className="w-3 h-3" />
-                                      {comp.square_feet?.toLocaleString()} sqft
-                            </span>
-                          </div>
-                                  <div className="flex items-center justify-between mt-2">
-                                    <span className="font-semibold text-green-600">
-                                      Sold: ${comp.last_sale_price?.toLocaleString()}
-                                    </span>
-                                    <span className="text-sm text-gray-500">
-                                      {comp.distance_miles} mi away
-                            </span>
-                          </div>
-                      </div>
+                            <div className="space-y-6 mt-6">
+                              {extracted.market_insights.comparable_properties.slice(0, 4).map((comp, idx) => (
+                                <div key={idx} className="text-center">
+                                  <h4 className="font-bold text-lg mb-2" style={{color: '#000000'}}>
+                                    {comp.address}
+                                  </h4>
+                                  <div className="text-3xl font-black mb-2" style={{color: '#22C55E'}}>
+                                    ${comp.last_sale_price?.toLocaleString()}
+                                  </div>
+                                  <div className="text-gray-600">
+                                    {comp.bedrooms || '—'}BR • {comp.bathrooms || '—'}BA • {comp.square_feet?.toLocaleString() || '—'} sqft
+                                  </div>
+                                </div>
                               ))}
-                        </div>
-                      )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
+
                   </>
                 ) : (
                   <>
@@ -1281,11 +1256,11 @@ const PropertyDetail = () => {
             </div>
           </div>
           
-          </div> {/* End 2-column layout */}
-          </div> {/* End left content area (lg:col-span-2) */}
-
-          {/* COLUMN 3 - Floor Plan (Sticky) */}
-          <div className="space-y-6">
+            </div> {/* End 2-column layout */}
+           </div> {/* End left content area (lg:col-span-9) */}
+  
+            {/* COLUMN 3 - Floor Plan (Sticky) */}
+           <div className="lg:col-span-3 space-y-6">
             <div className="sticky top-4 space-y-4">
               {/* Data Sources + Re-run Button */}
               <div className="flex items-center justify-between rounded-lg p-3" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
@@ -1363,118 +1338,167 @@ const PropertyDetail = () => {
             )}
           </div>
 
-              {/* ATTOM Data (Property, AVM, Parcel, Area) - Inside Floor Plan Container */}
-              {extracted.attom && (
-                <div className="rounded-lg p-6 space-y-6" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
-                  <h2 className="text-lg font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>Property & Market Data</h2>
+          {/* ATTOM Data (Property, AVM, Parcel, Area) - Inside Floor Plan Card */}
+          {extracted.attom && (
+            <div className="space-y-4">
+              {/* Header with divider */}
+              <div className="border-t-2 border-gray-200 pt-4">
+                <h2 className="text-lg font-black uppercase mb-4" style={{color: '#000000', letterSpacing: '1px'}}>Property & Market Data</h2>
+              </div>
+
+              {/* Property Characteristics Card */}
+              {extracted.attom.property && (() => {
+                const hasData = extracted.attom.property.property_type || 
+                               extracted.attom.property.year_built || 
+                               extracted.attom.property.bedrooms !== undefined || 
+                               extracted.attom.property.bathrooms !== undefined || 
+                               extracted.attom.property.square_feet || 
+                               extracted.attom.property.last_sale_date
+                
+                return hasData ? (
+                <div className="rounded-lg border-2 border-black bg-white p-4">
+                  <div 
+                    className="cursor-pointer flex items-center justify-between mb-3"
+                    onClick={() => setShowPropertyCharacteristics(!showPropertyCharacteristics)}
+                  >
+                    <h3 className="text-sm font-black uppercase" style={{color: '#000000', letterSpacing: '1px'}}>
+                      Property Characteristics
+                    </h3>
+                    {showPropertyCharacteristics ? (
+                      <ChevronUp className="w-5 h-5" style={{color: '#FF5959'}} />
+                    ) : (
+                      <ChevronDown className="w-5 h-5" style={{color: '#000000'}} />
+                    )}
+                  </div>
                   
-                  {/* Property Characteristics - Only show if there's actual data */}
-                  {extracted.attom.property && (() => {
-                    const hasData = extracted.attom.property.property_type || 
-                                   extracted.attom.property.year_built || 
-                                   extracted.attom.property.bedrooms !== undefined || 
-                                   extracted.attom.property.bathrooms !== undefined || 
-                                   extracted.attom.property.square_feet || 
-                                   extracted.attom.property.last_sale_date
-                    
-                    return hasData ? (
-                    <div 
-                      className="cursor-pointer transition-all duration-200 hover:shadow-sm" 
-                      style={{
-                        border: `1px solid ${showPropertyCharacteristics ? '#FF5959' : '#E5E5E5'}`,
-                        borderRadius: '8px',
-                        padding: '16px',
-                        background: '#FAFAFA'
-                      }}
-                      onClick={() => setShowPropertyCharacteristics(!showPropertyCharacteristics)}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-1px)'
-                        e.currentTarget.style.boxShadow = '0 4px 12px -2px rgba(0, 0, 0, 0.1)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = 'none'
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-xs font-bold uppercase flex items-center gap-2" style={{color: '#666666', letterSpacing: '1px'}}>
-                          Property Characteristics
-                          <span className="text-xs font-normal" style={{color: '#999999'}}>
-                            {showPropertyCharacteristics ? '(Click to collapse)' : '(Click to expand)'}
-                          </span>
-                        </h3>
-                        <div className="flex items-center gap-2 pointer-events-none">
-                          <span className="text-xs font-medium" style={{color: '#666666'}}>
-                            {showPropertyCharacteristics ? 'Expanded' : 'Collapsed'}
-                          </span>
-                          {showPropertyCharacteristics ? (
-                            <ChevronUp className="w-4 h-4" style={{color: '#FF5959'}} />
-                          ) : (
-                            <ChevronDown className="w-4 h-4" style={{color: '#666666'}} />
-                          )}
+                  {showPropertyCharacteristics && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                          <p className="text-xs font-bold uppercase text-gray-600 mb-1">Type</p>
+                          <p className="font-black text-sm">{extracted.attom.property.property_type || '—'}</p>
+                        </div>
+                        <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                          <p className="text-xs font-bold uppercase text-gray-600 mb-1">Year Built</p>
+                          <p className="font-black text-sm">{extracted.attom.property.year_built || '—'}</p>
                         </div>
                       </div>
-                      
-                      {showPropertyCharacteristics && (
-                        <div className="grid grid-cols-2 gap-3 text-sm" onClick={(e) => e.stopPropagation()}>
-                          <div><p className="text-gray-600">Type</p><p className="font-semibold text-gray-900">{extracted.attom.property.property_type || '—'}</p></div>
-                          <div><p className="text-gray-600">Year Built</p><p className="font-semibold text-gray-900">{extracted.attom.property.year_built || '—'}</p></div>
-                          <div><p className="text-gray-600">Beds</p><p className="font-semibold text-gray-900">{extracted.attom.property.bedrooms ?? '—'}</p></div>
-                          <div><p className="text-gray-600">Baths</p><p className="font-semibold text-gray-900">{extracted.attom.property.bathrooms ?? '—'}</p></div>
-                          <div><p className="text-gray-600">Sq Ft</p><p className="font-semibold text-gray-900">{extracted.attom.property.square_feet?.toLocaleString?.() || extracted.attom.property.square_feet || '—'}</p></div>
-                          <div><p className="text-gray-600">Last Sale</p><p className="font-semibold text-gray-900">{extracted.attom.property.last_sale_date || '—'}{extracted.attom.property.last_sale_price ? ` • $${Number(extracted.attom.property.last_sale_price).toLocaleString()}` : ''}</p></div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-3 rounded-lg text-center" style={{background: '#F6F1EB'}}>
+                          <p className="text-xs font-bold uppercase text-gray-600 mb-1">Beds</p>
+                          <p className="font-black text-lg">{extracted.attom.property.bedrooms ?? '—'}</p>
+                        </div>
+                        <div className="p-3 rounded-lg text-center" style={{background: '#F6F1EB'}}>
+                          <p className="text-xs font-bold uppercase text-gray-600 mb-1">Baths</p>
+                          <p className="font-black text-lg">{extracted.attom.property.bathrooms ?? '—'}</p>
+                        </div>
+                        <div className="p-3 rounded-lg text-center" style={{background: '#F6F1EB'}}>
+                          <p className="text-xs font-bold uppercase text-gray-600 mb-1">Sq Ft</p>
+                          <p className="font-black text-lg">{extracted.attom.property.square_feet?.toLocaleString?.() || extracted.attom.property.square_feet || '—'}</p>
+                        </div>
+                      </div>
+                      {(extracted.attom.property.last_sale_date || extracted.attom.property.last_sale_price) && (
+                        <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                          <p className="text-xs font-bold uppercase text-gray-600 mb-1">Last Sale</p>
+                          <p className="font-black text-sm">
+                            {extracted.attom.property.last_sale_date || '—'}
+                            {extracted.attom.property.last_sale_price ? ` • $${Number(extracted.attom.property.last_sale_price).toLocaleString()}` : ''}
+                          </p>
                         </div>
                       )}
                     </div>
-                    ) : null
-                  })()}
-
-                  {/* AVM */}
-                  {extracted.attom.avm && (
-                    <div>
-                      <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>ATTOM AVM</h3>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div><p className="text-gray-600">Estimated Value</p><p className="font-semibold text-gray-900">${Number(extracted.attom.avm.estimated_value || 0).toLocaleString()}</p></div>
-                        <div><p className="text-gray-600">Confidence</p><p className="font-semibold text-gray-900">{extracted.attom.avm.confidence_score ? `${extracted.attom.avm.confidence_score}%` : '—'}</p></div>
-                        <div><p className="text-gray-600">Range</p><p className="font-semibold text-gray-900">${Number(extracted.attom.avm.value_range_low || 0).toLocaleString()} - ${Number(extracted.attom.avm.value_range_high || 0).toLocaleString()}</p></div>
-                        <div><p className="text-gray-600">As of</p><p className="font-semibold text-gray-900">{extracted.attom.avm.as_of_date || '—'}</p></div>
-                      </div>
-                    </div>
                   )}
+                </div>
+                ) : null
+              })()}
 
-                  {/* Parcel Summary */}
-                  {extracted.attom.parcel && (
-                    <div>
-                      <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Public Records</h3>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div><p className="text-gray-600">APN</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.apn || '—'}</p></div>
-                        <div><p className="text-gray-600">FIPS</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.fips || '—'}</p></div>
-                        <div><p className="text-gray-600">Lot Size (acres)</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.lot_size_acres ?? '—'}</p></div>
-                        <div><p className="text-gray-600">Lot Size (sqft)</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.lot_size_sqft?.toLocaleString?.() || extracted.attom.parcel.lot_size_sqft || '—'}</p></div>
-                        <div><p className="text-gray-600">Zoning</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.zoning || '—'}</p></div>
-                        <div><p className="text-gray-600">Use</p><p className="font-semibold text-gray-900">{extracted.attom.parcel.county_use || '—'}</p></div>
-                      </div>
+              {/* AVM Card */}
+              {extracted.attom.avm && (
+                <div className="rounded-lg border-2 border-black bg-white p-4">
+                  <h3 className="text-sm font-black uppercase mb-3" style={{color: '#000000', letterSpacing: '1px'}}>Market Valuation</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">Estimated Value</p>
+                      <p className="font-black text-lg" style={{color: '#FF5959'}}>${Number(extracted.attom.avm.estimated_value || 0).toLocaleString()}</p>
                     </div>
-                  )}
-
-                  {/* Area / Demographics */}
-                  {extracted.attom.area_stats && (
-                    <div>
-                      <h3 className="text-xs font-bold uppercase mb-2" style={{color: '#666666', letterSpacing: '1px'}}>Area</h3>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div><p className="text-gray-600">Median Home Value</p><p className="font-semibold text-gray-900">${Number(extracted.attom.area_stats.median_home_value || 0).toLocaleString()}</p></div>
-                        <div><p className="text-gray-600">Median Household Income</p><p className="font-semibold text-gray-900">${Number(extracted.attom.area_stats.median_household_income || 0).toLocaleString()}</p></div>
-                        <div><p className="text-gray-600">Population</p><p className="font-semibold text-gray-900">{Number(extracted.attom.area_stats.population || 0).toLocaleString()}</p></div>
-                      </div>
+                    <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">Confidence</p>
+                      <p className="font-black text-lg">{extracted.attom.avm.confidence_score ? `${extracted.attom.avm.confidence_score}%` : '—'}</p>
                     </div>
-                  )}
+                    <div className="p-3 rounded-lg col-span-2" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">Value Range</p>
+                      <p className="font-black text-sm">${Number(extracted.attom.avm.value_range_low || 0).toLocaleString()} - ${Number(extracted.attom.avm.value_range_high || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-xs text-gray-500">
+                    As of: {extracted.attom.avm.as_of_date || '—'}
+                  </div>
                 </div>
               )}
+
+              {/* Public Records Card */}
+              {extracted.attom.parcel && (
+                <div className="rounded-lg border-2 border-black bg-white p-4">
+                  <h3 className="text-sm font-black uppercase mb-3" style={{color: '#000000', letterSpacing: '1px'}}>Public Records</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">APN</p>
+                      <p className="font-black text-sm">{extracted.attom.parcel.apn || '—'}</p>
+                    </div>
+                    <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">FIPS</p>
+                      <p className="font-black text-sm">{extracted.attom.parcel.fips || '—'}</p>
+                    </div>
+                    <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">Lot (acres)</p>
+                      <p className="font-black text-sm">{extracted.attom.parcel.lot_size_acres ?? '—'}</p>
+                    </div>
+                    <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">Lot (sqft)</p>
+                      <p className="font-black text-sm">{extracted.attom.parcel.lot_size_sqft?.toLocaleString?.() || extracted.attom.parcel.lot_size_sqft || '—'}</p>
+                    </div>
+                    <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">Zoning</p>
+                      <p className="font-black text-sm">{extracted.attom.parcel.zoning || '—'}</p>
+                    </div>
+                    <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">Use</p>
+                      <p className="font-black text-sm">{extracted.attom.parcel.county_use || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Area Demographics Card */}
+              {extracted.attom.area_stats && (
+                <div className="rounded-lg border-2 border-black bg-white p-4">
+                  <h3 className="text-sm font-black uppercase mb-3" style={{color: '#000000', letterSpacing: '1px'}}>Area Demographics</h3>
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                      <p className="text-xs font-bold uppercase text-gray-600 mb-1">Median Home Value</p>
+                      <p className="font-black text-lg" style={{color: '#FF5959'}}>${Number(extracted.attom.area_stats.median_home_value || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                        <p className="text-xs font-bold uppercase text-gray-600 mb-1">Median Income</p>
+                        <p className="font-black text-sm">${Number(extracted.attom.area_stats.median_household_income || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="p-3 rounded-lg" style={{background: '#F6F1EB'}}>
+                        <p className="text-xs font-bold uppercase text-gray-600 mb-1">Population</p>
+                        <p className="font-black text-sm">{Number(extracted.attom.area_stats.population || 0).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
                 </div>
+           </div> {/* End Column 3 */}
 
           {/* ROOM-BY-ROOM MEASUREMENTS - Spans All 3 Columns (Full Width) */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-12">
             <div className="mt-6">
               <h3 className="text-xs font-bold uppercase mb-4" style={{color: '#666666', letterSpacing: '1px'}}>
                 AI Analysis - Floor Plan Details
@@ -1485,7 +1509,6 @@ const PropertyDetail = () => {
                 setShowAllFeatures={setShowAllFeatures}
               />
               </div>
-            </div>
             </div>
       </main>
       
