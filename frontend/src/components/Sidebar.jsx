@@ -57,7 +57,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               <div className="flex items-center gap-2 overflow-hidden">
                 <Building2 className="w-6 h-6 flex-shrink-0" style={{ color: '#FF5959' }} />
                 <span className="text-xl font-black uppercase tracking-tight text-white whitespace-nowrap">
-                  FP AI
+                  FloorIQ
                 </span>
               </div>
               <button
@@ -71,7 +71,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               </button>
             </div>
             <p className="text-xs text-gray-400 mt-1 whitespace-nowrap">
-              Floor Plan Insights
+              Property Intelligence
             </p>
           </div>
         )}

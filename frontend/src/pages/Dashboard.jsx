@@ -378,7 +378,7 @@ const Dashboard = () => {
   const [selectionMode, setSelectionMode] = useState(false)
 
   useEffect(() => {
-    document.title = 'Properties | FP AI'
+    document.title = 'Properties | FloorIQ'
     fetchProperties()
   }, [])
 
@@ -647,10 +647,9 @@ const Dashboard = () => {
       <main className="max-w-[1400px] mx-auto px-4 py-16">
         {/* Centered Title */}
         <div className="text-center mb-16">
-          <h1 className="text-6xl font-black uppercase tracking-tight mb-2" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
-            MY <span style={{color: '#FF5959'}}>PROPERTIES</span>
+          <h1 className="text-6xl font-black uppercase tracking-tight mb-8" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
+            MY <span style={{color: '#FF5959'}}><span style={{borderBottom: '6px solid #FF5959'}}>PROPER</span>TIES</span>
           </h1>
-          <div className="w-24 h-1.5 mx-auto mb-8" style={{background: '#FF5959'}}></div>
           
           {/* Search Bar & Filter Controls */}
           <div className="max-w-3xl mx-auto mb-8">
@@ -1314,7 +1313,7 @@ const Dashboard = () => {
       <footer className="mt-20 py-8 bg-black w-full">
         <div className="max-w-[1400px] mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center text-sm" style={{color: '#999999'}}>
-            <p>© 2025 FP AI Technologies. All Rights Reserved.</p>
+            <p>© 2025 FloorIQ Technologies. All Rights Reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="transition-colors" style={{color: '#999999'}} onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'} onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}>Privacy</a>
               <a href="#" className="transition-colors" style={{color: '#999999'}} onMouseEnter={(e) => e.currentTarget.style.color = '#FF5959'} onMouseLeave={(e) => e.currentTarget.style.color = '#999999'}>Terms</a>

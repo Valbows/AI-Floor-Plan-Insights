@@ -40,10 +40,10 @@ const AgentTools = () => {
   useEffect(() => {
     // Set page title and fetch data
     if (id) {
-      document.title = 'Agent Tools - Property | FP AI'
+      document.title = 'Agent Tools - Property | FloorIQ'
       fetchProperty()
     } else {
-      document.title = 'Agent Tools | FP AI'
+      document.title = 'Agent Tools | FloorIQ'
       fetchProperties()
     }
   }, [id, refreshKey]) // Re-run when id OR refreshKey changes

@@ -17,7 +17,7 @@ const Analytics = () => {
 
   useEffect(() => {
     // Set page title
-    document.title = 'Price Predictor | FP AI';
+    document.title = 'Price Predictor | FloorIQ';
     
     // Try to load model stats and sqft impact on mount
     loadAnalytics();

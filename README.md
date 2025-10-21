@@ -1,4 +1,4 @@
-# AI Floor Plan and Market Insights
+# FloorIQ - AI Floor Plan and Market Insights
 
 🏡 **Intelligent real estate assistant that parses floor plans, enriches property data with market insights, and generates MLS-ready listings.**
 
@@ -219,7 +219,7 @@ Expected response:
 ```json
 {
   "status": "healthy",
-  "service": "AI Floor Plan Insights API",
+  "service": "FloorIQ API",
   "version": "1.0.0"
 }
 ```

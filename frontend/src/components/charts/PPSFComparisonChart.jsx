@@ -116,7 +116,7 @@ const PPSFComparisonChart = ({ property, comparables }) => {
       </ResponsiveContainer>
       
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 mt-4 pt-4" style={{borderTop: '1px solid #E5E5E5'}}>
+      <div className="flex items-center justify-center gap-4 mt-2 pt-3" style={{borderTop: '1px solid #E5E5E5'}}>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded" style={{background: '#FF5959'}}></div>
           <span className="text-xs" style={{color: '#666666'}}>Your Property</span>

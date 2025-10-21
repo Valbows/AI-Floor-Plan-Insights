@@ -63,7 +63,7 @@ const PropertyDetail = () => {
   const showMarketingAndAnalytics = false
 
   useEffect(() => {
-    document.title = 'Property Details | FP AI'
+    document.title = 'Property Details | FloorIQ'
     loadProperty()
   }, [id])
 

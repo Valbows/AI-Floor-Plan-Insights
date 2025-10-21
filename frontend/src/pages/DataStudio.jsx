@@ -21,7 +21,7 @@ const DataStudio = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    document.title = 'Data Studio | FP AI'
+    document.title = 'Data Studio | FloorIQ'
     fetchProperties()
   }, [])
 
@@ -141,10 +141,9 @@ const DataStudio = () => {
       <div className="max-w-[1400px] mx-auto px-4 py-16">
         {/* Hero Header - Matching MY PROPERTIES style */}
         <div className="text-center mb-16">
-          <h1 className="text-6xl font-black uppercase tracking-tight mb-2" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
-            DATA <span style={{color: '#FF5959'}}>STUDIO</span>
+          <h1 className="text-6xl font-black uppercase tracking-tight mb-8" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
+            DATA <span style={{color: '#FF5959'}}><span style={{borderBottom: '6px solid #FF5959'}}>STU</span>DIO</span>
           </h1>
-          <div className="w-24 h-1.5 mx-auto mb-4" style={{background: '#FF5959'}}></div>
           <p className="text-lg font-medium" style={{color: '#666666'}}>
             Interactive analysis of your property portfolio
           </p>

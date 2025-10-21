@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Ruler, Eye, Maximize2, CheckCircle, AlertCircle, Bed, Bath, UtensilsCrossed, Home, Maximize, ArrowUpDown, Shirt, Archive, Briefcase, Armchair, Trash2, DoorOpen, TreePine, Info, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { Ruler, Eye, Maximize2, CheckCircle, AlertCircle, Bed, Bath, UtensilsCrossed, Home, Maximize, ArrowUpDown, Shirt, Archive, Briefcase, Armchair, Trash2, DoorOpen, TreePine, Info, Star, ChevronDown, ChevronUp, Download } from 'lucide-react';
 
 const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFeatures }) => {
   const [expandedRows, setExpandedRows] = useState(new Set())
@@ -27,6 +27,49 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
   
   const toggleTableExpanded = () => {
     setIsTableExpanded(!isTableExpanded)
+  }
+  
+  // Export rooms to CSV
+  const exportRoomsToCSV = () => {
+    if (!extractedData || !extractedData.rooms || extractedData.rooms.length === 0) {
+      alert('No room data to export')
+      return
+    }
+    
+    const headers = ['Room Type', 'Dimensions', 'Features', 'Has Dimensions']
+    const rows = extractedData.rooms.map(room => [
+      room.type || 'Unknown',
+      room.dimensions || '',
+      (room.features || []).join('; '),
+      room.dimensions ? 'Yes' : 'No'
+    ])
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => 
+        row.map(cell => {
+          const cellStr = String(cell || '')
+          if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+            return `"${cellStr.replace(/"/g, '""')}"`
+          }
+          return cellStr
+        }).join(',')
+      )
+    ].join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    
+    const timestamp = new Date().toISOString().split('T')[0]
+    const filename = `room-dimensions-${timestamp}.csv`
+    
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
   if (!extractedData) {
     return (
@@ -177,8 +220,37 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
             </div>
           </div>
           
-          {/* Expand/Collapse Indicator - Now just visual, not clickable */}
-          <div className="flex items-center gap-2 pointer-events-none">
+          {/* Right side controls */}
+          <div className="flex items-center gap-3">
+            {/* Export CSV Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                exportRoomsToCSV()
+              }}
+              className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase transition-all rounded"
+              style={{
+                background: '#FFFFFF',
+                color: '#000000',
+                border: '2px solid #000000',
+                letterSpacing: '1px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#000000'
+                e.currentTarget.style.color = '#FFFFFF'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#FFFFFF'
+                e.currentTarget.style.color = '#000000'
+              }}
+              title="Export room data to CSV"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export</span>
+            </button>
+            
+            {/* Expand/Collapse Indicator - Now just visual, not clickable */}
+            <div className="flex items-center gap-2 pointer-events-none">
             <span className="text-xs font-medium" style={{color: '#666666'}}>
               {isTableExpanded ? 'Expanded' : 'Collapsed'}
             </span>
@@ -187,6 +259,7 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
             ) : (
               <ChevronDown className="w-5 h-5" style={{color: '#666666'}} />
             )}
+          </div>
           </div>
         </div>
 
@@ -211,12 +284,11 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                           e.stopPropagation()
                           toggleExpandAll()
                         }}
-                        className="text-xs px-3 py-1.5 rounded font-bold uppercase transition-all"
+                        className="p-1.5 rounded transition-all"
                         style={{
                           background: expandAll ? '#FF5959' : '#FFFFFF',
                           color: expandAll ? '#FFFFFF' : '#000000',
-                          border: '1px solid #FFFFFF',
-                          letterSpacing: '1px'
+                          border: '1px solid #FFFFFF'
                         }}
                         onMouseEnter={(e) => {
                           if (!expandAll) {
@@ -232,7 +304,7 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                         }}
                         title={expandAll ? 'Collapse all features' : 'Expand all features'}
                       >
-                        {expandAll ? 'Collapse' : 'Expand All'}
+                        {expandAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                     </div>
                   </th>
@@ -317,15 +389,13 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                                 return (
                                   <div
                                     key={idx}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase rounded mr-2 mb-1"
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full mr-1.5 mb-1"
                                     style={{
-                                      background: isKey ? '#FFF5F5' : '#FFFFFF',
-                                      color: isKey ? '#FF5959' : '#000000',
-                                      border: isKey ? '1px solid #FF5959' : '1px solid #999999',
-                                      letterSpacing: '0.5px'
+                                      background: isKey ? 'rgba(255, 89, 89, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                                      color: isKey ? '#FF5959' : '#666666'
                                     }}
                                   >
-                                    {isKey && <Star className="w-3 h-3" style={{color: '#FF5959'}} fill="#FF5959" />}
+                                    {isKey && <Star className="w-2.5 h-2.5" style={{color: '#FF5959'}} fill="#FF5959" />}
                                     <span>{feature}</span>
                                   </div>
                                 )
@@ -345,16 +415,14 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                           <div className="flex items-center gap-2">
                             {/* Primary feature badge */}
                             <div
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase rounded flex-1 min-w-0"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full"
                               style={{
-                                background: isKeyFeature ? '#FFF5F5' : '#FFFFFF',
-                                color: isKeyFeature ? '#FF5959' : '#000000',
-                                border: isKeyFeature ? '1px solid #FF5959' : '1px solid #999999',
-                                letterSpacing: '0.5px'
+                                background: isKeyFeature ? 'rgba(255, 89, 89, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                                color: isKeyFeature ? '#FF5959' : '#666666'
                               }}
                             >
-                              {isKeyFeature && <Star className="w-3 h-3 flex-shrink-0" style={{color: '#FF5959'}} fill="#FF5959" />}
-                              <span className="truncate">{primaryFeature}</span>
+                              {isKeyFeature && <Star className="w-2.5 h-2.5 flex-shrink-0" style={{color: '#FF5959'}} fill="#FF5959" />}
+                              <span>{primaryFeature}</span>
                             </div>
                             
                             {/* Expand button if more features exist */}
@@ -364,20 +432,18 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                                   e.stopPropagation()
                                   toggleRowExpanded(index)
                                 }}
-                                className="text-xs px-3 py-1.5 rounded font-bold uppercase transition-all flex-shrink-0"
+                                className="text-xs px-2 py-0.5 rounded-full font-semibold transition-all flex-shrink-0"
                                 style={{
-                                  background: '#FFFFFF',
-                                  color: '#000000',
-                                  border: '1px solid #999999',
-                                  letterSpacing: '0.5px'
+                                  background: 'rgba(0, 0, 0, 0.05)',
+                                  color: '#666666'
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.background = '#000000'
                                   e.currentTarget.style.color = '#FFFFFF'
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = '#FFFFFF'
-                                  e.currentTarget.style.color = '#000000'
+                                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)'
+                                  e.currentTarget.style.color = '#666666'
                                 }}
                                 title={`View all ${allFeatures.length} features`}
                               >
@@ -391,13 +457,9 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                     
                     <td className="px-4 py-4 text-center">
                       {room.dimensions ? (
-                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg" style={{background: '#DCFCE7', color: '#16A34A'}}>
-                          <CheckCircle className="w-4 h-4" />
-                        </div>
+                        <CheckCircle className="w-5 h-5 inline-block" style={{color: '#4ADE80'}} />
                       ) : (
-                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg" style={{background: '#FEF2F2', color: '#DC2626'}}>
-                          <AlertCircle className="w-4 h-4" />
-                        </div>
+                        <AlertCircle className="w-5 h-5 inline-block" style={{color: '#DC2626'}} />
                       )}
                     </td>
                   </tr>

@@ -22,7 +22,7 @@ const NewProperty = () => {
   ]
 
   useEffect(() => {
-    document.title = 'Add Property | FP AI'
+    document.title = 'Add Property | FloorIQ'
   }, [])
 
   useEffect(() => {
