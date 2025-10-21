@@ -317,14 +317,15 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                                 return (
                                   <div
                                     key={idx}
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg mr-2 mb-1"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase rounded mr-2 mb-1"
                                     style={{
-                                      background: isKey ? '#FEF3C7' : '#F3F4F6',
-                                      color: isKey ? '#92400E' : '#374151',
-                                      border: isKey ? '1px solid #FDE68A' : '1px solid #E5E7EB'
+                                      background: isKey ? '#FFF5F5' : '#F6F1EB',
+                                      color: isKey ? '#FF5959' : '#000000',
+                                      border: isKey ? '2px solid #FF5959' : '2px solid #000000',
+                                      letterSpacing: '0.5px'
                                     }}
                                   >
-                                    {isKey && <Star className="w-3 h-3" style={{color: '#F59E0B'}} fill="#F59E0B" />}
+                                    {isKey && <Star className="w-3 h-3" style={{color: '#FF5959'}} fill="#FF5959" />}
                                     <span>{feature}</span>
                                   </div>
                                 )
@@ -344,14 +345,15 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                           <div className="flex items-center gap-2">
                             {/* Primary feature badge */}
                             <div
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg flex-1 min-w-0"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase rounded flex-1 min-w-0"
                               style={{
-                                background: isKeyFeature ? '#FEF3C7' : '#F3F4F6',
-                                color: isKeyFeature ? '#92400E' : '#374151',
-                                border: isKeyFeature ? '1px solid #FDE68A' : '1px solid #E5E7EB'
+                                background: isKeyFeature ? '#FFF5F5' : '#F6F1EB',
+                                color: isKeyFeature ? '#FF5959' : '#000000',
+                                border: isKeyFeature ? '2px solid #FF5959' : '2px solid #000000',
+                                letterSpacing: '0.5px'
                               }}
                             >
-                              {isKeyFeature && <Star className="w-3 h-3 flex-shrink-0" style={{color: '#F59E0B'}} fill="#F59E0B" />}
+                              {isKeyFeature && <Star className="w-3 h-3 flex-shrink-0" style={{color: '#FF5959'}} fill="#FF5959" />}
                               <span className="truncate">{primaryFeature}</span>
                             </div>
                             
@@ -362,17 +364,20 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                                   e.stopPropagation()
                                   toggleRowExpanded(index)
                                 }}
-                                className="text-xs px-2 py-1 rounded-lg font-medium transition-colors flex-shrink-0"
+                                className="text-xs px-3 py-1.5 rounded font-bold uppercase transition-all flex-shrink-0"
                                 style={{
-                                  background: '#F3F4F6',
-                                  color: '#6B7280',
-                                  border: '1px solid #E5E7EB'
+                                  background: '#F6F1EB',
+                                  color: '#000000',
+                                  border: '2px solid #000000',
+                                  letterSpacing: '0.5px'
                                 }}
                                 onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#E5E7EB'
+                                  e.currentTarget.style.background = '#000000'
+                                  e.currentTarget.style.color = '#FFFFFF'
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = '#F3F4F6'
+                                  e.currentTarget.style.background = '#F6F1EB'
+                                  e.currentTarget.style.color = '#000000'
                                 }}
                                 title={`View all ${allFeatures.length} features`}
                               >
