@@ -319,9 +319,9 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                                     key={idx}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase rounded mr-2 mb-1"
                                     style={{
-                                      background: isKey ? '#FFF5F5' : '#F6F1EB',
+                                      background: isKey ? '#FFF5F5' : '#FFFFFF',
                                       color: isKey ? '#FF5959' : '#000000',
-                                      border: isKey ? '2px solid #FF5959' : '2px solid #000000',
+                                      border: isKey ? '1px solid #FF5959' : '1px solid #999999',
                                       letterSpacing: '0.5px'
                                     }}
                                   >
@@ -347,9 +347,9 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                             <div
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase rounded flex-1 min-w-0"
                               style={{
-                                background: isKeyFeature ? '#FFF5F5' : '#F6F1EB',
+                                background: isKeyFeature ? '#FFF5F5' : '#FFFFFF',
                                 color: isKeyFeature ? '#FF5959' : '#000000',
-                                border: isKeyFeature ? '2px solid #FF5959' : '2px solid #000000',
+                                border: isKeyFeature ? '1px solid #FF5959' : '1px solid #999999',
                                 letterSpacing: '0.5px'
                               }}
                             >
@@ -366,9 +366,9 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                                 }}
                                 className="text-xs px-3 py-1.5 rounded font-bold uppercase transition-all flex-shrink-0"
                                 style={{
-                                  background: '#F6F1EB',
+                                  background: '#FFFFFF',
                                   color: '#000000',
-                                  border: '2px solid #000000',
+                                  border: '1px solid #999999',
                                   letterSpacing: '0.5px'
                                 }}
                                 onMouseEnter={(e) => {
@@ -376,7 +376,7 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                                   e.currentTarget.style.color = '#FFFFFF'
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = '#F6F1EB'
+                                  e.currentTarget.style.background = '#FFFFFF'
                                   e.currentTarget.style.color = '#000000'
                                 }}
                                 title={`View all ${allFeatures.length} features`}
