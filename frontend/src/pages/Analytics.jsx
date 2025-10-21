@@ -67,10 +67,9 @@ const Analytics = () => {
     <div className="max-w-[1400px] mx-auto px-4 py-16">
       {/* Hero Header - Matching MY PROPERTIES style */}
       <div className="text-center mb-16">
-        <h1 className="text-6xl font-black uppercase tracking-tight mb-2" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
-          AI PRICE <span style={{color: '#FF5959'}}>PREDICTOR</span>
+        <h1 className="text-6xl font-black uppercase tracking-tight mb-8" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
+          AI PRICE <span style={{color: '#FF5959'}}><span style={{borderBottom: '6px solid #FF5959'}}>PRED</span>ICTOR</span>
         </h1>
-        <div className="w-24 h-1.5 mx-auto mb-4" style={{background: '#FF5959'}}></div>
         <p className="text-lg font-medium mb-2" style={{color: '#666666'}}>
           Test floor plans before construction • Predict pricing • Maximize ROI
         </p>
