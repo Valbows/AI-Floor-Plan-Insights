@@ -531,9 +531,9 @@ const PropertyDetail = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* COLUMN 1 - Property Details */}
-          <div className="space-y-6 flex flex-col">
+          <div className="flex flex-col">
             {/* Property Details Section */}
-            <div className="space-y-4 flex-1">
+            <div className="space-y-6 flex flex-col flex-1">
 
             {/* PROPERTY VALUATION - Combined Analysis */}
             {extracted.square_footage > 0 && extracted.market_insights?.price_estimate?.estimated_value && (
@@ -567,7 +567,7 @@ const PropertyDetail = () => {
                 const compCount = comparables.length
                 
                 return (
-                  <div className="rounded-lg p-8" style={{background: '#FFFFFF', border: '3px solid #FF5959'}}>
+                  <div className="rounded-lg p-8 flex flex-col flex-1" style={{background: '#FFFFFF', border: '3px solid #FF5959'}}>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-5 h-5" style={{color: '#FF5959'}} />
@@ -664,7 +664,7 @@ const PropertyDetail = () => {
 
             {/* Market Trend */}
             {extracted.market_insights?.market_trend && (
-              <div className="rounded-lg p-8 pb-12" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+              <div className="rounded-lg p-8 pb-12 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                 <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
                   <TrendingUp className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                   Market Trend
@@ -707,7 +707,7 @@ const PropertyDetail = () => {
 
             {/* Investment Analysis */}
             {extracted.market_insights?.investment_analysis && (
-              <div className="rounded-lg p-8 pb-12" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
+              <div className="rounded-lg p-8 pb-12 flex flex-col flex-1" style={{background: '#FFFFFF', border: '2px solid #000000'}}>
                 <h2 className="text-lg font-black uppercase mb-4 flex items-center" style={{color: '#000000', letterSpacing: '1px'}}>
                   <Building2 className="w-5 h-5 mr-2" style={{color: '#FF5959'}} />
                   Investment Analysis
