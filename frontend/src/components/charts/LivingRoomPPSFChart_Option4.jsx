@@ -62,7 +62,7 @@ const LivingRoomPPSFChart_Option4 = ({ properties }) => {
 
   return (
     <div className="rounded-lg" style={{border: '3px solid #000000', background: 'transparent'}}>
-      <div className="p-4 pb-3 rounded-t-lg" style={{background: '#000000'}}>
+      <div className="p-4 pb-3 rounded-t" style={{background: '#000000'}}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Grid3x3 className="w-5 h-5" style={{color: '#FFFFFF'}} />
