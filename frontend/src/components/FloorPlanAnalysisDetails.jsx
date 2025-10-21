@@ -196,14 +196,14 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
           <div className="overflow-x-auto" onClick={(e) => e.stopPropagation()}>
             <table className="w-full" style={{borderCollapse: 'separate', borderSpacing: '0'}}>
               <thead>
-                <tr style={{background: '#F8F9FA'}}>
-                  <th className="text-left text-xs font-bold uppercase px-4 py-3 border-b-2" style={{color: '#666666', letterSpacing: '1px', borderColor: '#E5E5E5', width: '35%'}}>
+                <tr style={{background: '#000000'}}>
+                  <th className="text-left text-xs font-black uppercase px-4 py-4 border-b-2" style={{color: '#FFFFFF', letterSpacing: '1.5px', borderColor: '#000000', width: '35%'}}>
                     Room
                   </th>
-                  <th className="text-center text-xs font-bold uppercase px-4 py-3 border-b-2" style={{color: '#666666', letterSpacing: '1px', borderColor: '#E5E5E5', width: '30%'}}>
+                  <th className="text-center text-xs font-black uppercase px-4 py-4 border-b-2" style={{color: '#FFFFFF', letterSpacing: '1.5px', borderColor: '#000000', width: '30%'}}>
                     Dimensions
                   </th>
-                  <th className="text-left text-xs font-bold uppercase px-4 py-3 border-b-2" style={{color: '#666666', letterSpacing: '1px', borderColor: '#E5E5E5', width: '25%'}}>
+                  <th className="text-left text-xs font-black uppercase px-4 py-4 border-b-2" style={{color: '#FFFFFF', letterSpacing: '1.5px', borderColor: '#000000', width: '25%'}}>
                     <div className="flex items-center justify-between">
                       <span>Features</span>
                       <button
@@ -211,30 +211,32 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                           e.stopPropagation()
                           toggleExpandAll()
                         }}
-                        className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
+                        className="text-xs px-3 py-1.5 rounded font-bold uppercase transition-all"
                         style={{
-                          background: expandAll ? '#000000' : 'transparent',
-                          color: expandAll ? '#FFFFFF' : '#666666',
-                          border: '1px solid #E5E5E5',
-                          letterSpacing: 'normal'
+                          background: expandAll ? '#FF5959' : '#FFFFFF',
+                          color: expandAll ? '#FFFFFF' : '#000000',
+                          border: '1px solid #FFFFFF',
+                          letterSpacing: '1px'
                         }}
                         onMouseEnter={(e) => {
                           if (!expandAll) {
-                            e.currentTarget.style.background = '#F0F0F0'
+                            e.currentTarget.style.background = '#FF5959'
+                            e.currentTarget.style.color = '#FFFFFF'
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (!expandAll) {
-                            e.currentTarget.style.background = 'transparent'
+                            e.currentTarget.style.background = '#FFFFFF'
+                            e.currentTarget.style.color = '#000000'
                           }
                         }}
                         title={expandAll ? 'Collapse all features' : 'Expand all features'}
                       >
-                        {expandAll ? 'Collapse All' : 'Expand All'}
+                        {expandAll ? 'Collapse' : 'Expand All'}
                       </button>
                     </div>
                   </th>
-                  <th className="text-center text-xs font-bold uppercase px-4 py-3 border-b-2" style={{color: '#666666', letterSpacing: '1px', borderColor: '#E5E5E5', width: '10%'}}>
+                  <th className="text-center text-xs font-black uppercase px-4 py-4 border-b-2" style={{color: '#FFFFFF', letterSpacing: '1.5px', borderColor: '#000000', width: '10%'}}>
                     Status
                   </th>
                 </tr>
@@ -243,28 +245,28 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
                 {rooms.map((room, index) => (
                   <tr
                     key={index}
-                    className="transition-colors relative border-b"
+                    className="transition-colors relative"
                     style={{
-                      background: index % 2 === 0 ? '#FFFFFF' : '#FAFAFA',
-                      borderColor: '#F0F0F0'
+                      background: index % 2 === 0 ? '#FFFFFF' : '#F6F1EB',
+                      borderBottom: '1px solid #E5E5E5'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? '#FFFFFF' : '#FAFAFA'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? '#FFFFFF' : '#F6F1EB'}
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-8 h-8 rounded-lg" style={{background: '#FFF5F5', color: '#FF5959'}}>
                           {getRoomIcon(room.type || 'Unknown Room')}
                         </div>
-                        <span className="font-semibold text-sm" style={{color: '#000000'}}>
+                        <span className="font-black text-sm uppercase tracking-wide" style={{color: '#000000', letterSpacing: '0.5px'}}>
                           {room.type || 'Unknown Room'}
                         </span>
                       </div>
                     </td>
                     <td className="px-4 py-4 text-center">
                       {room.dimensions ? (
-                        <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg" style={{background: '#F0F9FF', color: '#0369A1', border: '1px solid #E0F2FE'}}>
-                          <Ruler className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded" style={{background: '#000000', color: '#FFFFFF'}}>
+                          <Ruler className="w-4 h-4" />
                           {room.dimensions}
                         </span>
                       ) : (
@@ -399,24 +401,22 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
               
               {/* Summary Footer */}
               <tfoot>
-                <tr>
-                  <td colSpan="4" className="px-3 py-4">
-                    <div className="border-t border-gray-200 pt-4">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="text-center">
-                          <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>TOTAL ROOMS</p>
-                          <p className="text-lg font-bold" style={{color: '#000000'}}>{rooms.length}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>SQUARE FOOTAGE</p>
-                          <p className="text-lg font-bold" style={{color: '#000000'}}>{square_footage?.toLocaleString() || 'N/A'}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>WITH DIMENSIONS</p>
-                          <p className="text-lg font-bold" style={{color: '#000000'}}>
-                            {rooms.filter(r => r.dimensions).length}
-                          </p>
-                        </div>
+                <tr style={{background: '#F6F1EB'}}>
+                  <td colSpan="4" className="px-4 py-6">
+                    <div className="grid grid-cols-3 gap-6">
+                      <div className="text-center">
+                        <p className="text-xs font-black uppercase mb-2" style={{color: '#666666', letterSpacing: '1.5px'}}>TOTAL ROOMS</p>
+                        <p className="text-3xl font-black" style={{color: '#000000'}}>{rooms.length}</p>
+                      </div>
+                      <div className="text-center border-x border-gray-300">
+                        <p className="text-xs font-black uppercase mb-2" style={{color: '#666666', letterSpacing: '1.5px'}}>SQUARE FOOTAGE</p>
+                        <p className="text-3xl font-black" style={{color: '#FF5959'}}>{square_footage?.toLocaleString() || 'N/A'}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-black uppercase mb-2" style={{color: '#666666', letterSpacing: '1.5px'}}>WITH DIMENSIONS</p>
+                        <p className="text-3xl font-black" style={{color: '#000000'}}>
+                          {rooms.filter(r => r.dimensions).length}
+                        </p>
                       </div>
                     </div>
                   </td>
@@ -426,19 +426,19 @@ const FloorPlanAnalysisDetails = ({ extractedData, showAllFeatures, setShowAllFe
           </div>
         ) : (
           /* Collapsed Summary View */
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            <div className="grid grid-cols-3 gap-4">
+          <div className="border-t-2 border-gray-300 pt-6 mt-4">
+            <div className="grid grid-cols-3 gap-6">
               <div className="text-center">
-                <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>TOTAL ROOMS</p>
-                <p className="text-2xl font-bold" style={{color: '#000000'}}>{rooms.length}</p>
+                <p className="text-xs font-black uppercase mb-2" style={{color: '#666666', letterSpacing: '1.5px'}}>TOTAL ROOMS</p>
+                <p className="text-4xl font-black" style={{color: '#000000'}}>{rooms.length}</p>
+              </div>
+              <div className="text-center border-x-2 border-gray-300">
+                <p className="text-xs font-black uppercase mb-2" style={{color: '#666666', letterSpacing: '1.5px'}}>SQUARE FOOTAGE</p>
+                <p className="text-4xl font-black" style={{color: '#FF5959'}}>{square_footage?.toLocaleString() || 'N/A'}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>SQUARE FOOTAGE</p>
-                <p className="text-2xl font-bold" style={{color: '#000000'}}>{square_footage?.toLocaleString() || 'N/A'}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs font-medium mb-1" style={{color: '#666666'}}>WITH DIMENSIONS</p>
-                <p className="text-2xl font-bold" style={{color: '#000000'}}>
+                <p className="text-xs font-black uppercase mb-2" style={{color: '#666666', letterSpacing: '1.5px'}}>WITH DIMENSIONS</p>
+                <p className="text-4xl font-black" style={{color: '#000000'}}>
                   {rooms.filter(r => r.dimensions).length}
                 </p>
               </div>
