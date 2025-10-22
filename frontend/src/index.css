@@ -59,3 +59,30 @@ html {
   scrollbar-width: thin;
   scrollbar-color: #CCCCCC #F6F1EB; /* light gray thumb, cream track */
 }
+
+/* Circular Text Animation */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 60s linear infinite;
+}
+
+@keyframes spin-slow-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-slow-reverse {
+  animation: spin-slow-reverse 60s linear infinite;
+}

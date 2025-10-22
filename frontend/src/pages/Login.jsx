@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Home, AlertCircle } from 'lucide-react'
+import buildingBg from '../assets/building-bg.png'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -28,14 +29,51 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{background: '#F6F1EB'}}>
-      <div className="max-w-md w-full">
+    <div 
+      className="min-h-screen flex items-center justify-center px-4 relative" 
+      style={{
+        background: '#F6F1EB'
+      }}
+    >
+      {/* Circular Text - at the top right */}
+      <div className="absolute top-0 right-0" style={{zIndex: 0, width: '750px', height: '750px', transform: 'translate(-38%, 12%)'}}>
+        <svg width="750" height="750" viewBox="0 0 750 750" className="animate-spin-slow-reverse">
+          <defs>
+            <path
+              id="circlePath"
+              d="M 375, 375 m -300, 0 a 300,300 0 1,1 600,0 a 300,300 0 1,1 -600,0"
+            />
+          </defs>
+          <text style={{fill: '#000000', fontSize: '27px', fontWeight: '900', letterSpacing: '4px', opacity: 1}}>
+            <textPath href="#circlePath" startOffset="0%">
+              FLOOR IQ • TURNING FLOOR PLANS INTO INSIGHTS IN HOURS • FLOOR IQ • TURNING FLOOR PLANS INTO INSIGHTS IN HOURS • 
+            </textPath>
+          </text>
+        </svg>
+      </div>
+
+      {/* Background Image - above circular text */}
+      <div 
+        className="absolute inset-0" 
+        style={{
+          backgroundImage: `url(${buildingBg})`,
+          backgroundSize: '90%',
+          backgroundPosition: 'right bottom',
+          backgroundRepeat: 'no-repeat',
+          zIndex: 1
+        }}
+      ></div>
+
+      {/* Overlay */}
+      <div className="absolute inset-0" style={{background: 'rgba(246, 241, 235, 0)', zIndex: 2}}></div>
+      
+      {/* Content */}
+      <div className="max-w-md w-full relative z-10 mr-auto ml-0 md:ml-20">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style={{background: '#FF5959'}}>
             <Home className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-5xl font-black uppercase mb-2" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>Welcome <span style={{color: '#FF5959'}}>Back</span></h1>
-          <p className="text-base" style={{color: '#666666'}}>Sign in to your agent account</p>
         </div>
 
         <div className="bg-white p-8" style={{borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '2px solid #000000'}}>
