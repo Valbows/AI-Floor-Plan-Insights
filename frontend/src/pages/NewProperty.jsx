@@ -120,9 +120,12 @@ const NewProperty = () => {
             {/* Page Title */}
             <div className="text-center mb-12">
               <h1 className="text-5xl font-black uppercase tracking-tight mb-3" style={{color: '#000000', letterSpacing: '-2px', lineHeight: '0.95'}}>
-                UPLOAD <span style={{color: '#FF5959'}}>FLOOR PLAN</span>
+                UPLOAD <span style={{color: '#FF5959', position: 'relative', display: 'inline-block'}}>
+                  FLOOR PLAN
+                  <div className="absolute left-1/2 -translate-x-1/2" style={{width: '120px', height: '6px', background: '#FF5959', bottom: '-12px', marginLeft: '80px'}}></div>
+                </span>
               </h1>
-              <div className="w-24 h-1.5 mx-auto mb-6" style={{background: '#FF5959'}}></div>
+              <div className="mb-6"></div>
               <p className="text-lg" style={{color: '#666666'}}>Let our AI analyze your property and generate insights instantly</p>
             </div>
 
